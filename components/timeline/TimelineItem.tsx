@@ -2,7 +2,7 @@
 
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import Image from 'next/image';
+import { SafeImage } from '../ui/SafeImage';
 import Link from 'next/link';
 import { Tweet } from '../../features/timeline/types';
 import { Heart, MessageCircle, Repeat2, Share } from 'lucide-react';
@@ -25,7 +25,7 @@ export function TimelineItem({ tweet, onLike, onRetweet }: TimelineItemProps) {
         {/* アバター */}
         <Link href={`/${tweet.author.username}` as any} className="flex-shrink-0">
           {tweet.author.avatar ? (
-            <Image
+            <SafeImage
               src={tweet.author.avatar}
               alt={tweet.author.name}
               width={48}
@@ -76,7 +76,7 @@ export function TimelineItem({ tweet, onLike, onRetweet }: TimelineItemProps) {
               {tweet.media.map((media) => (
                 <div key={media.id} className="relative aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
                   {media.type === 'image' && (
-                    <Image
+                    <SafeImage
                       src={media.url}
                       alt={media.altText || ''}
                       fill

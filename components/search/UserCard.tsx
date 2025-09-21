@@ -1,7 +1,7 @@
 "use client";
 
-import Image from 'next/image';
 import Link from 'next/link';
+import { SafeImage } from '../ui/SafeImage';
 import { User } from '../../features/timeline/types';
 
 interface UserCardProps {
@@ -16,7 +16,7 @@ export function UserCard({ user, onFollow }: UserCardProps) {
         {/* アバター */}
         <Link href={`/${user.username}` as any} className="flex-shrink-0">
           {user.avatar ? (
-            <Image
+            <SafeImage
               src={user.avatar}
               alt={user.name}
               width={48}
