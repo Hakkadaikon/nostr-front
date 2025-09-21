@@ -44,7 +44,7 @@ export default function KeyManager() {
         <Input placeholder="nsec or hex" value={input} onChange={e => setInput(e.target.value)} />
         <Button onClick={() => {
           const r = importKey(input.trim());
-          if (r.ok) loginWithNsec(r.npub, r.nsec);
+          if (r.ok && r.npub) loginWithNsec(r.npub, r.nsec);
         }}>Import</Button>
       </div>
       <div className="text-xs text-gray-500">

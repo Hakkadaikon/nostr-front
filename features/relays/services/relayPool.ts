@@ -15,22 +15,26 @@ export function getWriteRelays(relays: RelayInfo[]) {
 
 export function subscribeTo(relays: string[], filters: Filter[], onEvent: (e: NostrEvent) => void): Subscription {
   const p = getPool();
-  const sub = p.sub(relays, filters);
-  sub.on('event', onEvent);
-  return { close: () => sub.unsub() };
+  const sub = p.subscribeMany(relays, filters, {
+    onevent: onEvent
+  });
+  return { close: () => sub.close() };
 }
 
 export async function publishTo(relays: string[], event: NostrEvent) {
   const p = getPool();
   const results: { relay: string; ok: boolean; error?: any }[] = [];
-  for (const url of relays) {
+  const promises = p.publish(relays, event);
+  
+  await Promise.all(promises.map(async (promise, index) => {
     try {
-      await p.publish(url, event);
-      results.push({ relay: url, ok: true });
+      await promise;
+      results.push({ relay: relays[index], ok: true });
     } catch (e) {
-      results.push({ relay: url, ok: false, error: e });
+      results.push({ relay: relays[index], ok: false, error: e });
     }
-  }
+  }));
+  
   return results;
 }
 
@@ -39,16 +43,26 @@ export async function checkRelayHealth(url: string, timeoutMs = 1500) {
     const p = getPool();
     const controller = new AbortController();
     const t = setTimeout(() => controller.abort(), timeoutMs);
-    // SimplePool.connect doesn't exist; we emulate with a dummy sub that immediately closes
-    const sub = p.sub([url], [{ kinds: [0], limit: 1 }]);
-    await new Promise<void>((resolve, reject) => {
-      let resolved = false;
-      sub.on('event', () => { if (!resolved) { resolved = true; resolve(); } });
-      sub.on('eose', () => { if (!resolved) { resolved = true; resolve(); } });
-      controller.signal.addEventListener('abort', () => reject(new Error('timeout')));
+    
+    const sub = p.subscribeMany([url], [{ kinds: [0], limit: 1 }], {
+      onevent: () => {
+        clearTimeout(t);
+        sub.close();
+      },
+      oneose: () => {
+        clearTimeout(t);
+        sub.close();
+      }
     });
-    clearTimeout(t);
-    sub.unsub();
+    
+    await new Promise<void>((resolve, reject) => {
+      controller.signal.addEventListener('abort', () => {
+        sub.close();
+        reject(new Error('timeout'));
+      });
+      setTimeout(resolve, 100); // Give it time to connect
+    });
+    
     return true;
   } catch {
     return false;

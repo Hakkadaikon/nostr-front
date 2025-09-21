@@ -1,0 +1,35 @@
+"use client";
+
+import { ReactNode } from 'react';
+import NavSidebar from './NavSidebar';
+import ComposeModal from '../compose/ComposeModal';
+
+interface MainLayoutProps {
+  children: ReactNode;
+}
+
+export function MainLayout({ children }: MainLayoutProps) {
+  return (
+    <>
+      <div className="flex min-h-screen">
+        {/* サイドバー */}
+        <NavSidebar />
+        
+        {/* メインコンテンツエリア */}
+        <div className="flex-1 md:ml-64">
+          <div className="max-w-2xl mx-auto border-x border-gray-200 dark:border-gray-800 min-h-screen">
+            {children}
+          </div>
+        </div>
+        
+        {/* 右サイドバー（将来的な拡張用） */}
+        <div className="hidden xl:block w-80 p-4">
+          {/* トレンド、おすすめユーザーなどを表示予定 */}
+        </div>
+      </div>
+      
+      {/* グローバルモーダル */}
+      <ComposeModal />
+    </>
+  );
+}

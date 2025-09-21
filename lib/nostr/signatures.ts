@@ -1,4 +1,4 @@
-import { finalizeEvent, getEventHash, validateEvent, verifySignature, type Event as NostrEvent } from 'nostr-tools';
+import { finalizeEvent, getEventHash, validateEvent, verifyEvent, type Event as NostrEvent } from 'nostr-tools';
 
 let queue = Promise.resolve();
 
@@ -25,5 +25,5 @@ export async function signEvent(event: Omit<NostrEvent, 'id' | 'sig'>, getSecret
 }
 
 export function verify(event: NostrEvent) {
-  return validateEvent(event) && verifySignature(event);
+  return validateEvent(event) && verifyEvent(event);
 }

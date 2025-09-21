@@ -12,32 +12,44 @@ function getPool() {
 
 export function subscribe(relays: string[], filters: Filter[], onEvent: (e: NostrEvent) => void): Subscription {
   const p = getPool();
-  const sub = p.sub(relays, filters);
-  sub.on('event', onEvent);
-  return { close: () => sub.unsub() };
+  const sub = p.subscribeMany(relays, filters, {
+    onevent: onEvent
+  });
+  return { close: () => sub.close() };
 }
 
 export async function publish(relays: string[], event: NostrEvent, retries = 1): Promise<PublishResult[]> {
   const p = getPool();
   const results: PublishResult[] = [];
-  for (const url of relays) {
-    let ok = false;
-    let lastErr: unknown;
-    for (let attempt = 0; attempt <= retries && !ok; attempt++) {
-      try {
-        await p.publish(url, event);
-        ok = true;
-      } catch (err) {
-        lastErr = err;
-        if (attempt < retries) await new Promise(r => setTimeout(r, 300 * (attempt + 1)));
-      }
+  
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    if (attempt > 0) {
+      await new Promise(r => setTimeout(r, 300 * attempt));
     }
-    results.push({ relay: url, ok, error: ok ? undefined : lastErr });
+    
+    const promises = p.publish(relays, event);
+    
+    await Promise.all(promises.map(async (promise, index) => {
+      try {
+        await promise;
+        if (!results[index] || !results[index].ok) {
+          results[index] = { relay: relays[index], ok: true };
+        }
+      } catch (err) {
+        if (!results[index]) {
+          results[index] = { relay: relays[index], ok: false, error: err };
+        }
+      }
+    }));
   }
+  
   return results;
 }
 
 export function close() {
-  pool?.close?.();
-  pool = null;
+  if (pool) {
+    // SimplePool.close requires relay URLs, but we want to close all
+    // So we'll just set pool to null and let garbage collection handle it
+    pool = null;
+  }
 }

@@ -9,6 +9,6 @@ export function generatePrivateKey() {
   const hex = toHex(sk);
   const pk = getPublicKey(sk);
   const npub = nip19.npubEncode(pk);
-  const nsec = nip19.nsecEncode(hex);
+  const nsec = nip19.nsecEncode(sk);
   return { hex, npub, nsec };
 }

@@ -1,0 +1,30 @@
+{
+  "mcpServers": {
+    "serena": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena-mcp-server",
+        "--context",
+        "ide-assistant",
+        "--project",
+        "/Users/yida/work/porker2-sst"
+      ],
+      "env": {}
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"],
+      "env": {}
+    },
+    "gemini-cli": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["@choplin/mcp-gemini-cli", "--allow-npx"],
+      "env": {}
+    }
+  }
+}

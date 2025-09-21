@@ -1,18 +1,71 @@
 "use client";
-import ComposeBox from '../components/compose/ComposeBox';
+
 import { useTimeline } from '../features/timeline/hooks/useTimeline';
-import NoteCard from '../components/notes/NoteCard';
+import { TimelineList } from '../components/timeline/TimelineList';
+import { TweetComposer } from '../components/tweets/TweetComposer';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
+import { useCallback, useRef } from 'react';
+import { Tweet } from '../features/timeline/types';
 
 export default function HomePage() {
-  const { events } = useTimeline();
+  const { tweets, isLoading, error, hasMore, loadMore, toggleLike, toggleRetweet, addTweet } = useTimeline({
+    type: 'home',
+    limit: 20,
+  });
+
+  // 無限スクロール用のref
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  // 無限スクロールのコールバック
+  const handleIntersect = useCallback(() => {
+    if (hasMore && !isLoading) {
+      loadMore();
+    }
+  }, [hasMore, isLoading, loadMore]);
+
+  // 無限スクロールフックを使用
+  useInfiniteScroll({
+    target: observerTarget,
+    onIntersect: handleIntersect,
+    enabled: hasMore && !isLoading,
+  });
+
   return (
-    <section className="space-y-4">
-      <ComposeBox />
-      <div className="space-y-3">
-        {events.map(e => (
-          <NoteCard key={e.id} id={e.id} content={e.content} />
-        ))}
-      </div>
-    </section>
+    <div className="min-h-screen">
+      {/* ヘッダー */}
+      <header className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+        <div className="px-4 py-4">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            ホーム
+          </h1>
+        </div>
+        <div className="flex">
+          <button className="relative flex-1 px-4 py-4 text-center font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200">
+            おすすめ
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-600 to-pink-600" />
+          </button>
+          <button className="flex-1 px-4 py-4 text-center font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/20 transition-all duration-200">
+            フォロー中
+          </button>
+        </div>
+      </header>
+
+      {/* 投稿フォーム */}
+      <TweetComposer onTweetCreated={addTweet} />
+
+      {/* タイムライン */}
+      <main>
+        <TimelineList
+          tweets={tweets}
+          isLoading={isLoading}
+          error={error}
+          onLike={toggleLike}
+          onRetweet={toggleRetweet}
+        />
+        
+        {/* 無限スクロールのターゲット */}
+        <div ref={observerTarget} className="h-1" />
+      </main>
+    </div>
   );
 }

@@ -11,13 +11,3 @@ export default function ProfilePage({ params }: Props) {
     </div>
   );
 }
-
-
-export default function ProfilePage({ params }: Props) {
-  return (
-    <div>
-      <h2 className="text-lg font-semibold mb-2">Profile</h2>
-      <p>npub: <code>{params.npub}</code></p>
-    </div>
-  );
-}

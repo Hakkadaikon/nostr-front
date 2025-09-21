@@ -15,11 +15,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-  return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Settings</h2>
-      <p className="text-sm text-gray-600 dark:text-gray-300">Relay and key settings will appear here.</p>
-    </div>
-  );
-}
