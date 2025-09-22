@@ -40,9 +40,133 @@ export function createNip50Filter(query: string, type: 'all' | 'users' | 'tweets
 }
 
 /**
+ * フォロー数を取得する
+ */
+async function getFollowCounts(pubkey: string): Promise<{ followingCount: number; followersCount: number }> {
+  const relayStore = useRelaysStore.getState();
+  const readRelays = relayStore.relays.filter(r => r.read).map(r => r.url);
+  
+  if (readRelays.length === 0) {
+    return { followingCount: 0, followersCount: 0 };
+  }
+
+  let followingCount = 0;
+  let followersCount = 0;
+
+  // フォロー中の数を取得（自分のkind 3イベント）
+  const followingFilter: Filter = {
+    kinds: [3],
+    authors: [pubkey],
+    limit: 1,
+  };
+
+  // フォロワー数を取得（他の人のkind 3イベントで自分がタグに含まれているもの）
+  const followersFilter: Filter = {
+    kinds: [3],
+    '#p': [pubkey],
+    limit: 500,
+  };
+
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => {
+      sub.close();
+      resolve({ followingCount, followersCount });
+    }, 2000);
+
+    const processedAuthors = new Set<string>();
+
+    const sub = subscribe(readRelays, [followingFilter, followersFilter], (event: NostrEvent) => {
+      if (event.kind === 3) {
+        if (event.pubkey === pubkey) {
+          // 自分のフォローリスト
+          const pTags = event.tags.filter(tag => tag[0] === 'p');
+          followingCount = pTags.length;
+        } else {
+          // 他の人のフォローリストに自分が含まれている
+          if (!processedAuthors.has(event.pubkey)) {
+            processedAuthors.add(event.pubkey);
+            followersCount++;
+          }
+        }
+      }
+    });
+  });
+}
+
+/**
+ * 投稿の統計情報を取得する
+ */
+async function getPostStats(eventId: string): Promise<{ likesCount: number; repostsCount: number; repliesCount: number; zapsCount: number }> {
+  const relayStore = useRelaysStore.getState();
+  const readRelays = relayStore.relays.filter(r => r.read).map(r => r.url);
+  
+  if (readRelays.length === 0) {
+    return { likesCount: 0, repostsCount: 0, repliesCount: 0, zapsCount: 0 };
+  }
+
+  let likesCount = 0;
+  let repostsCount = 0;
+  let repliesCount = 0;
+  let zapsCount = 0;
+
+  const filters: Filter[] = [
+    // いいね（リアクション）
+    {
+      kinds: [7],
+      '#e': [eventId],
+      limit: 100,
+    },
+    // リポスト
+    {
+      kinds: [6],
+      '#e': [eventId],
+      limit: 100,
+    },
+    // 返信
+    {
+      kinds: [1],
+      '#e': [eventId],
+      limit: 100,
+    },
+    // Zap
+    {
+      kinds: [9735],
+      '#e': [eventId],
+      limit: 100,
+    },
+  ];
+
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => {
+      sub.close();
+      resolve({ likesCount, repostsCount, repliesCount, zapsCount });
+    }, 2000);
+
+    const sub = subscribe(readRelays, filters, (event: NostrEvent) => {
+      switch (event.kind) {
+        case 7:
+          if (event.content === '+' || event.content === '❤️' || event.content === '👍' || event.content === '♥') {
+            likesCount++;
+          }
+          break;
+        case 6:
+          repostsCount++;
+          break;
+        case 1:
+          repliesCount++;
+          break;
+        case 9735:
+          zapsCount++;
+          break;
+      }
+    });
+  });
+}
+
+/**
  * NostrイベントからUserに変換
  */
-export function eventToUser(event: NostrEvent): User | null {
+export function eventToUser(event: NostrEvent, followCounts?: { followingCount: number; followersCount: number }): User | null {
   if (event.kind !== 0) return null;
 
   try {
@@ -56,8 +180,8 @@ export function eventToUser(event: NostrEvent): User | null {
       name: content.display_name || content.name || '',
       avatar: content.picture || undefined,
       bio: content.about || '',
-      followersCount: 0,
-      followingCount: 0,
+      followersCount: followCounts?.followersCount || 0,
+      followingCount: followCounts?.followingCount || 0,
       createdAt: new Date(event.created_at * 1000),
       npub,
     };
@@ -70,7 +194,7 @@ export function eventToUser(event: NostrEvent): User | null {
 /**
  * NostrイベントからTweetに変換
  */
-export function eventToTweet(event: NostrEvent, author?: User): Tweet | null {
+export function eventToTweet(event: NostrEvent, author?: User, stats?: { likesCount: number; repostsCount: number; repliesCount: number; zapsCount: number }): Tweet | null {
   if (event.kind !== 1) return null;
 
   return {
@@ -87,10 +211,10 @@ export function eventToTweet(event: NostrEvent, author?: User): Tweet | null {
       createdAt: new Date(),
     },
     createdAt: new Date(event.created_at * 1000),
-    likesCount: 0,
-    retweetsCount: 0,
-    repliesCount: 0,
-    zapsCount: 0,
+    likesCount: stats?.likesCount || 0,
+    retweetsCount: stats?.repostsCount || 0,
+    repliesCount: stats?.repliesCount || 0,
+    zapsCount: stats?.zapsCount || 0,
     isLiked: false,
     isRetweeted: false,
   };
@@ -122,16 +246,39 @@ export async function searchNostr(
   const eventCache = new Map<string, NostrEvent>();
 
   return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
+    const timeout = setTimeout(async () => {
       console.log('[NIP-50 Search] Timeout reached, closing subscription');
-      
-      // userCacheからユニークなユーザーの配列を作成
-      const users = Array.from(userCache.values());
-      
-      console.log('[NIP-50 Search] Found unique users:', users.length);
-      console.log('[NIP-50 Search] Found tweets:', tweets.length);
       sub.close();
-      resolve({ users, tweets });
+      
+      // ユーザーのフォロー数を取得
+      const usersWithStats: User[] = [];
+      for (const user of userCache.values()) {
+        const followCounts = await getFollowCounts(user.id);
+        const userWithStats = {
+          ...user,
+          followingCount: followCounts.followingCount,
+          followersCount: followCounts.followersCount,
+        };
+        usersWithStats.push(userWithStats);
+      }
+      
+      // ツイートの統計情報を取得
+      const tweetsWithStats: Tweet[] = [];
+      for (const tweet of tweets) {
+        const stats = await getPostStats(tweet.id);
+        const tweetWithStats = {
+          ...tweet,
+          likesCount: stats.likesCount,
+          retweetsCount: stats.repostsCount,
+          repliesCount: stats.repliesCount,
+          zapsCount: stats.zapsCount,
+        };
+        tweetsWithStats.push(tweetWithStats);
+      }
+      
+      console.log('[NIP-50 Search] Found unique users:', usersWithStats.length);
+      console.log('[NIP-50 Search] Found tweets:', tweetsWithStats.length);
+      resolve({ users: usersWithStats, tweets: tweetsWithStats });
     }, 5000); // 5秒でタイムアウト
 
     let eventCount = 0;
@@ -172,15 +319,13 @@ export async function searchNostr(
     });
 
     // エラーハンドリング
-    setTimeout(() => {
+    setTimeout(async () => {
       if (userCache.size === 0 && tweets.length === 0 && eventCount === 0) {
         console.log('[NIP-50 Search] No events received after 1 second');
         clearTimeout(timeout);
         sub.close();
         
-        // userCacheからユニークなユーザーの配列を作成
-        const users = Array.from(userCache.values());
-        resolve({ users, tweets });
+        resolve({ users: [], tweets: [] });
       }
     }, 1000);
   });
@@ -205,9 +350,22 @@ export async function fetchUserProfiles(pubkeys: string[]): Promise<Map<string, 
   };
 
   return new Promise((resolve) => {
-    const timeout = setTimeout(() => {
+    const timeout = setTimeout(async () => {
       sub.close();
-      resolve(userMap);
+      
+      // 各ユーザーのフォロー数を取得
+      const usersWithStats = new Map<string, User>();
+      for (const [pubkey, user] of userMap) {
+        const followCounts = await getFollowCounts(pubkey);
+        const userWithStats = {
+          ...user,
+          followingCount: followCounts.followingCount,
+          followersCount: followCounts.followersCount,
+        };
+        usersWithStats.set(pubkey, userWithStats);
+      }
+      
+      resolve(usersWithStats);
     }, 3000);
 
     const sub = subscribe(readRelays, [filter], (event: NostrEvent) => {
