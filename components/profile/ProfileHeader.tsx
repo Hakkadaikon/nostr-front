@@ -35,12 +35,7 @@ export function ProfileHeader({
   const truncatedNpub = `${profile.npub.slice(0, 8)}...${profile.npub.slice(-6)}`;
   const avatarSrc = profile.picture || '/images/avatar-placeholder.png';
 
-  const stats = useMemo(
-    () => [
-      { key: 'following', label: 'フォロー中', value: profile.followingCount ?? 0 },
-    ],
-    [profile.followingCount]
-  );
+  
 
   const cleanWebsite = profile.website
     ? profile.website.replace(/^https?:\/\//, '')
@@ -141,18 +136,7 @@ export function ProfileHeader({
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-6 text-sm">
-                {stats.map((stat) => (
-                  <div key={stat.key} className="min-w-[88px]">
-                    <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                      {stat.label}
-                    </p>
-                    <p className="text-xl font-semibold text-gray-900 dark:text-white">
-                      {stat.value.toLocaleString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
+              
             </div>
           </div>
 

@@ -49,9 +49,6 @@ export default function ProfilePage({ params }: Props) {
           website: profileData.website,
           lud16: profileData.lud16,
           nip05: profileData.nip05,
-          followersCount: 0, // TODO: 実装
-          followingCount: 0, // TODO: 実装
-          postsCount: 0, // TODO: 実装
         });
         
         // フォロー状態を確認

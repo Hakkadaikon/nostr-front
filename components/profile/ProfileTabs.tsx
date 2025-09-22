@@ -38,18 +38,7 @@ export function ProfileTabs({ activeTab, onTabChange, counts = {} }: ProfileTabs
               )}
             >
               <span className="whitespace-nowrap">{tab.label}</span>
-              {typeof count === 'number' && count > 0 && (
-                <span
-                  className={clsx(
-                    'ml-1 min-w-[1.25rem] rounded-full px-1.5 py-0.5 text-center text-xs font-semibold leading-tight',
-                    isActive
-                      ? 'bg-gray-900 text-white dark:bg-white dark:text-black'
-                      : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'
-                  )}
-                >
-                  {count > 999 ? '999+' : count.toLocaleString()}
-                </span>
-              )}
+              
               {isActive && (
                 <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-gray-900 dark:bg-white" />
               )}

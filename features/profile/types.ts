@@ -8,7 +8,4 @@ export interface Profile {
   website?: string;
   lud16?: string; // Lightning address
   nip05?: string; // Nostr address verification
-  followersCount?: number;
-  followingCount?: number;
-  postsCount?: number;
 }
