@@ -94,24 +94,22 @@ async function nostrEventToTweet(event: NostrEvent, relays: string[]): Promise<T
  */
 export async function fetchTimeline(params: TimelineParams): Promise<TimelineResponse> {
   try {
-    // リレー設定を取得
+    // リレー設定を取得（読み取り可能なリレー + 既知のフォールバックリレーを統合）
     const relaysStore = useRelaysStore.getState();
-    let relays = getReadRelays(relaysStore.relays);
-    
-    if (relays.length === 0) {
-      // 環境変数からデフォルトリレーを取得
-      const defaultRelays = process.env.NEXT_PUBLIC_DEFAULT_RELAYS;
-      if (defaultRelays) {
-        relays = defaultRelays.split(',').map(url => url.trim());
-      } else {
-        // フォールバック用のデフォルトリレー
-        relays = [
-          'wss://relay.damus.io',
-          'wss://nos.lol',
-          'wss://relay.nostr.band'
-        ];
-      }
-    }
+    const configuredRelays = getReadRelays(relaysStore.relays);
+
+    const envRelays = (process.env.NEXT_PUBLIC_DEFAULT_RELAYS || '')
+      .split(',')
+      .map(u => u.trim())
+      .filter(Boolean);
+
+    const fallbackRelays = envRelays.length > 0 ? envRelays : [
+      'wss://relay.damus.io',
+      'wss://nos.lol',
+      'wss://relay.nostr.band'
+    ];
+
+    const relays = Array.from(new Set([...(configuredRelays || []), ...fallbackRelays]));
 
     const limit = params.limit || 20;
     const until = params.cursor ? parseInt(params.cursor) : Math.floor(Date.now() / 1000);

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useReducer } from 'react';
 import { fetchTimeline, likeTweet, unlikeTweet, retweet, undoRetweet } from '../services/timeline';
 import { TimelineParams, TimelineState, Tweet } from '../types';
+import { useAuthStore } from '../../../stores/auth.store';
 
 // Action types
 type TimelineAction =
@@ -179,11 +180,16 @@ export function useTimeline(params: TimelineParams) {
     dispatch({ type: 'ADD_TWEET', tweet });
   }, []);
 
-  // 初回読み込み・パラメータ変更時のリセット
+  // 現在のユーザーの公開鍵（NIP-07などで取得）
+  const authPubkey = useAuthStore(state => state.publicKey);
+
+  // 初回読み込み・パラメータ変更時、または公開鍵取得時のリセット
   useEffect(() => {
+    // フォロー中タブは公開鍵が必要（kind3でフォローリストを取得するため）
+    if (params.type === 'following' && !authPubkey) return;
     reset();
     loadMore();
-  }, [params.type]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [params.type, authPubkey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     tweets: state.tweets,

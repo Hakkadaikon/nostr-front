@@ -6,12 +6,18 @@ import ComposeModal from '../compose/ComposeModal';
 import { MobileNav } from './MobileNav';
 import { MobileHeader } from './MobileHeader';
 import { ThemeProvider } from '../providers/ThemeProvider';
+import { useAuth } from '../../features/auth/hooks/useAuth';
+import { useLoadNip65Relays } from '../../features/relays/hooks/useLoadNip65Relays';
 
 interface MainLayoutProps {
   children: ReactNode;
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
+  // Initialize authentication (NIP-07) on app load
+  useAuth();
+  // Load relays from NIP-65 (kind:10002) when pubkey is ready
+  useLoadNip65Relays();
   return (
     <ThemeProvider>
       {/* モバイルヘッダー */}
