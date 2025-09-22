@@ -50,7 +50,7 @@ export default function NotificationsPage() {
             {filteredNotifications.length > 0 && (
               <button
                 onClick={handleClearAll}
-                className="p-1.5 text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
+                className="p-1.5 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 transition-colors"
                 title="すべての通知を削除"
               >
                 <Trash2 size={18} />

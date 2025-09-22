@@ -97,7 +97,7 @@ export default function ComposeModal() {
               <Button
                 onClick={handleClose}
                 disabled={loading}
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800"
+                variant="secondary"
               >
                 キャンセル
               </Button>

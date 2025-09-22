@@ -51,10 +51,10 @@ export default function RelayManager() {
                   <input type="checkbox" checked={r.nip50 || false} onChange={() => toggleNip50(r.url)} className="cursor-pointer" /> 
                   <span>NIP-50</span>
                 </label>
-                <Button 
+                <Button
                   onClick={() => remove(r.url)}
+                  variant="danger"
                   className="whitespace-nowrap text-xs px-3 py-1"
-                  variant="secondary"
                 >
                   削除
                 </Button>
@@ -93,9 +93,10 @@ export default function RelayManager() {
             <div className="text-sm">
               <span className="text-purple-600 dark:text-purple-400 font-medium">検索リレー:</span> {searchRelay}
             </div>
-            <Button 
-              onClick={() => setSearchRelay(null)} 
-              className="text-xs bg-red-500 hover:bg-red-600"
+            <Button
+              onClick={() => setSearchRelay(null)}
+              variant="danger"
+              className="text-xs"
             >
               削除
             </Button>

@@ -150,7 +150,7 @@ export function ZapModal({ isOpen, onClose, tweetId, recipientNpub, recipientLnA
             )}
 
             <div className="flex justify-end gap-2">
-              <Button onClick={handleClose} className="bg-gray-300 hover:bg-gray-400 text-gray-800">
+              <Button onClick={handleClose} variant="secondary">
                 キャンセル
               </Button>
               <Button
@@ -197,7 +197,7 @@ export function ZapModal({ isOpen, onClose, tweetId, recipientNpub, recipientLnA
               <div className="flex justify-center gap-2">
                 <Button
                   onClick={() => navigator.clipboard.writeText(invoice)}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-800"
+                  variant="secondary"
                 >
                   コピー
                 </Button>
