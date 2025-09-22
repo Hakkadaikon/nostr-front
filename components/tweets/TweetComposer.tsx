@@ -117,9 +117,6 @@ export function TweetComposer({
         <Avatar 
           src={currentProfile?.picture} 
           alt={currentProfile?.name || 'user'} 
-          npub={currentProfile?.npub || ''}
-          width={48} 
-          height={48} 
         />
         
         <div className="flex-1">

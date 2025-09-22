@@ -4,7 +4,7 @@ import { useRelaysStore } from '../../../stores/relays.store';
 import { type Event as NostrEvent, nip19 } from 'nostr-tools';
 import { format } from 'date-fns';
 import { fetchFollowList } from '../../follow/services/follow';
-import { KIND_TEXT_NOTE, KIND_METADATA } from '../../../lib/nostr/constants';
+import { KIND_TEXT_NOTE, KIND_METADATA, KIND_REACTION } from '../../../lib/nostr/constants';
 import { createRepost, deleteRepost } from '../../repost/services/repost';
 
 // プロフィール情報のキャッシュ
@@ -114,19 +114,58 @@ async function fetchProfile(pubkey: string, relays: string[]): Promise<any> {
 }
 
 /**
- * NostrイベントをTweet型に変換
+ * 複数のイベントのリアクション数を一度に取得
+ */
+async function fetchReactionCounts(eventIds: string[], relays: string[]): Promise<Map<string, number>> {
+  return new Promise((resolve) => {
+    const counts = new Map<string, number>();
+    const seenReactions = new Set<string>();
+    let timeoutId: NodeJS.Timeout;
+
+    // 初期化
+    eventIds.forEach(id => counts.set(id, 0));
+
+    const sub = subscribeTo(
+      relays,
+      [{ kinds: [KIND_REACTION], '#e': eventIds }],
+      (event: NostrEvent) => {
+        // リアクション対象のイベントIDを取得
+        const targetEventTag = event.tags.find(tag => tag[0] === 'e');
+        if (!targetEventTag || !targetEventTag[1]) return;
+        
+        const targetEventId = targetEventTag[1];
+        
+        // 重複チェック
+        if (!seenReactions.has(event.id) && event.content === '+' && counts.has(targetEventId)) {
+          seenReactions.add(event.id);
+          counts.set(targetEventId, (counts.get(targetEventId) || 0) + 1);
+        }
+      }
+    );
+
+    // タイムアウト設定（1秒）
+    timeoutId = setTimeout(() => {
+      sub.close();
+      resolve(counts);
+    }, 1000);
+  });
+}
+
+/**
+ * NostrイベントをTweet型に変換（リアクション数は後で設定）
  */
 async function nostrEventToTweet(event: NostrEvent, relays: string[]): Promise<Tweet> {
   const profile = await fetchProfile(event.pubkey, relays);
   
   const tags = event.tags as string[][];
   const quote = extractQuoteReference(tags);
+  
   return {
     id: event.id,
     content: event.content,
     author: profile,
     createdAt: new Date(event.created_at * 1000),
-    likesCount: 0, // Nostrでは反応数を別途集計する必要がある
+    likesCount: 0, // 一時的に0を設定（後でバッチ処理で更新）
     retweetsCount: 0, // Nostrではリポスト数を別途集計する必要がある
     repliesCount: 0, // Nostrでは返信数を別途集計する必要がある
     zapsCount: 0, // NostrではZap数を別途集計する必要がある
@@ -215,6 +254,15 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
             clearTimeout(timeoutId);
             sub.close();
             
+            // リアクション数をバッチで取得
+            const eventIds = tweets.map(t => t.id);
+            const reactionCounts = await fetchReactionCounts(eventIds, relays);
+            
+            // ツイートにリアクション数を設定
+            tweets.forEach(tweet => {
+              tweet.likesCount = reactionCounts.get(tweet.id) || 0;
+            });
+            
             // 時系列でソート（新しい順）
             tweets.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
             
@@ -232,8 +280,19 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
       );
 
       // タイムアウト設定（2秒に短縮）
-      timeoutId = setTimeout(() => {
+      timeoutId = setTimeout(async () => {
         sub.close();
+        
+        // リアクション数をバッチで取得
+        if (tweets.length > 0) {
+          const eventIds = tweets.map(t => t.id);
+          const reactionCounts = await fetchReactionCounts(eventIds, relays);
+          
+          // ツイートにリアクション数を設定
+          tweets.forEach(tweet => {
+            tweet.likesCount = reactionCounts.get(tweet.id) || 0;
+          });
+        }
         
         // 時系列でソート（新しい順）
         tweets.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());

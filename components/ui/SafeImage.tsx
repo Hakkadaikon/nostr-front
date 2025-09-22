@@ -3,7 +3,7 @@
 import NextImage from 'next/image';
 import { useEffect, useState } from 'react';
 
-const DEFAULT_FALLBACK_SRC = '/images/default-avatar.png';
+const DEFAULT_FALLBACK_SRC = '/images/default-avatar.svg';
 
 interface SafeImageProps {
   src: string;

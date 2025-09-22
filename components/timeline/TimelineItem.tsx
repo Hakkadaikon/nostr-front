@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { Tweet } from '../../features/timeline/types';
 import { Heart, MessageCircle, Repeat2, Share, Zap } from 'lucide-react';
 import { IconButton } from '../ui/IconButton';
+import { QuotedTweet } from './QuotedTweet';
 
 interface TimelineItemProps {
   tweet: Tweet;
@@ -72,6 +73,11 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply }: Timel
           <div className="mt-2">
             <RichContent content={tweet.content} tags={tweet.tags} suppressNoteIds={tweet.quote ? [tweet.quote.id] : undefined} />
           </div>
+
+          {/* 引用ツイート */}
+          {tweet.quote && (
+            <QuotedTweet quoteId={tweet.quote.id} relays={tweet.quote.relays} />
+          )}
 
           {/* メディア */}
           {tweet.media && tweet.media.length > 0 && (

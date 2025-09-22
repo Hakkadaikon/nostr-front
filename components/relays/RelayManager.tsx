@@ -6,15 +6,12 @@ import { useState } from 'react';
 
 export default function RelayManager() {
   const [url, setUrl] = useState('');
-  const [searchRelayUrl, setSearchRelayUrl] = useState('');
   const relays = useRelaysStore(s => s.relays);
-  const searchRelay = useRelaysStore(s => s.searchRelay);
   const add = useRelaysStore(s => s.add);
   const remove = useRelaysStore(s => s.remove);
   const toggleRead = useRelaysStore(s => s.toggleRead);
   const toggleWrite = useRelaysStore(s => s.toggleWrite);
   const toggleNip50 = useRelaysStore(s => s.toggleNip50);
-  const setSearchRelay = useRelaysStore(s => s.setSearchRelay);
 
   return (
     <div className="space-y-6">
@@ -62,46 +59,11 @@ export default function RelayManager() {
             </li>
           ))}
         </ul>
-      </div>
-
-      <div className="space-y-3 border-t pt-4">
-        <h3 className="text-md font-medium">検索専用リレー（NIP-50対応）</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          検索専用のNIP-50対応リレーを指定できます。指定しない場合は、上記でNIP-50にチェックしたリレーが使用されます。
-        </p>
-        <div className="flex gap-2">
-          <Input 
-            placeholder="wss://relay.nostr.band" 
-            value={searchRelayUrl} 
-            onChange={e => setSearchRelayUrl(e.target.value)} 
-            className="flex-1"
-          />
-          <Button 
-            onClick={() => { 
-              if (searchRelayUrl.trim()) { 
-                setSearchRelay(searchRelayUrl.trim()); 
-                setSearchRelayUrl(''); 
-              } 
-            }}
-            className="whitespace-nowrap px-6"
-          >
-            設定
-          </Button>
+        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
+          <p className="text-sm text-blue-800 dark:text-blue-200">
+            <strong>ヒント:</strong> NIP-50にチェックを入れたリレーは検索機能で使用されます。複数のリレーを選択できます。
+          </p>
         </div>
-        {searchRelay && (
-          <div className="flex items-center justify-between rounded bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 p-3">
-            <div className="text-sm">
-              <span className="text-purple-600 dark:text-purple-400 font-medium">検索リレー:</span> {searchRelay}
-            </div>
-            <Button
-              onClick={() => setSearchRelay(null)}
-              variant="danger"
-              className="text-xs"
-            >
-              削除
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -30,23 +30,41 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
 
   useEffect(() => {
     let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
 
     const loadTweet = async () => {
-      if (!containerRef.current) return;
+      if (!containerRef.current || !statusId) return;
 
       try {
+        setIsLoading(true);
+        setHasError(false);
+
         // Load Twitter widget script if not already loaded
-        if (!window.twttr) {
+        if (!window.twttr?.widgets) {
           await new Promise<void>((resolve, reject) => {
+            // タイムアウト設定（10秒）
+            const timeout = setTimeout(() => {
+              reject(new Error('Twitter script load timeout'));
+            }, 10000);
+
             const existingScript = document.querySelector('script[src="https://platform.twitter.com/widgets.js"]');
             
             if (existingScript) {
               // Script already exists, wait for it to load
-              if (window.twttr) {
+              if (window.twttr?.widgets) {
+                clearTimeout(timeout);
                 resolve();
               } else {
-                existingScript.addEventListener('load', () => resolve());
-                existingScript.addEventListener('error', () => reject(new Error('Failed to load Twitter script')));
+                const handleLoad = () => {
+                  clearTimeout(timeout);
+                  resolve();
+                };
+                const handleError = () => {
+                  clearTimeout(timeout);
+                  reject(new Error('Failed to load Twitter script'));
+                };
+                existingScript.addEventListener('load', handleLoad);
+                existingScript.addEventListener('error', handleError);
               }
               return;
             }
@@ -54,19 +72,33 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
             const script = document.createElement('script');
             script.src = 'https://platform.twitter.com/widgets.js';
             script.async = true;
-            script.onload = () => resolve();
-            script.onerror = () => reject(new Error('Failed to load Twitter script'));
-            document.body.appendChild(script);
+            script.charset = 'utf-8';
+            script.onload = () => {
+              clearTimeout(timeout);
+              // widgets.jsがロードされても即座にtwttr.widgetsが利用可能にならない場合があるため、少し待つ
+              timeoutId = setTimeout(() => {
+                if (window.twttr?.widgets) {
+                  resolve();
+                } else {
+                  reject(new Error('Twitter widgets not available'));
+                }
+              }, 100);
+            };
+            script.onerror = () => {
+              clearTimeout(timeout);
+              reject(new Error('Failed to load Twitter script'));
+            };
+            document.head.appendChild(script);
           });
         }
 
         // Clear container
-        if (containerRef.current) {
+        if (containerRef.current && isMounted) {
           containerRef.current.innerHTML = '';
         }
 
         // Create tweet embed
-        if (window.twttr && containerRef.current && isMounted) {
+        if (window.twttr?.widgets && containerRef.current && isMounted) {
           // Check theme from localStorage or system preference
           const theme = localStorage.getItem('theme') === 'dark' || 
                        (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches) 
@@ -75,10 +107,10 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
           const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
           const isSmallScreen = viewportWidth < 640;
           const calculatedWidth = isSmallScreen
-            ? Math.max(Math.min(viewportWidth - 32, 540), 280)
-            : undefined;
+            ? Math.max(Math.min(viewportWidth - 32, 540), 250)
+            : 550;
 
-          await window.twttr.widgets.createTweet(
+          const tweetElement = await window.twttr.widgets.createTweet(
             statusId,
             containerRef.current,
             {
@@ -86,10 +118,20 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
               dnt: true,
               conversation: 'none',
               align: 'center',
-              ...(calculatedWidth ? { width: calculatedWidth } : {}),
+              width: calculatedWidth,
+              cards: 'visible',
+              linkColor: theme === 'dark' ? '#8B5CF6' : '#7C3AED',
             }
           );
-          setIsLoading(false);
+
+          if (tweetElement && isMounted) {
+            setIsLoading(false);
+            setHasError(false);
+          } else if (isMounted) {
+            // ツイートが見つからない、削除された、または非公開の場合
+            setHasError(true);
+            setIsLoading(false);
+          }
         }
       } catch (error) {
         console.error('Error loading tweet:', error);
@@ -100,10 +142,16 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
       }
     };
 
-    loadTweet();
+    // 少し遅延させてから読み込み開始（レンダリングの安定化のため）
+    timeoutId = setTimeout(() => {
+      loadTweet();
+    }, 50);
 
     return () => {
       isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, [statusId]);
 

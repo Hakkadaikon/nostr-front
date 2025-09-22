@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>X Embed Test</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .embed-container {
+      margin: 20px 0;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>X Embed テスト</h1>
+  
+  <div class="embed-container">
+    <h2>テスト1: x.com URL</h2>
+    <p>URL: https://x.com/elonmusk/status/1849933041156681961</p>
+    <div id="tweet1"></div>
+  </div>
+
+  <div class="embed-container">
+    <h2>テスト2: twitter.com URL</h2>
+    <p>URL: https://twitter.com/jack/status/1</p>
+    <div id="tweet2"></div>
+  </div>
+
+  <script>
+    // Twitter widget scriptをロード
+    window.twttr = (function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0],
+        t = window.twttr || {};
+      if (d.getElementById(id)) return t;
+      js = d.createElement(s);
+      js.id = id;
+      js.src = "https://platform.twitter.com/widgets.js";
+      fjs.parentNode.insertBefore(js, fjs);
+
+      t._e = [];
+      t.ready = function(f) {
+        t._e.push(f);
+      };
+
+      return t;
+    }(document, "script", "twitter-wjs"));
+
+    // ツイートを作成
+    twttr.ready(function() {
+      twttr.widgets.createTweet(
+        '1849933041156681961',
+        document.getElementById('tweet1'),
+        {
+          theme: 'light'
+        }
+      );
+
+      twttr.widgets.createTweet(
+        '1',
+        document.getElementById('tweet2'),
+        {
+          theme: 'light'
+        }
+      );
+    });
+  </script>
+</body>
+</html>

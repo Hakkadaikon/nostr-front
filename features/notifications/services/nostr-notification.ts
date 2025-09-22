@@ -2,6 +2,7 @@ import { Event as NostrEvent } from 'nostr-tools';
 import { useNotificationStore } from '../../../stores/notification.store';
 import { Notification, NotificationType } from '../../../types/notification';
 import { fetchProfileForNotification } from '../../profile/services/profile-cache';
+import { fetchPostData } from './post-cache';
 
 export class NostrNotificationService {
   private userPubkey: string | null = null;
@@ -164,10 +165,19 @@ export class NostrNotificationService {
     );
     
     if (pTags.length > 0 && eTags.length > 0) {
+      const postId = eTags[0][1];
+      
+      // 元の投稿データを取得
+      const postData = await fetchPostData(postId);
+      
       await this.createNotification({
         type: 'repost',
         event,
-        postId: eTags[0][1],
+        postId,
+        postContent: postData?.content,
+        postAuthor: postData?.author,
+        postCreatedAt: postData?.createdAt,
+        postMedia: postData?.media,
       });
     }
   }
