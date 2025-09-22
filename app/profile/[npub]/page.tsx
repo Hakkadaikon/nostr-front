@@ -245,7 +245,6 @@ export default function ProfilePage({ params }: Props) {
               <ProfileTabs
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
-                counts={{ posts: profile.postsCount ?? tweets.length }}
               />
             </div>
 

@@ -6,6 +6,7 @@ import { TweetComposer } from '../components/tweets/TweetComposer';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useCallback, useRef, useState } from 'react';
 import { Tweet } from '../features/timeline/types';
+import { useAuthStore } from '../stores/auth.store';
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<'recommended' | 'following'>('recommended');
@@ -71,8 +72,11 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* 投稿フォーム */}
-      <TweetComposer onTweetCreated={addTweet} />
+      {/* 投稿フォーム（ログイン時のみ） */}
+      {/* TweetComposerは署名が必要なため未ログイン時は非表示 */}
+      {require('../stores/auth.store').useAuthStore.getState().npub ? (
+        <TweetComposer onTweetCreated={addTweet} />
+      ) : null}
 
       {/* タイムライン */}
       <main>

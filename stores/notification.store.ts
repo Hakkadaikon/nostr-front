@@ -16,13 +16,24 @@ interface NotificationStore {
 // 通知の有効期限（7日間）
 const NOTIFICATION_EXPIRY_DAYS = 7;
 
+// createdAt が Date/string/number いずれでも比較できるように正規化
+function toTimestamp(value: unknown): number {
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const t = Date.parse(value);
+    return isNaN(t) ? 0 : t;
+  }
+  return 0;
+}
+
 // 期限切れの通知を削除
 function filterExpiredNotifications(notifications: Notification[]): Notification[] {
   const now = Date.now();
   const expiryTime = NOTIFICATION_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
   
   return notifications.filter(n => {
-    const notificationTime = n.createdAt.getTime();
+    const notificationTime = toTimestamp(n.createdAt as unknown);
     return now - notificationTime < expiryTime;
   });
 }
@@ -84,20 +95,30 @@ export const useNotificationStore = create<NotificationStore>()(
         const state = get();
         const settings = useNotificationSettingsStore.getState().settings;
         
-        return state.notifications.filter(notification => 
-          settings[notification.type]
-        );
+        const filtered = state.notifications.filter(notification => settings[notification.type]);
+        // createdAt の新しい順（降順）で並び替え
+        return filtered.sort((a, b) => toTimestamp(b.createdAt as unknown) - toTimestamp(a.createdAt as unknown));
       },
     }),
     {
       name: 'notification-storage',
       onRehydrateStorage: () => (state) => {
-        // ストアが復元された時に期限切れの通知を削除
+        // ストアが復元された時に期限切れの通知を削除 + createdAt を Date に正規化
         if (state) {
-          const filteredNotifications = filterExpiredNotifications(state.notifications);
+          // createdAt を Date へ正規化
+          const normalized = state.notifications.map((n) => ({
+            ...n,
+            createdAt: new Date(toTimestamp(n.createdAt as unknown)),
+          }));
+
+          const filteredNotifications = filterExpiredNotifications(normalized);
           const unreadCount = filteredNotifications.filter(n => !n.isRead).length;
           
-          if (filteredNotifications.length !== state.notifications.length) {
+          // 変更がある場合のみ state を更新
+          if (
+            filteredNotifications.length !== state.notifications.length ||
+            normalized.some((n, i) => (state.notifications[i]?.createdAt as any) !== (n.createdAt as any))
+          ) {
             state.notifications = filteredNotifications;
             state.unreadCount = unreadCount;
           }

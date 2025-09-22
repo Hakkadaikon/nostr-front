@@ -6,6 +6,7 @@ import ComposeModal from '../compose/ComposeModal';
 import { MobileNav } from './MobileNav';
 import { MobileHeader } from './MobileHeader';
 import { ThemeProvider } from '../providers/ThemeProvider';
+import Nip07LoginPrompt from '../auth/Nip07LoginPrompt';
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import { useLoadNip65Relays } from '../../features/relays/hooks/useLoadNip65Relays';
 interface MainLayoutProps {
@@ -32,8 +33,12 @@ export function MainLayout({ children }: MainLayoutProps) {
         {/* メインコンテンツエリア */}
         <div className="flex-1 md:ml-72">
           <div className={innerContainerClass}>
+            {/* ログイン促進 */}
+            {/** NOTE: グローバルにログイン促進バナーを表示（未ログイン時のみ） */}
             {/* モバイル時の上部余白 */}
             <div className="md:hidden h-14" />
+            {/** Nip07LoginPrompt will render nothing if logged in */}
+            <Nip07LoginPrompt />
             {children}
             {/* モバイル時の下部余白 */}
             <div className="md:hidden h-16" />

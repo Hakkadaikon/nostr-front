@@ -38,10 +38,8 @@ export function ProfileHeader({
   const stats = useMemo(
     () => [
       { key: 'following', label: 'フォロー中', value: profile.followingCount ?? 0 },
-      { key: 'followers', label: 'フォロワー', value: profile.followersCount ?? 0 },
-      { key: 'notes', label: 'ノート', value: profile.postsCount ?? 0 },
     ],
-    [profile.followersCount, profile.followingCount, profile.postsCount]
+    [profile.followingCount]
   );
 
   const cleanWebsite = profile.website
