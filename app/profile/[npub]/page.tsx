@@ -14,8 +14,10 @@ import { fetchUserPosts } from '../../../features/profile/fetchUserPosts';
 import { followUser, unfollowUser, isFollowing as checkFollowStatus } from '../../../features/profile/follow';
 import { useProfileStore } from '../../../stores/profile.store';
 import { useAuthStore } from '../../../stores/auth.store';
+import { useFollowCount } from '../../../features/follow/hooks/useFollowCount';
 import { Tweet } from '../../../features/timeline/types';
 import { likeTweet, unlikeTweet, retweet, undoRetweet } from '../../../features/timeline/services/timeline';
+import { decode } from '../../../lib/nostr/nip19';
 
 type Props = { params: { npub: string } };
 
@@ -32,6 +34,9 @@ export default function ProfilePage({ params }: Props) {
   const { current: currentUser } = useProfileStore();
   const { publicKey } = useAuthStore();
   const isOwnProfile = currentUser?.npub === params.npub;
+
+  const pubkey = params.npub && !Array.isArray(params.npub) ? (decode(params.npub).data as string) : undefined;
+  const { followCount } = useFollowCount(pubkey);
 
   // プロフィール情報の取得
   useEffect(() => {
@@ -231,6 +236,7 @@ export default function ProfilePage({ params }: Props) {
         onEditClick={() => setIsEditModalOpen(true)}
         onFollowClick={handleFollow}
         isFollowing={isFollowing}
+        followCount={followCount}
       />
 
       <main className="mx-auto mt-10 w-full max-w-6xl px-4">

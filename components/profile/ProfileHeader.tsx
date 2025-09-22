@@ -18,6 +18,7 @@ interface ProfileHeaderProps {
   onEditClick?: () => void;
   onFollowClick?: () => void;
   isFollowing?: boolean;
+  followCount?: number | null;
 }
 
 export function ProfileHeader({
@@ -26,6 +27,7 @@ export function ProfileHeader({
   onEditClick,
   onFollowClick,
   isFollowing = false,
+  followCount,
 }: ProfileHeaderProps) {
   const [bannerError, setBannerError] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -136,7 +138,13 @@ export function ProfileHeader({
                 </div>
               </div>
 
-              
+              <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                {followCount !== null && (
+                  <p>
+                    <span className="font-bold text-gray-900 dark:text-white">{followCount}</span> フォロー
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
