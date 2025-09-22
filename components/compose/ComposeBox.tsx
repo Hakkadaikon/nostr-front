@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import { publishNote } from '../../features/notes/publish';
 import { saveDraft, loadDraft, removeDraft } from '../../lib/storage/draftStore';
 import { useToast } from '../../hooks/useToast';
+import { useProfileStore } from '../../stores/profile.store';
+import { Avatar } from '../ui/Avatar';
 
 const DRAFT_KEY = 'compose:main';
 
@@ -12,6 +14,7 @@ export default function ComposeBox() {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const { show } = useToast();
+  const { current } = useProfileStore();
 
   useEffect(() => {
     (async () => {
@@ -47,7 +50,10 @@ export default function ComposeBox() {
   };
   return (
     <div className="space-y-2 rounded border p-3">
-      <Textarea value={text} onChange={e => setText(e.target.value)} placeholder="What's happening?" rows={3} />
+      <div className="flex space-x-2">
+        <Avatar src={current?.picture} />
+        <Textarea value={text} onChange={e => setText(e.target.value)} placeholder="What's happening?" rows={3} />
+      </div>
       <div className="text-right">
         <Button variant="primary" disabled={!text.trim() || loading} onClick={onPost}>
           {loading ? 'Posting...' : 'Post'}

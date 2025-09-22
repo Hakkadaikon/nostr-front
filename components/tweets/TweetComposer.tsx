@@ -6,6 +6,8 @@ import { Tweet } from '../../features/timeline/types';
 import { Image, Smile, X, Hash, AtSign, Eye } from 'lucide-react';
 import { EmojiPicker } from '../compose/EmojiPicker';
 import { MediaUploader } from '../compose/MediaUploader';
+import { useProfileStore } from '../../stores/profile.store';
+import { Avatar } from '../ui/Avatar';
 
 interface TweetComposerProps {
   onTweetCreated?: (tweet: Tweet) => void;
@@ -29,6 +31,7 @@ export function TweetComposer({
   const [showPreview, setShowPreview] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { postTweet, isPosting, error, clearError } = useTweets();
+  const { current: currentProfile } = useProfileStore();
 
   // 文字数計算
   const charCount = content.length;
@@ -120,7 +123,13 @@ export function TweetComposer({
     <div className="border-b border-gray-200 dark:border-gray-800 p-4 hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition-colors duration-200">
       <div className="flex gap-3">
         {/* アバター */}
-        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0" />
+        <Avatar 
+          src={currentProfile?.picture} 
+          alt={currentProfile?.name || 'user'} 
+          npub={currentProfile?.npub || ''}
+          width={48} 
+          height={48} 
+        />
         
         <div className="flex-1">
           {/* 返信先の表示 */}

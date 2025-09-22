@@ -66,7 +66,7 @@ export default function Nip07LoginPrompt() {
           </Link>
         ) : (
           <a
-            href="https://getalby.com/" target="_blank" rel="noreferrer"
+            href="https://welcome.nostr-jp.org/tutorial/nip-07.html" target="_blank" rel="noreferrer"
             className="px-4 py-2 rounded bg-purple-600 text-white font-semibold hover:bg-purple-700"
           >
             拡張機能を入手
