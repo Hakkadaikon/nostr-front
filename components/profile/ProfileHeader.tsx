@@ -158,7 +158,7 @@ export function ProfileHeader({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <button
               type="button"
               onClick={handleShare}
