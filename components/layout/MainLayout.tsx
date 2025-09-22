@@ -8,9 +8,6 @@ import { MobileHeader } from './MobileHeader';
 import { ThemeProvider } from '../providers/ThemeProvider';
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import { useLoadNip65Relays } from '../../features/relays/hooks/useLoadNip65Relays';
-import { usePathname } from 'next/navigation';
-import clsx from 'clsx';
-
 interface MainLayoutProps {
   children: ReactNode;
 }
@@ -21,15 +18,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   // Load relays from NIP-65 (kind:10002) when pubkey is ready
   useLoadNip65Relays();
 
-  const pathname = usePathname();
-  const isProfile = pathname?.startsWith('/profile');
-
-  const innerContainerClass = clsx(
-    'mx-auto min-h-screen',
-    isProfile
-      ? 'max-w-6xl'
-      : 'max-w-2xl md:border-x border-gray-200 dark:border-gray-800'
-  );
+  const innerContainerClass = 'mx-auto min-h-screen max-w-2xl md:border-x border-gray-200 dark:border-gray-800';
 
   return (
     <ThemeProvider>
