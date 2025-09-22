@@ -19,6 +19,8 @@ interface ProfileHeaderProps {
   onFollowClick?: () => void;
   isFollowing?: boolean;
   followCount?: number | null;
+  followerCount?: number | null;
+  postCount?: number | null;
 }
 
 export function ProfileHeader({
@@ -28,6 +30,8 @@ export function ProfileHeader({
   onFollowClick,
   isFollowing = false,
   followCount,
+  followerCount,
+  postCount,
 }: ProfileHeaderProps) {
   const [bannerError, setBannerError] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -35,7 +39,7 @@ export function ProfileHeader({
   const displayName = profile.displayName || profile.name || 'Nostrユーザー';
   const username = profile.name || profile.npub.slice(0, 12);
   const truncatedNpub = `${profile.npub.slice(0, 8)}...${profile.npub.slice(-6)}`;
-  const avatarSrc = profile.picture || '/images/avatar-placeholder.png';
+  const avatarSrc = profile.picture || '';
 
   
 
@@ -90,13 +94,17 @@ export function ProfileHeader({
         <div className="-mt-16 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div className="flex flex-col gap-4 md:flex-row md:items-end">
             <div className="relative h-32 w-32 flex-shrink-0 aspect-square overflow-hidden rounded-full border-4 border-white bg-gray-200 shadow-xl dark:border-gray-950 dark:bg-gray-800">
-              <SafeImage
-                src={avatarSrc}
-                alt={`${displayName} avatar`}
-                fill
-                sizes="256px"
-                className="object-cover rounded-full"
-              />
+              {avatarSrc ? (
+                <SafeImage
+                  src={avatarSrc}
+                  alt={`${displayName} avatar`}
+                  fill
+                  sizes="256px"
+                  className="object-cover rounded-full"
+                />
+              ) : (
+                <div className="h-full w-full rounded-full bg-gradient-to-br from-purple-400 to-pink-400" />
+              )}
             </div>
 
             <div className="space-y-4 text-gray-900 dark:text-white">
@@ -139,10 +147,23 @@ export function ProfileHeader({
               </div>
 
               <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                {followCount !== null && (
-                  <p>
-                    <span className="font-bold text-gray-900 dark:text-white">{followCount}</span> フォロー
-                  </p>
+                {postCount !== null && postCount !== undefined && (
+                  <div>
+                    <span className="font-bold text-gray-900 dark:text-white">{postCount.toLocaleString()}</span>{' '}
+                    <span>ポスト</span>
+                  </div>
+                )}
+                {followCount !== null && followCount !== undefined && (
+                  <div>
+                    <span className="font-bold text-gray-900 dark:text-white">{followCount.toLocaleString()}</span>{' '}
+                    <span>フォロー中</span>
+                  </div>
+                )}
+                {followerCount !== null && followerCount !== undefined && (
+                  <div>
+                    <span className="font-bold text-gray-900 dark:text-white">{followerCount.toLocaleString()}</span>{' '}
+                    <span>フォロワー</span>
+                  </div>
                 )}
               </div>
             </div>
@@ -163,19 +184,14 @@ export function ProfileHeader({
             {isOwnProfile ? (
               <Button
                 onClick={onEditClick}
-                className="inline-flex items-center gap-2 rounded-full bg-purple-600 px-5 py-2 text-sm font-semibold text-white shadow-sm shadow-purple-500/30 hover:bg-purple-700"
+                variant="primary"
               >
                 プロフィールを編集
               </Button>
             ) : (
               <Button
                 onClick={onFollowClick}
-                className={clsx(
-                  'inline-flex items-center gap-2 rounded-full px-6 py-2 text-sm font-semibold shadow-sm transition',
-                  isFollowing
-                    ? 'bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-200'
-                    : 'bg-purple-600 text-white hover:bg-purple-700'
-                )}
+                variant={isFollowing ? 'secondary' : 'primary'}
               >
                 {isFollowing ? 'フォロー中' : 'フォロー'}
               </Button>

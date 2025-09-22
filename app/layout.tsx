@@ -7,6 +7,13 @@ export const metadata = {
   description: 'A Twitter/X clone built with Next.js + Tailwind',
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ja" suppressHydrationWarning>

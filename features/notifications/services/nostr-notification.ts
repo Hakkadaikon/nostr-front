@@ -195,21 +195,53 @@ export class NostrNotificationService {
   private async processZap(event: NostrEvent) {
     if (!this.userPubkey) return;
 
-    // Zapイベントの処理（簡略化）
-    const pTags = event.tags.filter(tag => 
-      tag[0] === 'p' && tag[1] === this.userPubkey
-    );
-    
-    if (pTags.length > 0) {
-      // 金額の抽出（実際のZapイベントではより複雑な処理が必要）
-      const amountTag = event.tags.find(tag => tag[0] === 'amount');
-      const amount = amountTag ? parseInt(amountTag[1]) : 1000;
+    try {
+      // Zap receiptイベント (kind 9735) の処理
+      // descriptionタグから元のZap requestを取得
+      const descriptionTag = event.tags.find(tag => tag[0] === 'description');
+      if (!descriptionTag || !descriptionTag[1]) return;
+
+      let zapRequest: any;
+      try {
+        zapRequest = JSON.parse(descriptionTag[1]);
+      } catch (error) {
+        console.error('Failed to parse zap request:', error);
+        return;
+      }
+
+      // Zap requestから受信者を確認
+      const recipientTag = zapRequest.tags?.find((tag: string[]) => 
+        tag[0] === 'p' && tag[1] === this.userPubkey
+      );
+      if (!recipientTag) return;
+
+      // 金額を取得 (millisatoshis)
+      const amountTag = zapRequest.tags?.find((tag: string[]) => tag[0] === 'amount');
+      let amountSats = 1000; // デフォルト値
       
+      if (amountTag && amountTag[1]) {
+        const amountMilliSats = parseInt(amountTag[1]);
+        amountSats = Math.floor(amountMilliSats / 1000); // millisatsからsatsに変換
+      }
+
+      // bolt11タグから実際の支払い金額を確認（より正確）
+      const bolt11Tag = event.tags.find(tag => tag[0] === 'bolt11');
+      if (bolt11Tag && bolt11Tag[1]) {
+        // Lightning invoiceから金額を抽出する場合はここで処理
+        // 現在は簡略化のためzap requestの金額を使用
+      }
+
+      // Zapメッセージを取得
+      const zapMessage = zapRequest.content || '';
+
       await this.createNotification({
         type: 'zap',
         event,
-        amount,
+        amount: amountSats,
+        content: zapMessage,
       });
+    } catch (error) {
+      console.error('Error processing zap event:', error);
     }
   }
 
@@ -219,6 +251,9 @@ export class NostrNotificationService {
     content,
     postId,
     postContent,
+    postAuthor,
+    postCreatedAt,
+    postMedia,
     amount,
   }: {
     type: NotificationType;
@@ -226,6 +261,20 @@ export class NostrNotificationService {
     content?: string;
     postId?: string;
     postContent?: string;
+    postAuthor?: {
+      id?: string;
+      name?: string;
+      username?: string;
+      avatar?: string;
+      npub?: string;
+    };
+    postCreatedAt?: Date;
+    postMedia?: Array<{
+      type: 'image' | 'video' | 'gif';
+      url: string;
+      thumbnailUrl?: string;
+      altText?: string;
+    }>;
     amount?: number;
   }) {
     // プロフィール情報を取得
@@ -238,6 +287,9 @@ export class NostrNotificationService {
       content,
       postId,
       postContent,
+      postAuthor,
+      postCreatedAt,
+      postMedia,
       amount,
       isRead: false,
       createdAt: new Date(event.created_at * 1000),

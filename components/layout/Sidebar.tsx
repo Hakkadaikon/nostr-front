@@ -2,10 +2,11 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Home, Bell, Mail, User, Settings, MoreHorizontal } from 'lucide-react';
+import { Home, Bell, Mail, User, Settings, MoreHorizontal, Edit } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuthStore } from '../../stores/auth.store';
 import { SafeImage } from '../ui/SafeImage';
+import { useUiStore } from '../../stores/ui.store';
 
 interface NavItem {
   label: string;
@@ -17,6 +18,7 @@ interface NavItem {
 export function Sidebar() {
   const pathname = usePathname();
   const { npub } = useAuthStore();
+  const openComposeModal = useUiStore(state => state.openComposeModal);
   
   const navItems: NavItem[] = [
     {
@@ -98,8 +100,12 @@ export function Sidebar() {
 
       {/* 投稿ボタン */}
       <div className="p-4">
-        <button className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-full hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200">
-          ポストする
+        <button 
+          onClick={openComposeModal}
+          className="w-full py-3 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 shadow-md shadow-purple-500/20 hover:shadow-lg hover:shadow-purple-500/30 transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2"
+        >
+          <Edit size={20} />
+          <span>ポストする</span>
         </button>
       </div>
 

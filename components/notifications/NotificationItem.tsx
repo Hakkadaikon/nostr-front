@@ -13,6 +13,8 @@ import { useFollow } from '../../features/follow/hooks/useFollow';
 import { useAuthStore } from '../../stores/auth.store';
 import { useReaction } from '../../features/reactions/hooks/useReaction';
 import { SafeImage } from '../ui/SafeImage';
+import { EmbeddedPost } from './EmbeddedPost';
+import { RichContent } from '../timeline/RichContent';
 
 interface NotificationItemProps {
   notification: Notification;
@@ -71,7 +73,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
       case 'mention':
         return 'があなたをメンションしました';
       case 'zap':
-        return `があなたに${notification.amount} satsを送りました`;
+        return 'があなたにZapを送りました';
     }
   };
 
@@ -129,24 +131,38 @@ export function NotificationItem({ notification }: NotificationItemProps) {
             {timeAgo}
           </div>
 
-          {/* 返信内容 or メンション内容 */}
+          {/* 返信内容 or メンション内容 or Zapメッセージ */}
           {notification.content && (
             <div className="mt-2 text-gray-900 dark:text-white">
-              {notification.content}
+              {notification.type === 'zap' ? (
+                <div className="flex items-start gap-2">
+                  <span className="text-2xl">⚡</span>
+                  <div className="flex-1">
+                    <div className="font-semibold text-yellow-600 dark:text-yellow-400">
+                      {notification.amount?.toLocaleString() || '0'} sats
+                    </div>
+                    {notification.content && (
+                      <div className="mt-1 text-sm">
+                        <RichContent content={notification.content} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <RichContent content={notification.content} />
+              )}
             </div>
           )}
 
-          {/* 元の投稿内容 */}
-          {notification.postContent && (
-            <Link
-              href={`/status/${notification.postId}` as any}
-              className="mt-2 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-800 block hover:bg-gray-100 dark:hover:bg-gray-900/70 transition-colors"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
-                {notification.postContent}
-              </div>
-            </Link>
+          {/* 元の投稿内容 - 埋め込み表示 */}
+          {notification.postContent && notification.postId && (
+            <EmbeddedPost
+              postId={notification.postId}
+              content={notification.postContent}
+              author={notification.postAuthor}
+              createdAt={notification.postCreatedAt}
+              media={notification.postMedia}
+            />
           )}
 
           {/* アクションボタン */}

@@ -104,7 +104,7 @@ export default function ComposeModal() {
               <Button 
                 disabled={!text.trim() || loading} 
                 onClick={onPost}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                variant="primary"
               >
                 {loading ? '投稿中...' : '投稿する'}
               </Button>

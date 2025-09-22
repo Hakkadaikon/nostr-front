@@ -8,15 +8,17 @@ import { RichContent } from './RichContent';
 import Link from 'next/link';
 import { Tweet } from '../../features/timeline/types';
 import { Heart, MessageCircle, Repeat2, Share, Zap } from 'lucide-react';
+import { IconButton } from '../ui/IconButton';
 
 interface TimelineItemProps {
   tweet: Tweet;
   onLike: (tweetId: string) => void;
   onRetweet: (tweetId: string) => void;
   onZap?: (tweetId: string) => void;
+  onReply?: (tweet: Tweet) => void;
 }
 
-export function TimelineItem({ tweet, onLike, onRetweet, onZap }: TimelineItemProps) {
+export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply }: TimelineItemProps) {
   const timeAgo = formatDistanceToNow(new Date(tweet.createdAt), {
     addSuffix: true,
     locale: ja,
@@ -92,80 +94,62 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap }: TimelineItemPr
           {/* アクションバー */}
           <div className="mt-3 flex items-center justify-between max-w-md">
             {/* 返信 */}
-            <button
-              className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-purple-500 dark:hover:text-purple-400 transition-colors group"
+            <IconButton
+              onClick={() => onReply?.(tweet)}
+              variant="share"
+              size="small"
+              count={tweet.repliesCount}
               aria-label="返信"
             >
-              <div className="p-2 rounded-full group-hover:bg-purple-50 dark:group-hover:bg-purple-950/20 transition-all duration-200 hover:scale-110">
-                <MessageCircle size={18} />
-              </div>
-              {tweet.repliesCount > 0 && (
-                <span className="text-sm">{tweet.repliesCount}</span>
-              )}
-            </button>
+              <MessageCircle size={18} />
+            </IconButton>
 
             {/* リツイート */}
-            <button
+            <IconButton
               onClick={() => onRetweet(tweet.id)}
-              className={`flex items-center gap-2 transition-colors group ${
-                tweet.isRetweeted
-                  ? 'text-green-500'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-green-500'
-              }`}
+              variant="retweet"
+              size="small"
+              active={tweet.isRetweeted}
+              count={tweet.retweetsCount}
               aria-label="リツイート"
             >
-              <div className="p-2 rounded-full group-hover:bg-green-50 dark:group-hover:bg-green-950/20 transition-all duration-200 hover:scale-110">
-                <Repeat2 size={18} />
-              </div>
-              {tweet.retweetsCount > 0 && (
-                <span className="text-sm">{tweet.retweetsCount}</span>
-              )}
-            </button>
+              <Repeat2 size={18} />
+            </IconButton>
 
             {/* いいね */}
-            <button
+            <IconButton
               onClick={() => onLike(tweet.id)}
-              className={`flex items-center gap-2 transition-colors group ${
-                tweet.isLiked
-                  ? 'text-red-500'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-red-500'
-              }`}
+              variant="like"
+              size="small"
+              active={tweet.isLiked}
+              count={tweet.likesCount}
               aria-label="いいね"
             >
-              <div className="p-2 rounded-full group-hover:bg-red-50 dark:group-hover:bg-red-950/20 transition-all duration-200 hover:scale-110">
-                <Heart
-                  size={18}
-                  fill={tweet.isLiked ? 'currentColor' : 'none'}
-                />
-              </div>
-              {tweet.likesCount > 0 && (
-                <span className="text-sm">{tweet.likesCount}</span>
-              )}
-            </button>
+              <Heart
+                size={18}
+                fill={tweet.isLiked ? 'currentColor' : 'none'}
+              />
+            </IconButton>
 
             {/* Zap */}
-            <button
+            <IconButton
               onClick={() => onZap?.(tweet.id)}
-              className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-yellow-500 dark:hover:text-yellow-400 transition-colors group"
+              variant="zap"
+              size="small"
+              count={tweet.zapsCount}
               aria-label="Zap"
             >
-              <div className="p-2 rounded-full group-hover:bg-yellow-50 dark:group-hover:bg-yellow-950/20 transition-all duration-200 hover:scale-110">
-                <Zap size={18} />
-              </div>
-              {tweet.zapsCount > 0 && (
-                <span className="text-sm">{tweet.zapsCount}</span>
-              )}
-            </button>
+              <Zap size={18} />
+            </IconButton>
 
             {/* 共有 */}
-            <button
-              className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-purple-500 dark:hover:text-purple-400 transition-colors group"
+            <IconButton
+              variant="share"
+              size="small"
               aria-label="共有"
             >
-              <div className="p-2 rounded-full group-hover:bg-purple-50 dark:group-hover:bg-purple-950/20 transition-all duration-200 hover:scale-110">
-                <Share size={18} />
-              </div>
-            </button>
+              <Share size={18} />
+            </IconButton>
           </div>
         </div>
       </div>

@@ -93,7 +93,7 @@ async function fetchProfile(pubkey: string, relays: string[]): Promise<any> {
       }
     );
 
-    // タイムアウト設定（1.5秒）
+    // タイムアウト設定（1秒に短縮）
     timeoutId = setTimeout(() => {
       sub.close();
       // デフォルトプロフィールを返す
@@ -159,7 +159,7 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
 
     const relays = Array.from(new Set([...(configuredRelays || []), ...fallbackRelays]));
 
-    const limit = params.limit || 20;
+    const limit = params.limit || 10; // デフォルトを20から10に削減
     const until = params.cursor ? parseInt(params.cursor) : Math.floor(Date.now() / 1000);
 
     // フォロー中タブの場合、フォローリストを取得
@@ -189,7 +189,7 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
       // フィルター設定
       const filters: any = {
         kinds: [KIND_TEXT_NOTE],
-        limit: limit * 2, // フォローフィルタリングのため多めに取得
+        limit: Math.min(limit * 1.5, 30), // 過剰な取得を防ぐため上限を設定
         until: until
       };
 
@@ -231,7 +231,7 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
         }
       );
 
-      // タイムアウト設定（3秒）
+      // タイムアウト設定（2秒に短縮）
       timeoutId = setTimeout(() => {
         sub.close();
         

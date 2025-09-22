@@ -5,6 +5,7 @@ import { Tweet } from '../../features/timeline/types';
 import { TimelineItem } from './TimelineItem';
 import { Spinner } from '../ui/Spinner';
 import { ZapModal } from '../zap/ZapModal';
+import { ReplyModal } from '../tweets/ReplyModal';
 
 interface TimelineListProps {
   tweets: Tweet[];
@@ -22,8 +23,10 @@ export function TimelineList({
   onRetweet,
 }: TimelineListProps) {
   const [zapModalOpen, setZapModalOpen] = useState(false);
+  const [replyModalOpen, setReplyModalOpen] = useState(false);
   const [selectedTweetId, setSelectedTweetId] = useState<string>('');
   const [selectedTweet, setSelectedTweet] = useState<Tweet | null>(null);
+  const [replyToTweet, setReplyToTweet] = useState<Tweet | null>(null);
 
   const handleZap = (tweetId: string) => {
     const tweet = tweets.find(t => t.id === tweetId);
@@ -32,6 +35,16 @@ export function TimelineList({
       setSelectedTweet(tweet);
       setZapModalOpen(true);
     }
+  };
+
+  const handleReply = (tweet: Tweet) => {
+    setReplyToTweet(tweet);
+    setReplyModalOpen(true);
+  };
+
+  const handleReplyCreated = (newTweet: Tweet) => {
+    // 返信が作成されたら、タイムラインに追加するロジックをここに実装
+    // 現在は親コンポーネントでリフレッシュ等の処理を行う想定
   };
   if (error) {
     return (
@@ -69,6 +82,7 @@ export function TimelineList({
             onLike={onLike}
             onRetweet={onRetweet}
             onZap={handleZap}
+            onReply={handleReply}
           />
         ))}
         {isLoading && (
@@ -87,6 +101,15 @@ export function TimelineList({
         tweetId={selectedTweetId}
         recipientNpub={selectedTweet?.author.id || ''}
         recipientLnAddress={(selectedTweet?.author as any)?.lud16}
+      />
+      <ReplyModal
+        isOpen={replyModalOpen}
+        onClose={() => {
+          setReplyModalOpen(false);
+          setReplyToTweet(null);
+        }}
+        replyToTweet={replyToTweet}
+        onReplyCreated={handleReplyCreated}
       />
     </>
   );

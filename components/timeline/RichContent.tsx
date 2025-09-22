@@ -5,8 +5,7 @@ import { nip19 } from 'nostr-tools';
 import { parseNostrUri } from '../../lib/utils/url';
 import EmbeddedNote from '../notes/EmbeddedNote';
 import { useMemo, ReactNode } from 'react';
-import { LinkPreview } from './LinkPreview';
-import { EmbeddedImage } from './EmbeddedMedia';
+import { MediaEmbed } from './MediaEmbed';
 
 interface RichContentProps {
   content: string;
@@ -15,16 +14,6 @@ interface RichContentProps {
 }
 
 const TOKEN_REGEX = /(nostr:[^\s]+|https?:\/\/[^\s]+)/gi;
-const IMAGE_EXTENSIONS = /\.(png|jpe?g|gif|webp|avif|svg)$/i;
-
-function isImageUrl(url: string) {
-  try {
-    const parsed = new URL(url);
-    return IMAGE_EXTENSIONS.test(parsed.pathname);
-  } catch {
-    return false;
-  }
-}
 
 function renderText(text: string) {
   if (!text) return null;
@@ -32,10 +21,7 @@ function renderText(text: string) {
 }
 
 function renderLink(url: string, key: string) {
-  if (isImageUrl(url)) {
-    return <EmbeddedImage key={key} url={url} />;
-  }
-  return <LinkPreview key={key} url={url} />;
+  return <MediaEmbed key={key} url={url} />;
 }
 
 

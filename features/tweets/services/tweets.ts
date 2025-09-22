@@ -18,8 +18,8 @@ function buildAuthor(): Tweet['author'] {
     name: displayName,
     avatar: profile?.picture || `https://robohash.org/${npub}`,
     bio: profile?.about || '',
-    followersCount: profile?.followersCount ?? 0,
-    followingCount: profile?.followingCount ?? 0,
+    followersCount: 0,
+    followingCount: 0,
     createdAt: new Date(),
   };
 }

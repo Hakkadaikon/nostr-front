@@ -6,7 +6,7 @@ export type AuthState = {
   hasNip07: boolean;
   locked: boolean;
   npub: string | null;
-  nsec?: string | null; // keep in-memory only
+  nsec?: string | null; // keep in-memory only - NEVER persist
   publicKey: string | null; // hex public key
   pubkey?: string | null; // alias for publicKey (for compatibility)
 };
@@ -33,18 +33,24 @@ export const useAuthStore = create<AuthState & Actions>()(
   unlock: () => set({ locked: false }),
   loginWithNsec: (npub, nsec) => {
     try {
+      // 入力検証
+      if (!npub || !nsec) {
+        throw new Error('Invalid credentials');
+      }
+      
       // npubをデコードしてpublicKeyを取得
       const { type, data } = nip19.decode(npub);
       if (type === 'npub') {
         const pubkey = data as string;
+        // nsecはメモリにのみ保持（絶対にlocalStorageに保存しない）
         set({ npub, nsec, publicKey: pubkey, pubkey, locked: false });
       } else {
-        console.error('Invalid npub format');
-        set({ npub, nsec, locked: false });
+        throw new Error('Invalid npub format');
       }
     } catch (error) {
-      console.error('Failed to decode npub:', error);
-      set({ npub, nsec, locked: false });
+      console.error('Failed to login:', error);
+      // エラー時は認証状態をクリア
+      set({ npub: null, nsec: null, publicKey: null, pubkey: null, locked: true });
     }
   },
   logout: () => set({ npub: null, nsec: null, publicKey: null, pubkey: null, locked: true }),
@@ -53,11 +59,12 @@ export const useAuthStore = create<AuthState & Actions>()(
       name: 'auth-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        // Do not persist secrets or environment flags
+        // セキュリティ: nsecは絶対に永続化しない
         npub: state.npub,
         publicKey: state.publicKey,
         pubkey: state.pubkey,
         locked: state.locked,
+        // nsec: NEVER persist - security critical
       }),
     }
   )

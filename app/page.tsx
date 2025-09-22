@@ -13,7 +13,7 @@ export default function HomePage() {
   
   const { tweets, isLoading, error, hasMore, loadMore, toggleLike, toggleRetweet, addTweet } = useTimeline({
     type: activeTab === 'recommended' ? 'home' : 'following',
-    limit: 20,
+    limit: 10, // 初期表示件数を20件から10件に削減
   });
 
   // 無限スクロール用のref

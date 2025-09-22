@@ -49,7 +49,9 @@ export default function ComposeBox() {
     <div className="space-y-2 rounded border p-3">
       <Textarea value={text} onChange={e => setText(e.target.value)} placeholder="What's happening?" rows={3} />
       <div className="text-right">
-        <Button disabled={!text.trim() || loading} onClick={onPost}>{loading ? 'Posting...' : 'Post'}</Button>
+        <Button variant="primary" disabled={!text.trim() || loading} onClick={onPost}>
+          {loading ? 'Posting...' : 'Post'}
+        </Button>
       </div>
     </div>
   );

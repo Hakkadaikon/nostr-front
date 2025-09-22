@@ -37,3 +37,23 @@ next-env.d.ts
 
 .serena/
 tmp/
+
+# playwright
+.playwright-mcp/
+test-results/
+playwright-report/
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Security - never commit secrets
+*.key
+*.pem
+*.cert
+*.crt
+secrets/
+private/
+.env.production

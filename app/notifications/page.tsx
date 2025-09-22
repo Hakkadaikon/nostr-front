@@ -4,14 +4,12 @@ import { useEffect, useState } from "react";
 import { useNotificationStore } from '../../stores/notification.store';
 import { NotificationList } from '../../components/notifications/NotificationList';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
-import { useNotifications, useNotificationActions } from '../../features/notifications/hooks/useNotifications';
-import { Trash2 } from 'lucide-react';
+import { useNotifications } from '../../features/notifications/hooks/useNotifications';
 
 export default function NotificationsPage() {
   const { getFilteredNotifications } = useNotificationStore();
   const [isMounted, setIsMounted] = useState(false);
   const filteredNotifications = getFilteredNotifications();
-  const { handleClearAll } = useNotificationActions();
   
   useEffect(() => {
     setIsMounted(true);
@@ -34,21 +32,10 @@ export default function NotificationsPage() {
     <div className="min-h-screen">
       {/* ヘッダー */}
       <header className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
-        <div className="px-4 py-4 flex items-center justify-between">
+        <div className="px-4 py-4">
           <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
             通知
           </h1>
-          <div className="flex items-center gap-2">
-            {filteredNotifications.length > 0 && (
-              <button
-                onClick={handleClearAll}
-                className="p-1.5 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                title="すべての通知を削除"
-              >
-                <Trash2 size={18} />
-              </button>
-            )}
-          </div>
         </div>
       </header>
 

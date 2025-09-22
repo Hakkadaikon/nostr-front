@@ -14,10 +14,10 @@ import { fetchUserPosts } from '../../../features/profile/fetchUserPosts';
 import { followUser, unfollowUser, isFollowing as checkFollowStatus } from '../../../features/profile/follow';
 import { useProfileStore } from '../../../stores/profile.store';
 import { useAuthStore } from '../../../stores/auth.store';
-import { useFollowCount } from '../../../features/follow/hooks/useFollowCount';
 import { Tweet } from '../../../features/timeline/types';
 import { likeTweet, unlikeTweet, retweet, undoRetweet } from '../../../features/timeline/services/timeline';
 import { decode } from '../../../lib/nostr/nip19';
+import { fetchProfileStats } from '../../../features/profile/services/profileStats';
 
 type Props = { params: { npub: string } };
 
@@ -30,13 +30,14 @@ export default function ProfilePage({ params }: Props) {
   const [isFollowing, setIsFollowing] = useState(false);
   const [tweets, setTweets] = useState<Tweet[]>([]);
   const [tweetsLoading, setTweetsLoading] = useState(false);
+  const [followingCount, setFollowingCount] = useState<number | null>(null);
+  const [followerCount, setFollowerCount] = useState<number | null>(null);
   
   const { current: currentUser } = useProfileStore();
   const { publicKey } = useAuthStore();
   const isOwnProfile = currentUser?.npub === params.npub;
 
   const pubkey = params.npub && !Array.isArray(params.npub) ? (decode(params.npub).data as string) : undefined;
-  const { followCount } = useFollowCount(pubkey);
 
   // プロフィール情報の取得
   useEffect(() => {
@@ -61,6 +62,13 @@ export default function ProfilePage({ params }: Props) {
           const status = await checkFollowStatus(params.npub);
           setIsFollowing(status);
         }
+
+        // プロフィール統計情報を取得
+        if (pubkey) {
+          const stats = await fetchProfileStats(pubkey);
+          setFollowingCount(stats.followingCount);
+          setFollowerCount(stats.followerCount);
+        }
       } catch (error) {
         console.error('Failed to load profile:', error);
       } finally {
@@ -69,7 +77,7 @@ export default function ProfilePage({ params }: Props) {
     };
     
     loadProfile();
-  }, [params.npub, isOwnProfile, publicKey]);
+  }, [params.npub, isOwnProfile, publicKey, pubkey]);
 
   // ユーザーの投稿を取得
   useEffect(() => {
@@ -236,7 +244,9 @@ export default function ProfilePage({ params }: Props) {
         onEditClick={() => setIsEditModalOpen(true)}
         onFollowClick={handleFollow}
         isFollowing={isFollowing}
-        followCount={followCount}
+        followCount={followingCount}
+        followerCount={followerCount}
+        postCount={tweets.length}
       />
 
       <main className="mx-auto mt-10 w-full max-w-6xl px-4">

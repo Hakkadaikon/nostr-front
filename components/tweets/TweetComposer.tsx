@@ -11,12 +11,17 @@ interface TweetComposerProps {
   onTweetCreated?: (tweet: Tweet) => void;
   placeholder?: string;
   maxHeight?: string;
+  replyTo?: {
+    tweetId: string;
+    username: string;
+  };
 }
 
 export function TweetComposer({ 
   onTweetCreated, 
   placeholder = "いまどうしてる？",
-  maxHeight = "200px"
+  maxHeight = "200px",
+  replyTo
 }: TweetComposerProps) {
   const [content, setContent] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
@@ -78,11 +83,18 @@ export function TweetComposer({
   // 投稿処理
   const handleSubmit = async () => {
     if (content.trim() === '' || isOverLimit || isPosting) return;
+    
+    // 入力検証
+    const sanitizedContent = content.trim();
+    if (sanitizedContent.length > 280) {
+      // エラーは useTweets のエラーハンドリングに任せる
+      return;
+    }
 
     const hashtags = extractHashtags(content);
     const mentions = extractMentions(content);
 
-    const tweet = await postTweet(content, selectedMedia, hashtags, mentions, undefined);
+    const tweet = await postTweet(sanitizedContent, selectedMedia, hashtags, mentions, replyTo?.tweetId);
     if (tweet) {
       setContent('');
       setSelectedMedia([]);
@@ -111,6 +123,13 @@ export function TweetComposer({
         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0" />
         
         <div className="flex-1">
+          {/* 返信先の表示 */}
+          {replyTo && (
+            <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+              <span>@{replyTo.username} への返信</span>
+            </div>
+          )}
+          
           {/* テキストエリア */}
           <textarea
             ref={textareaRef}
@@ -131,30 +150,36 @@ export function TweetComposer({
             </div>
           )}
 
+          {/* メディアアップローダー */}
+          {(isExpanded || content.length > 0) && (
+            <MediaUploader
+              onMediaSelect={setSelectedMedia}
+              disabled={isPosting}
+              selectedMedia={selectedMedia}
+              onRemoveMedia={handleRemoveMedia}
+              hidePreview={false}
+            />
+          )}
+
           {/* 下部コントロール */}
           {(isExpanded || content.length > 0) && (
-            <div className="flex justify-between items-center mt-3">
-              {/* アクションボタン */}
-              <div className="flex gap-1">
-                <MediaUploader
-                  onMediaSelect={setSelectedMedia}
-                  disabled={isPosting}
-                  selectedMedia={selectedMedia}
-                  onRemoveMedia={handleRemoveMedia}
-                />
-                <EmojiPicker
-                  onEmojiSelect={handleEmojiSelect}
-                  disabled={isPosting}
-                />
-                <button
-                  onClick={() => setShowPreview(!showPreview)}
-                  className="p-2 rounded-full hover:bg-purple-50 dark:hover:bg-purple-950/20 text-purple-500 transition-all duration-200 hover:scale-110"
-                  title="プレビュー"
-                  disabled={isPosting}
-                >
-                  <Eye size={20} />
-                </button>
-              </div>
+            <div className="mt-3">
+              <div className="flex justify-between items-center">
+                {/* アクションボタン */}
+                <div className="flex gap-1">
+                  <EmojiPicker
+                    onEmojiSelect={handleEmojiSelect}
+                    disabled={isPosting}
+                  />
+                  <button
+                    onClick={() => setShowPreview(!showPreview)}
+                    className="p-2 rounded-full hover:bg-purple-50 dark:hover:bg-purple-950/20 text-purple-500 transition-all duration-200 hover:scale-110"
+                    title="プレビュー"
+                    disabled={isPosting}
+                  >
+                    <Eye size={20} />
+                  </button>
+                </div>
 
               {/* 文字数と投稿ボタン */}
               <div className="flex items-center gap-3">
@@ -209,6 +234,7 @@ export function TweetComposer({
                   {isPosting ? '投稿中...' : 'ポストする'}
                 </button>
               </div>
+            </div>
             </div>
           )}
 

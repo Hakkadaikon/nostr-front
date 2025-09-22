@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, X } from 'lucide-react';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 
 interface SearchBoxProps {
   value: string;
@@ -21,12 +21,28 @@ export function SearchBox({
   onClear,
 }: SearchBoxProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    if (autoFocus && inputRef.current) {
+    // モバイル判定
+    const checkMobile = () => {
+      const userAgent = typeof window !== 'undefined' ? window.navigator.userAgent : '';
+      const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+      const isMobileDevice = mobileRegex.test(userAgent) || window.innerWidth < 768;
+      setIsMobile(isMobileDevice);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    // モバイルでない場合のみ自動フォーカス
+    if (autoFocus && inputRef.current && !isMobile) {
       inputRef.current.focus();
     }
-  }, [autoFocus]);
+  }, [autoFocus, isMobile]);
 
   const handleClear = () => {
     onChange('');

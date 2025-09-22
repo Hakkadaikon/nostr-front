@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { SafeImage } from '../ui/SafeImage';
 import { User } from '../../features/timeline/types';
+import { Button } from '../ui/Button';
 
 interface UserCardProps {
   user: User;
@@ -52,12 +53,14 @@ export function UserCard({ user, onFollow }: UserCardProps) {
 
             {/* フォローボタン */}
             {onFollow && (
-              <button
+              <Button
                 onClick={() => onFollow(user.id)}
-                className="ml-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-semibold rounded-full hover:opacity-80 transition-opacity"
+                variant="primary"
+                size="small"
+                className="ml-4"
               >
                 フォロー
-              </button>
+              </Button>
             )}
           </div>
 
