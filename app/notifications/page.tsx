@@ -5,7 +5,8 @@ import { NotificationList } from '../../components/notifications/NotificationLis
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 
 export default function NotificationsPage() {
-  const { notifications, unreadCount, markAllAsRead } = useNotificationStore();
+  const { getFilteredNotifications, unreadCount, markAllAsRead } = useNotificationStore();
+  const filteredNotifications = getFilteredNotifications();
 
   return (
     <div className="min-h-screen">
@@ -28,23 +29,78 @@ export default function NotificationsPage() {
 
       {/* タブ */}
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="w-full border-b border-gray-200 dark:border-gray-800">
-          <TabsTrigger value="all" className="flex-1">
+        <TabsList className="w-full border-b border-gray-200 dark:border-gray-800 overflow-x-auto flex-nowrap">
+          <TabsTrigger value="all" className="min-w-fit px-4">
             すべて
           </TabsTrigger>
-          <TabsTrigger value="mentions" className="flex-1">
+          <TabsTrigger value="mentions" className="min-w-fit px-4">
             メンション
+          </TabsTrigger>
+          <TabsTrigger value="replies" className="min-w-fit px-4">
+            返信
+          </TabsTrigger>
+          <TabsTrigger value="reposts" className="min-w-fit px-4">
+            リポスト
+          </TabsTrigger>
+          <TabsTrigger value="likes" className="min-w-fit px-4">
+            いいね
+          </TabsTrigger>
+          <TabsTrigger value="zaps" className="min-w-fit px-4">
+            Zap
+          </TabsTrigger>
+          <TabsTrigger value="follows" className="min-w-fit px-4">
+            フォロー
           </TabsTrigger>
         </TabsList>
         
         <TabsContent value="all" className="m-0">
-          <NotificationList notifications={notifications} />
+          <NotificationList notifications={filteredNotifications} />
         </TabsContent>
         
         <TabsContent value="mentions" className="m-0">
           <NotificationList 
-            notifications={notifications.filter(n => 
-              n.type === 'mention' || n.type === 'reply'
+            notifications={filteredNotifications.filter(n => 
+              n.type === 'mention'
+            )} 
+          />
+        </TabsContent>
+        
+        <TabsContent value="replies" className="m-0">
+          <NotificationList 
+            notifications={filteredNotifications.filter(n => 
+              n.type === 'reply'
+            )} 
+          />
+        </TabsContent>
+        
+        <TabsContent value="reposts" className="m-0">
+          <NotificationList 
+            notifications={filteredNotifications.filter(n => 
+              n.type === 'repost'
+            )} 
+          />
+        </TabsContent>
+        
+        <TabsContent value="likes" className="m-0">
+          <NotificationList 
+            notifications={filteredNotifications.filter(n => 
+              n.type === 'like'
+            )} 
+          />
+        </TabsContent>
+        
+        <TabsContent value="zaps" className="m-0">
+          <NotificationList 
+            notifications={filteredNotifications.filter(n => 
+              n.type === 'zap'
+            )} 
+          />
+        </TabsContent>
+        
+        <TabsContent value="follows" className="m-0">
+          <NotificationList 
+            notifications={filteredNotifications.filter(n => 
+              n.type === 'follow'
             )} 
           />
         </TabsContent>

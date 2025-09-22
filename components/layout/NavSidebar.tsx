@@ -13,10 +13,9 @@ import { useUiStore } from '../../stores/ui.store';
 
 const navItems = [
   { href: '/', label: 'ホーム', icon: Home },
-  { href: '/explore', label: '探索', icon: Search },
+  { href: '/explore', label: '検索', icon: Search },
   { href: '/notifications', label: '通知', icon: Bell },
   { href: '/profile', label: 'プロフィール', icon: User },
-  { href: '/zaps', label: 'Zaps', icon: Zap },
   { href: '/settings', label: '設定', icon: Settings },
 ];
 
@@ -50,15 +49,19 @@ export default function NavSidebar() {
   }, [npub]);
 
   return (
-    <aside className="hidden md:flex flex-col w-64 px-4 py-6 space-y-6">
-      <div className="flex items-center space-x-3 px-4">
+    <aside className="hidden md:flex flex-col w-72 px-4 py-6 space-y-6 sticky top-0 h-screen overflow-y-auto">
+      <Link 
+        href="/" 
+        className="flex items-center space-x-3 px-4 hover:opacity-80 transition-opacity duration-200"
+        aria-label="ホームへ戻る"
+      >
         <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
           <Zap className="w-6 h-6 text-white" />
         </div>
         <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
           Nostr
         </span>
-      </div>
+      </Link>
 
       {/* Profile Section */}
       {npub && (
@@ -116,10 +119,10 @@ export default function NavSidebar() {
               key={href}
               href={href as any}
               className={clsx(
-                'flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200',
+                'flex items-center space-x-3 py-3 rounded-xl transition-all duration-200',
                 'hover:bg-gray-100 dark:hover:bg-gray-800',
                 'group relative overflow-hidden',
-                isActive && 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400'
+                isActive ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 pl-7 pr-4' : 'px-4'
               )}
             >
               <div className="relative z-10">

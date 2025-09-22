@@ -32,7 +32,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         <Header />
         <ThemeToggle />
       </header>
-      <div className="grid grid-cols-1 md:grid-cols-[16rem_minmax(0,1fr)] gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-[18rem_minmax(0,1fr)] gap-6">
         <NavSidebar />
         <main>{children}</main>
       </div>
