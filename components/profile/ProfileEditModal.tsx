@@ -174,7 +174,7 @@ export function ProfileEditModal({ isOpen, onClose, currentProfile, onSave }: Pr
           <Input
             id="website"
             type="url"
-            placeholder="https://example.com"
+            placeholder="https://yourwebsite.com"
             value={formData.website || ''}
             onChange={(e) => handleInputChange('website', e.target.value)}
           />
