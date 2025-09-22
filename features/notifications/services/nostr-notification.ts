@@ -5,6 +5,8 @@ import { fetchProfileForNotification } from '../../profile/services/profile-cach
 
 export class NostrNotificationService {
   private userPubkey: string | null = null;
+  // 著者(pubkey)ごとの最新コンタクトリスト状態を保持
+  private contactState: Map<string, { created_at: number; contacts: Set<string> }> = new Map();
 
   setUserPubkey(pubkey: string) {
     this.userPubkey = pubkey;
@@ -114,12 +116,40 @@ export class NostrNotificationService {
   private async processContactList(event: NostrEvent) {
     if (!this.userPubkey) return;
 
-    // フォロー検出
-    const pTags = event.tags.filter(tag => 
-      tag[0] === 'p' && tag[1] === this.userPubkey
+    // 著者の既存状態を取得
+    const author = event.pubkey;
+    const prev = this.contactState.get(author);
+    const currCreatedAt = event.created_at || 0;
+
+    // 既存があり、受信したイベントが古ければ無視
+    if (prev && prev.created_at >= currCreatedAt) {
+      return;
+    }
+
+    // 現在のpタグ集合を作成
+    const currentContacts = new Set<string>(
+      event.tags.filter(t => t[0] === 'p' && t[1]).map(t => t[1] as string)
     );
-    
-    if (pTags.length > 0) {
+
+    // 差分を計算: 新しく追加された公開鍵のみ
+    const containsMeNow = this.userPubkey ? currentContacts.has(this.userPubkey) : false;
+
+    // 通知判定
+    let shouldNotify = false;
+    if (!prev) {
+      // 初回受信: 現在のリストに自分が含まれていれば「新規フォロー」とみなす
+      shouldNotify = containsMeNow;
+    } else {
+      // 以前は含まれておらず、今回含まれた場合のみ通知
+      if (this.userPubkey && !prev.contacts.has(this.userPubkey) && containsMeNow) {
+        shouldNotify = true;
+      }
+    }
+
+    // 状態を更新（常に最新を保存）
+    this.contactState.set(author, { created_at: currCreatedAt, contacts: currentContacts });
+
+    if (shouldNotify) {
       await this.createNotification({
         type: 'follow',
         event,

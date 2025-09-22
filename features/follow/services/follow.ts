@@ -2,7 +2,7 @@ import { type Event as NostrEvent } from 'nostr-tools';
 import { subscribeTo, getReadRelays } from '../../relays/services/relayPool';
 import { useRelaysStore } from '../../../stores/relays.store';
 import { useAuthStore } from '../../../stores/auth.store';
-import { KIND_FOLLOW } from '../../../lib/nostr/constants';
+import { KIND_FOLLOW, KIND_PEOPLE_LIST } from '../../../lib/nostr/constants';
 
 /**
  * ユーザーのフォローリスト（kind3イベント）を取得
@@ -39,40 +39,37 @@ export async function fetchFollowList(pubkey?: string): Promise<string[]> {
 
     return new Promise((resolve) => {
       let followList: string[] = [];
+      let latestEvent: NostrEvent | null = null;
       let timeoutId: NodeJS.Timeout;
 
-      // kind3イベントを購読
+      // フォローリスト候補（NIP-51 People List と NIP-02 Contact List）を購読し、最も新しいものを採用
       const sub = subscribeTo(
         relays,
-        [{
-          kinds: [KIND_FOLLOW],
-          authors: [targetPubkey],
-          limit: 1
-        }],
+        [
+          { kinds: [KIND_PEOPLE_LIST, KIND_FOLLOW], authors: [targetPubkey], limit: 2 }
+        ],
         (event: NostrEvent) => {
           try {
-            console.log('[fetchFollowList] Received kind3 event:', event);
-            
-            // タグからフォローしている公開鍵を抽出
-            followList = event.tags
-              .filter(tag => tag[0] === 'p' && tag[1])
-              .map(tag => tag[1]);
-            
-            console.log('[fetchFollowList] Extracted follow list:', followList.length, 'pubkeys');
-            
-            clearTimeout(timeoutId);
-            sub.close();
-            resolve(followList);
+            // 最新の created_at を持つイベントを保持
+            if (!latestEvent || event.created_at >= latestEvent.created_at) {
+              latestEvent = event;
+            }
           } catch (error) {
-            console.error('[fetchFollowList] Failed to parse follow list:', error);
+            console.error('[fetchFollowList] Failed to handle event:', error);
           }
         }
       );
 
-      // タイムアウト設定（2秒）
+      // タイムアウト設定（2秒）で購読を終了し、最新イベントからpタグを抽出
       timeoutId = setTimeout(() => {
         sub.close();
-        console.log('Follow list fetch timeout, returning empty list');
+        if (latestEvent) {
+          const tags = latestEvent.tags || [];
+          followList = tags.filter(tag => tag[0] === 'p' && tag[1]).map(tag => tag[1]);
+          console.log('[fetchFollowList] Selected follow list from kind', latestEvent.kind, 'size:', followList.length);
+        } else {
+          console.log('Follow list fetch timeout, no events received');
+        }
         resolve(followList);
       }, 2000);
     });
@@ -112,39 +109,36 @@ export async function fetchFollowLists(pubkeys: string[]): Promise<Map<string, s
       const followListMap = new Map<string, string[]>();
       let timeoutId: NodeJS.Timeout;
 
-      // 複数のkind3イベントを購読
+      // 複数ユーザーの People/Contact List を購読し、各pubkeyごとに最新イベントを採用
+      const latestEventByAuthor = new Map<string, NostrEvent>();
       const sub = subscribeTo(
         relays,
         [{
-          kinds: [KIND_FOLLOW],
+          kinds: [KIND_PEOPLE_LIST, KIND_FOLLOW],
           authors: pubkeys,
-          limit: pubkeys.length
+          limit: Math.max(2, pubkeys.length * 2)
         }],
         (event: NostrEvent) => {
           try {
-            // タグからフォローしている公開鍵を抽出
-            const followList = event.tags
-              .filter(tag => tag[0] === 'p' && tag[1])
-              .map(tag => tag[1]);
-            
-            followListMap.set(event.pubkey, followList);
-
-            // 全ユーザーのフォローリストを取得したら完了
-            if (followListMap.size === pubkeys.length) {
-              clearTimeout(timeoutId);
-              sub.close();
-              resolve(followListMap);
+            const prev = latestEventByAuthor.get(event.pubkey);
+            if (!prev || event.created_at >= prev.created_at) {
+              latestEventByAuthor.set(event.pubkey, event);
             }
           } catch (error) {
-            console.error('Failed to parse follow list:', error);
+            console.error('Failed to handle follow list event:', error);
           }
         }
       );
 
-      // タイムアウト設定（3秒）
+      // タイムアウト設定（3秒）: 収集した最新イベントからpタグを抽出して返す
       timeoutId = setTimeout(() => {
         sub.close();
-        console.log(`Follow lists fetch timeout, got ${followListMap.size}/${pubkeys.length} lists`);
+        for (const [author, ev] of latestEventByAuthor.entries()) {
+          const tags = ev.tags || [];
+          const followList = tags.filter(tag => tag[0] === 'p' && tag[1]).map(tag => tag[1]);
+          followListMap.set(author, followList);
+        }
+        console.log(`Follow lists fetch timeout, got ${followListMap.size}/${pubkeys.length} lists (latest kinds per author)`);
         resolve(followListMap);
       }, 3000);
     });

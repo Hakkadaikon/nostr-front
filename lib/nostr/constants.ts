@@ -15,4 +15,7 @@ export const KIND_CHANNEL_HIDE_MESSAGE = 43;
 export const KIND_CHANNEL_MUTE_USER = 44;
 export const KIND_ZAP_REQUEST = 9734;
 export const KIND_ZAP_RECEIPT = 9735;
+
+// NIP-51 Lists (People lists, etc.)
+export const KIND_PEOPLE_LIST = 30000;
 export const KIND_RELAY_LIST_METADATA = 10002;
