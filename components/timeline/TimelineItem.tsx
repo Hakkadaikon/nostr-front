@@ -3,6 +3,7 @@
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { SafeImage } from '../ui/SafeImage';
+import EmbeddedNote from '../notes/EmbeddedNote';
 import { RichContent } from './RichContent';
 import Link from 'next/link';
 import { Tweet } from '../../features/timeline/types';
@@ -67,7 +68,7 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap }: TimelineItemPr
 
           {/* コンテンツ */}
           <div className="mt-2">
-            <RichContent content={tweet.content} tags={tweet.tags} />
+            <RichContent content={tweet.content} tags={tweet.tags} suppressNoteIds={tweet.quote ? [tweet.quote.id] : undefined} />
           </div>
 
           {/* メディア */}

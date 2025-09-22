@@ -13,6 +13,11 @@ export interface User {
 }
 
 // ツイート（投稿）
+export interface QuoteReference {
+  id: string;
+  relays?: string[];
+}
+
 export interface Tweet {
   id: string;
   content: string;
@@ -26,7 +31,7 @@ export interface Tweet {
   isLiked?: boolean;
   isRetweeted?: boolean;
   parentId?: string;
-  quoteTweetId?: string;
+  quote?: QuoteReference;
   media?: TweetMedia[];
   tags?: string[][];
 }

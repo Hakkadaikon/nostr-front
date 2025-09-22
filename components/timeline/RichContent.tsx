@@ -11,6 +11,7 @@ import { EmbeddedImage } from './EmbeddedMedia';
 interface RichContentProps {
   content: string;
   tags?: string[][];
+  suppressNoteIds?: string[];
 }
 
 const TOKEN_REGEX = /(nostr:[^\s]+|https?:\/\/[^\s]+)/gi;
@@ -37,7 +38,8 @@ function renderLink(url: string, key: string) {
   return <LinkPreview key={key} url={url} />;
 }
 
-function renderNostr(token: string, key: string, tags?: string[][]) {
+
+function renderNostr(token: string, key: string, tags?: string[][], suppressNoteIds?: string[]) {
   const parsed = parseNostrUri(token);
   if (!parsed) {
     return (
@@ -47,62 +49,70 @@ function renderNostr(token: string, key: string, tags?: string[][]) {
     );
   }
 
-  switch (parsed.type) {
-    case 'note': {
-      return (
-        <EmbeddedNote
-          key={key}
-          reference={{ id: parsed.data as string }}
-          className="mt-3"
-        />
-      );
+  if (parsed.type === 'note') {
+    const noteId = parsed.data as string;
+    if (suppressNoteIds?.includes(noteId)) {
+      return null;
     }
-    case 'nevent': {
-      const data = parsed.data as { id: string; relays?: string[] };
-      return (
-        <EmbeddedNote
-          key={key}
-          reference={{ id: data.id, relays: data.relays }}
-          className="mt-3"
-        />
-      );
-    }
-    case 'npub': {
-      const hex = parsed.data as string;
-      const npub = nip19.npubEncode(hex);
-      return (
-        <Link
-          key={key}
-          href={`/profile/${npub}`}
-          className="text-purple-600 underline hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-200"
-        >
-          @{npub.slice(0, 12)}…
-        </Link>
-      );
-    }
-    case 'nprofile': {
-      const data = parsed.data as { pubkey: string };
-      const npub = nip19.npubEncode(data.pubkey);
-      return (
-        <Link
-          key={key}
-          href={`/profile/${npub}`}
-          className="text-purple-600 underline hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-200"
-        >
-          @{npub.slice(0, 12)}…
-        </Link>
-      );
-    }
-    default:
-      return (
-        <span key={key} className="text-purple-600">
-          {token}
-        </span>
-      );
+    return (
+      <EmbeddedNote
+        key={key}
+        reference={{ id: noteId }}
+        className="mt-3"
+      />
+    );
   }
+
+  if (parsed.type === 'nevent') {
+    const data = parsed.data as { id: string; relays?: string[] };
+    if (suppressNoteIds?.includes(data.id)) {
+      return null;
+    }
+    return (
+      <EmbeddedNote
+        key={key}
+        reference={{ id: data.id, relays: data.relays }}
+        className="mt-3"
+      />
+    );
+  }
+
+  if (parsed.type === 'npub') {
+    const hex = parsed.data as string;
+    const npub = nip19.npubEncode(hex);
+    return (
+      <Link
+        key={key}
+        href={`/profile/${npub}`}
+        className="text-purple-600 underline hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-200"
+      >
+        @{npub.slice(0, 12)}…
+      </Link>
+    );
+  }
+
+  if (parsed.type === 'nprofile') {
+    const data = parsed.data as { pubkey: string };
+    const npub = nip19.npubEncode(data.pubkey);
+    return (
+      <Link
+        key={key}
+        href={`/profile/${npub}`}
+        className="text-purple-600 underline hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-200"
+      >
+        @{npub.slice(0, 12)}…
+      </Link>
+    );
+  }
+
+  return (
+    <span key={key} className="text-purple-600">
+      {token}
+    </span>
+  );
 }
 
-export function RichContent({ content, tags }: RichContentProps) {
+export function RichContent({ content, tags, suppressNoteIds }: RichContentProps) {
   const nodes = useMemo(() => {
     const elements: ReactNode[] = [];
     let lastIndex = 0;
@@ -117,7 +127,7 @@ export function RichContent({ content, tags }: RichContentProps) {
       }
 
       if (token.startsWith('nostr:')) {
-        elements.push(renderNostr(token, `${match.index}-${token}`, tags));
+        elements.push(renderNostr(token, `${match.index}-${token}`, tags, suppressNoteIds));
       } else if (token.startsWith('http')) {
         elements.push(renderLink(token, `${match.index}-${token}`));
       }
@@ -130,7 +140,7 @@ export function RichContent({ content, tags }: RichContentProps) {
     }
 
     return elements;
-  }, [content, tags]);
+  }, [content, tags, suppressNoteIds]);
 
   return (
     <div className="text-gray-900 dark:text-white whitespace-pre-wrap break-words">

@@ -10,6 +10,50 @@ import { createRepost, deleteRepost } from '../../repost/services/repost';
 // プロフィール情報のキャッシュ
 const profileCache = new Map<string, any>();
 
+
+function decodeNoteIdentifier(identifier: string): { id: string; relays?: string[] } | null {
+  try {
+    if (identifier.startsWith('nevent1') || identifier.startsWith('note1')) {
+      const decoded = nip19.decode(identifier);
+      if (decoded.type === 'nevent') {
+        const data = decoded.data as { id: string; relays?: string[] };
+        return { id: data.id, relays: data.relays };
+      }
+      if (decoded.type === 'note') {
+        const id = decoded.data as string;
+        return { id };
+      }
+    }
+  } catch (error) {
+    console.warn('[timeline] failed to decode identifier', identifier, error);
+  }
+  if (/^[0-9a-fA-F]{64}$/.test(identifier)) {
+    return { id: identifier };
+  }
+  return null;
+}
+
+function extractQuoteReference(tags: string[][]): { id: string; relays?: string[] } | undefined {
+  for (const tag of tags) {
+    if (tag[0] === 'q' && tag[1]) {
+      const decoded = decodeNoteIdentifier(tag[1]);
+      if (decoded) return decoded;
+    }
+  }
+
+  for (const tag of tags) {
+    if (tag[0] === 'e' && tag[1]) {
+      const marker = tag[3];
+      if (marker === 'quote' || marker === 'mention') {
+        const relays = tag[2] ? [tag[2]] : undefined;
+        return { id: tag[1], relays };
+      }
+    }
+  }
+
+  return undefined;
+}
+
 /**
  * Nostrイベントからプロフィール情報を取得
  */
@@ -75,6 +119,8 @@ async function fetchProfile(pubkey: string, relays: string[]): Promise<any> {
 async function nostrEventToTweet(event: NostrEvent, relays: string[]): Promise<Tweet> {
   const profile = await fetchProfile(event.pubkey, relays);
   
+  const tags = event.tags as string[][];
+  const quote = extractQuoteReference(tags);
   return {
     id: event.id,
     content: event.content,
@@ -86,7 +132,8 @@ async function nostrEventToTweet(event: NostrEvent, relays: string[]): Promise<T
     zapsCount: 0, // NostrではZap数を別途集計する必要がある
     isLiked: false, // ユーザーの反応状態は別途確認が必要
     isRetweeted: false, // ユーザーのリポスト状態は別途確認が必要
-    tags: event.tags as string[][],
+    tags,
+    quote,
   };
 }
 
