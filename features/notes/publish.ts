@@ -55,7 +55,7 @@ export async function publishNote(content: string, extra?: { rootId?: string; re
   if (!verify(signed)) throw new Error('Invalid signature');
   const results = await publishClient(relays, signed);
   await record(results);
-  return { ok: results.some(r => r.ok), results };
+  return { ok: results.some(r => r.ok), results, event: signed };
 }
 
 export async function publishRepost(targetId: string, targetAuthor?: string) {
@@ -71,7 +71,7 @@ export async function publishRepost(targetId: string, targetAuthor?: string) {
   if (!verify(signed)) throw new Error('Invalid signature');
   const results = await publishClient(relays, signed);
   await record(results);
-  return { ok: results.some(r => r.ok), results };
+  return { ok: results.some(r => r.ok), results, event: signed };
 }
 
 export async function publishQuote(targetId: string) {
@@ -87,5 +87,5 @@ export async function publishQuote(targetId: string) {
   if (!verify(signed)) throw new Error('Invalid signature');
   const results = await publishClient(relays, signed);
   await record(results);
-  return { ok: results.some(r => r.ok), results };
+  return { ok: results.some(r => r.ok), results, event: signed };
 }

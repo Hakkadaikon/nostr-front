@@ -1,133 +1,70 @@
 import { CreateTweetRequest, CreateTweetResponse } from '../types';
 import { Tweet } from '../../timeline/types';
+import { publishNote } from '../../notes/publish';
+import { useProfileStore } from '../../../stores/profile.store';
+import { useAuthStore } from '../../../stores/auth.store';
 
-// APIエンドポイント
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+function buildAuthor(): Tweet['author'] {
+  const profileState = useProfileStore.getState();
+  const authState = useAuthStore.getState();
+  const profile = profileState.current;
 
-// モック用のユーザー情報（開発環境用）
-const mockCurrentUser = {
-  id: 'current-user',
-  username: 'current_user',
-  name: 'Current User',
-  avatar: 'https://i.pravatar.cc/150?img=10',
-  bio: 'This is my bio',
-  followersCount: 100,
-  followingCount: 50,
-  createdAt: new Date('2024-01-01')
-};
+  const npub = profile?.npub || authState.npub || authState.publicKey || 'anonymous';
+  const displayName = profile?.displayName || profile?.name || npub.slice(0, 12);
 
-/**
- * メディアファイルをアップロードする
- */
-async function uploadMedia(files: File[]): Promise<string[]> {
-  // モック実装：実際にNostrのメディアサーバーにアップロード
-  const urls: string[] = [];
-  
-  for (const file of files) {
-    // モック：実際にはNIP-96に従ってアップロード
-    const mockUrl = `https://nostr.build/i/${Date.now()}_${file.name}`;
-    urls.push(mockUrl);
-  }
-  
-  return urls;
+  return {
+    id: profile?.npub || authState.publicKey || npub,
+    username: profile?.name || npub.slice(0, 12),
+    name: displayName,
+    avatar: profile?.picture || `https://robohash.org/${npub}`,
+    bio: profile?.about || '',
+    followersCount: profile?.followersCount ?? 0,
+    followingCount: profile?.followingCount ?? 0,
+    createdAt: new Date(),
+  };
 }
 
-/**
- * ツイートを投稿する
- */
 export async function createTweet(request: CreateTweetRequest): Promise<CreateTweetResponse> {
-  try {
-    // 開発環境ではモック処理
-    if (process.env.NODE_ENV === 'development' || !API_BASE_URL.startsWith('http')) {
-      // モック用の遅延
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // バリデーション
-      if (!request.content || request.content.trim() === '') {
-        throw new Error('ツイートの内容を入力してください');
-      }
-      
-      if (request.content.length > 280) {
-        throw new Error('ツイートは280文字以内で入力してください');
-      }
-      
-      // メディアのアップロード
-      let mediaUrls: string[] = [];
-      if (request.media && request.media.length > 0) {
-        mediaUrls = await uploadMedia(request.media);
-      }
+  const content = request.content?.trim();
 
-      // モックツイートを作成
-      const newTweet: Tweet = {
-        id: `tweet-${Date.now()}`,
-        content: request.content,
-        author: mockCurrentUser,
-        createdAt: new Date(),
-        likesCount: 0,
-        retweetsCount: 0,
-        repliesCount: 0,
-        zapsCount: 0,
-        isLiked: false,
-        isRetweeted: false,
-        parentId: request.parentId,
-        quoteTweetId: request.quoteTweetId,
-        media: mediaUrls.map((url, index) => ({
-          id: `media-${index}`,
-          type: request.media![index].type.startsWith('video/') ? 'video' : 'image',
-          url,
-          thumbnailUrl: url,
-        })),
-      };
-      
-      return { tweet: newTweet };
-    }
-
-    // 本番環境ではAPIを呼び出す
-    const response = await fetch(`${API_BASE_URL}/tweets`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify(request),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || `API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Failed to create tweet:', error);
-    throw error;
+  if (!content) {
+    throw new Error('ツイートの内容を入力してください');
   }
+
+  if (content.length > 280) {
+    throw new Error('ツイートは280文字以内で入力してください');
+  }
+
+  if (request.media && request.media.length > 0) {
+    throw new Error('現在、画像や動画のアップロードには対応していません');
+  }
+
+  const publishResult = await publishNote(content);
+
+  if (!publishResult.ok || !publishResult.event) {
+    throw new Error('ノートの投稿に失敗しました');
+  }
+
+  const event = publishResult.event;
+  const author = buildAuthor();
+
+  const tweet: Tweet = {
+    id: event.id,
+    content: event.content,
+    author,
+    createdAt: new Date(event.created_at * 1000),
+    likesCount: 0,
+    retweetsCount: 0,
+    repliesCount: 0,
+    zapsCount: 0,
+    isLiked: false,
+    isRetweeted: false,
+    tags: event.tags as string[][],
+  };
+
+  return { tweet };
 }
 
-/**
- * ツイートを削除する
- */
-export async function deleteTweet(tweetId: string): Promise<void> {
-  try {
-    if (process.env.NODE_ENV === 'development' || !API_BASE_URL.startsWith('http')) {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      return;
-    }
-
-    const response = await fetch(`${API_BASE_URL}/tweets/${tweetId}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-  } catch (error) {
-    console.error('Failed to delete tweet:', error);
-    throw error;
-  }
+export async function deleteTweet(_tweetId: string): Promise<void> {
+  throw new Error('ツイートの削除はまだ実装されていません');
 }
