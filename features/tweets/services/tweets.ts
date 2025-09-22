@@ -39,7 +39,14 @@ export async function createTweet(request: CreateTweetRequest): Promise<CreateTw
     throw new Error('現在、画像や動画のアップロードには対応していません');
   }
 
-  const publishResult = await publishNote(content);
+  // リプライの場合はNIP-10に従ってタグを追加
+  const extra = request.parentId ? { 
+    replyToId: request.parentId,
+    replyAuthor: request.parentAuthor,
+    rootId: request.rootId,
+    rootAuthor: request.rootAuthor,
+  } : undefined;
+  const publishResult = await publishNote(content, extra);
 
   if (!publishResult.ok || !publishResult.event) {
     throw new Error('ノートの投稿に失敗しました');

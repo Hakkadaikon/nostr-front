@@ -37,24 +37,43 @@ export default function ProfilePage({ params }: Props) {
   const { publicKey } = useAuthStore();
   const isOwnProfile = currentUser?.npub === params.npub;
 
-  const pubkey = params.npub && !Array.isArray(params.npub) ? (decode(params.npub).data as string) : undefined;
+  let pubkey: string | undefined;
+  try {
+    if (params.npub && !Array.isArray(params.npub)) {
+      const decoded = decode(params.npub);
+      pubkey = decoded.data as string;
+    }
+  } catch (err) {
+    console.error('Failed to decode npub:', err);
+    pubkey = undefined;
+  }
 
   // プロフィール情報の取得
   useEffect(() => {
     const loadProfile = async () => {
+      if (!params.npub || !pubkey) {
+        setIsLoading(false);
+        return;
+      }
+      
       setIsLoading(true);
       try {
+        // npubでもhexでも対応できるようにする
         const profileData = await fetchProfile(params.npub);
+        
+        // プロフィールデータが空の場合のデフォルト値を設定
+        const defaultName = params.npub.slice(0, 8) + '...';
+        
         setProfile({
           npub: params.npub,
-          name: profileData.name,
-          displayName: profileData.display_name,
-          about: profileData.about,
-          picture: profileData.picture,
-          banner: profileData.banner,
-          website: profileData.website,
-          lud16: profileData.lud16,
-          nip05: profileData.nip05,
+          name: profileData.name || defaultName,
+          displayName: profileData.display_name || profileData.name || defaultName,
+          about: profileData.about || '',
+          picture: profileData.picture || `https://robohash.org/${params.npub}`,
+          banner: profileData.banner || '',
+          website: profileData.website || '',
+          lud16: profileData.lud16 || '',
+          nip05: profileData.nip05 || '',
         });
         
         // フォロー状態を確認
@@ -71,6 +90,19 @@ export default function ProfilePage({ params }: Props) {
         }
       } catch (error) {
         console.error('Failed to load profile:', error);
+        // エラー時にもデフォルト値を設定
+        const defaultName = params.npub.slice(0, 8) + '...';
+        setProfile({
+          npub: params.npub,
+          name: defaultName,
+          displayName: defaultName,
+          about: '',
+          picture: `https://robohash.org/${params.npub}`,
+          banner: '',
+          website: '',
+          lud16: '',
+          nip05: '',
+        });
       } finally {
         setIsLoading(false);
       }

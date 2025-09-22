@@ -92,17 +92,19 @@ export function NotificationItem({ notification }: NotificationItemProps) {
           <Link
             href={`/profile/${notification.user.npub}` as any}
             onClick={(e) => e.stopPropagation()}
+            className="relative block"
           >
-            {notification.user.avatar ? (
-              <SafeImage
-                src={notification.user.avatar}
-                alt={notification.user.name}
-                width={48}
-                height={48}
-                className="w-12 h-12 rounded-full object-cover hover:opacity-90 transition-opacity"
-              />
-            ) : (
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
+            <SafeImage
+              src={notification.user.avatar || ''}
+              alt={notification.user.name}
+              width={48}
+              height={48}
+              className="w-12 h-12 rounded-full object-cover hover:opacity-90 transition-opacity"
+              fallbackSrc=""
+              onError={() => {}}
+            />
+            {(!notification.user.avatar || notification.user.avatar === '') && (
+              <div className="absolute inset-0 w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
             )}
           </Link>
           {/* 通知タイプアイコン */}

@@ -29,7 +29,7 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply }: Timel
     <article className="border-b border-gray-200 dark:border-gray-800 p-4 hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition-all duration-200 group">
       <div className="flex gap-3">
         {/* アバター */}
-        <Link href={`/${tweet.author.username}` as any} className="flex-shrink-0">
+        <Link href={`/profile/${tweet.author.npub || tweet.author.id}` as any} className="flex-shrink-0">
           {tweet.author.avatar ? (
             <SafeImage
               src={tweet.author.avatar}
@@ -48,13 +48,13 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply }: Timel
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-1 flex-wrap">
               <Link
-                href={`/${tweet.author.username}` as any}
+                href={`/profile/${tweet.author.npub || tweet.author.id}` as any}
                 className="font-bold text-gray-900 dark:text-white hover:underline"
               >
                 {tweet.author.name}
               </Link>
               <Link
-                href={`/${tweet.author.username}` as any}
+                href={`/profile/${tweet.author.npub || tweet.author.id}` as any}
                 className="text-gray-500 dark:text-gray-400"
               >
                 @{tweet.author.username}

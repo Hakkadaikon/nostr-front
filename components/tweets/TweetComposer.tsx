@@ -8,6 +8,8 @@ import { EmojiPicker } from '../compose/EmojiPicker';
 import { MediaUploader } from '../compose/MediaUploader';
 import { useProfileStore } from '../../stores/profile.store';
 import { Avatar } from '../ui/Avatar';
+import { useAuthStore } from '../../stores/auth.store';
+import { fetchProfile } from '../../features/profile/fetchProfile';
 
 interface TweetComposerProps {
   onTweetCreated?: (tweet: Tweet) => void;
@@ -16,6 +18,9 @@ interface TweetComposerProps {
   replyTo?: {
     tweetId: string;
     username: string;
+    authorPubkey?: string;
+    rootId?: string;
+    rootAuthorPubkey?: string;
   };
 }
 
@@ -31,8 +36,19 @@ export function TweetComposer({
   const [showPreview, setShowPreview] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { postTweet, isPosting, error, clearError } = useTweets();
-  const { current: currentProfile } = useProfileStore();
+  const { current: currentProfile, setCurrent } = useProfileStore();
+  const { publicKey } = useAuthStore();
 
+  // ログインユーザーのプロフィール情報を取得
+  useEffect(() => {
+    if (publicKey && !currentProfile) {
+      fetchProfile(publicKey).then((profile) => {
+        if (profile) {
+          setCurrent(profile);
+        }
+      });
+    }
+  }, [publicKey, currentProfile, setCurrent]);
 
   // テキストエリアの高さを自動調整
   useEffect(() => {
@@ -88,7 +104,14 @@ export function TweetComposer({
     const hashtags = extractHashtags(content);
     const mentions = extractMentions(content);
 
-    const tweet = await postTweet(sanitizedContent, selectedMedia, hashtags, mentions, replyTo?.tweetId);
+    const replyInfo = replyTo ? {
+      parentId: replyTo.tweetId,
+      parentAuthor: replyTo.authorPubkey,
+      rootId: replyTo.rootId,
+      rootAuthor: replyTo.rootAuthorPubkey,
+    } : undefined;
+
+    const tweet = await postTweet(sanitizedContent, selectedMedia, hashtags, mentions, replyInfo);
     if (tweet) {
       setContent('');
       setSelectedMedia([]);

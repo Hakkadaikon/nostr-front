@@ -4,6 +4,9 @@ import { Tweet, User } from '../timeline/types';
 export interface CreateTweetRequest {
   content: string;
   parentId?: string; // 返信の場合
+  parentAuthor?: string; // 返信先の投稿者のpubkey
+  rootId?: string; // スレッドのルート投稿ID
+  rootAuthor?: string; // ルート投稿者のpubkey
   quoteTweetId?: string; // 引用ツイートの場合
   media?: File[]; // 添付メディアファイル
   hashtags?: string[]; // ハッシュタグ

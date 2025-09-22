@@ -8,7 +8,18 @@ import { Tweet } from '../../timeline/types';
 interface UseTweetsReturn {
   isPosting: boolean;
   error: string | null;
-  postTweet: (content: string, media?: File[], hashtags?: string[], mentions?: string[], parentId?: string) => Promise<Tweet | null>;
+  postTweet: (
+    content: string, 
+    media?: File[], 
+    hashtags?: string[], 
+    mentions?: string[], 
+    replyInfo?: { 
+      parentId: string; 
+      parentAuthor?: string;
+      rootId?: string;
+      rootAuthor?: string;
+    }
+  ) => Promise<Tweet | null>;
   clearError: () => void;
 }
 
@@ -24,7 +35,12 @@ export function useTweets(): UseTweetsReturn {
     media?: File[], 
     hashtags?: string[], 
     mentions?: string[],
-    parentId?: string
+    replyInfo?: { 
+      parentId: string; 
+      parentAuthor?: string;
+      rootId?: string;
+      rootAuthor?: string;
+    }
   ): Promise<Tweet | null> => {
     setIsPosting(true);
     setError(null);
@@ -35,7 +51,10 @@ export function useTweets(): UseTweetsReturn {
         media,
         hashtags,
         mentions,
-        parentId
+        parentId: replyInfo?.parentId,
+        parentAuthor: replyInfo?.parentAuthor,
+        rootId: replyInfo?.rootId,
+        rootAuthor: replyInfo?.rootAuthor,
       };
 
       const response = await createTweet(request);

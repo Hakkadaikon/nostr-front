@@ -14,14 +14,26 @@ export type ReplyInput = {
 
 export function buildReplyTags(input: ReplyInput) {
   const tags: Tag[] = [];
-  if (input.rootId) {
-    tags.push(['e', input.rootId, input.rootRelay || '', 'root']);
-    if (input.rootAuthor) tags.push(['p', input.rootAuthor]);
+  
+  // リプライの場合、rootIdがない場合はreplyToIdをrootとして扱う
+  if (!input.rootId && input.replyToId) {
+    // 最初の返信の場合、replyToIdがroot投稿
+    tags.push(['e', input.replyToId, input.replyRelay || '', 'root']);
+    if (input.replyAuthor) tags.push(['p', input.replyAuthor]);
+  } else {
+    // スレッドの続きの場合
+    if (input.rootId) {
+      tags.push(['e', input.rootId, input.rootRelay || '', 'root']);
+      if (input.rootAuthor) tags.push(['p', input.rootAuthor]);
+    }
+    if (input.replyToId && input.replyToId !== input.rootId) {
+      tags.push(['e', input.replyToId, input.replyRelay || '', 'reply']);
+      if (input.replyAuthor && input.replyAuthor !== input.rootAuthor) {
+        tags.push(['p', input.replyAuthor]);
+      }
+    }
   }
-  if (input.replyToId) {
-    tags.push(['e', input.replyToId, input.replyRelay || '', 'reply']);
-    if (input.replyAuthor && input.replyAuthor !== input.rootAuthor) tags.push(['p', input.replyAuthor]);
-  }
+  
   return tags;
 }
 

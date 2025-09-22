@@ -11,6 +11,7 @@ import { subscribeTo, getReadRelays } from '../../features/relays/services/relay
 import { useRelaysStore } from '../../stores/relays.store';
 import { type Event as NostrEvent, nip19 } from 'nostr-tools';
 import { KIND_METADATA } from '../../lib/nostr/constants';
+import { isImageUrl } from '../../lib/utils/media-urls';
 
 interface QuotedTweetProps {
   quoteId: string;
@@ -21,6 +22,8 @@ export function QuotedTweet({ quoteId, relays = [] }: QuotedTweetProps) {
   const [note, setNote] = useState<NostrEvent | null>(null);
   const [author, setAuthor] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [displayContent, setDisplayContent] = useState<string>('');
 
   useEffect(() => {
     let active = true;
@@ -39,6 +42,18 @@ export function QuotedTweet({ quoteId, relays = [] }: QuotedTweetProps) {
       setNote(event);
 
       if (event) {
+        // コンテンツから画像URLを抽出
+        const urlRegex = /https?:\/\/[^\s]+/g;
+        const urls = event.content.match(urlRegex) || [];
+        const images = urls.filter(url => isImageUrl(url));
+        setImageUrls(images);
+
+        // 画像URLを除いたコンテンツを設定
+        let content = event.content;
+        images.forEach(imageUrl => {
+          content = content.replace(imageUrl, '').trim();
+        });
+        setDisplayContent(content);
         // 作者情報を取得
         const authorSub = subscribeTo(
           allRelays,
@@ -149,9 +164,31 @@ export function QuotedTweet({ quoteId, relays = [] }: QuotedTweetProps) {
           {/* コンテンツ */}
           <div className="mt-1">
             <p className="text-gray-900 dark:text-white text-sm line-clamp-3">
-              {note.content}
+              {displayContent || note.content}
             </p>
           </div>
+
+          {/* 画像 */}
+          {imageUrls.length > 0 && (
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {imageUrls.slice(0, 4).map((url, index) => (
+                <div key={index} className="relative aspect-square overflow-hidden rounded-lg">
+                  <SafeImage
+                    src={url}
+                    alt={`Image ${index + 1}`}
+                    fill
+                    sizes="(max-width: 768px) 50vw, 25vw"
+                    className="object-cover"
+                  />
+                  {imageUrls.length > 4 && index === 3 && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <span className="text-white text-2xl font-bold">+{imageUrls.length - 4}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </Link>

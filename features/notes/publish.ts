@@ -36,9 +36,23 @@ async function record(results: { relay: string; ok: boolean; error?: unknown }[]
   } catch {}
 }
 
-export async function publishNote(content: string, extra?: { rootId?: string; replyToId?: string }) {
+export async function publishNote(content: string, extra?: { 
+  rootId?: string; 
+  replyToId?: string;
+  rootAuthor?: string;
+  replyAuthor?: string;
+  rootRelay?: string;
+  replyRelay?: string;
+}) {
   const relays = getWriteRelays();
-  const tags = buildReplyTags({ rootId: extra?.rootId, replyToId: extra?.replyToId });
+  const tags = buildReplyTags({ 
+    rootId: extra?.rootId, 
+    replyToId: extra?.replyToId,
+    rootAuthor: extra?.rootAuthor,
+    replyAuthor: extra?.replyAuthor,
+    rootRelay: extra?.rootRelay,
+    replyRelay: extra?.replyRelay,
+  });
   const unsigned: Omit<NostrEvent, 'id' | 'sig'> = {
     kind: KINDS.NOTE,
     content,

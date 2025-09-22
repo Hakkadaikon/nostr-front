@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Profile } from '../../features/profile/types';
 import { SafeImage } from '../ui/SafeImage';
 import { Button } from '../ui/Button';
@@ -154,16 +155,22 @@ export function ProfileHeader({
                   </div>
                 )}
                 {followCount !== null && followCount !== undefined && (
-                  <div>
+                  <Link 
+                    href={`/profile/${profile.npub}/following`}
+                    className="hover:underline cursor-pointer"
+                  >
                     <span className="font-bold text-gray-900 dark:text-white">{followCount.toLocaleString()}</span>{' '}
                     <span>フォロー中</span>
-                  </div>
+                  </Link>
                 )}
                 {followerCount !== null && followerCount !== undefined && (
-                  <div>
+                  <Link 
+                    href={`/profile/${profile.npub}/followers`}
+                    className="hover:underline cursor-pointer"
+                  >
                     <span className="font-bold text-gray-900 dark:text-white">{followerCount.toLocaleString()}</span>{' '}
                     <span>フォロワー</span>
-                  </div>
+                  </Link>
                 )}
               </div>
             </div>

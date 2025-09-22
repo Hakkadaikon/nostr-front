@@ -55,8 +55,13 @@ export function SafeImage({
 
   const effectiveFallback = fallbackSrc || DEFAULT_FALLBACK_SRC;
 
-  if (!isValidImageUrl(src)) {
-    return null;
+  if (!isValidImageUrl(src) && !imageError) {
+    setImageError(true);
+    if (effectiveFallback) {
+      setImageSrc(effectiveFallback);
+    } else {
+      return null;
+    }
   }
 
   if (!fill && (typeof width !== 'number' || typeof height !== 'number')) {
@@ -66,7 +71,7 @@ export function SafeImage({
   const handleError = () => {
     if (!imageError) {
       setImageError(true);
-      if (imageSrc !== effectiveFallback) {
+      if (effectiveFallback && imageSrc !== effectiveFallback) {
         setImageSrc(effectiveFallback);
       }
     }
@@ -77,9 +82,14 @@ export function SafeImage({
   const resolvedSizes = fill ? sizes ?? '100vw' : sizes;
   const shouldUnoptimize = unoptimized ?? true;
 
+  // 画像URLが空またはエラーでfallbackもない場合は何も表示しない
+  if ((!imageSrc || imageSrc === '') && !effectiveFallback) {
+    return null;
+  }
+
   return (
     <NextImage
-      src={imageSrc}
+      src={imageSrc || effectiveFallback}
       alt={alt}
       width={fill ? undefined : width}
       height={fill ? undefined : height}

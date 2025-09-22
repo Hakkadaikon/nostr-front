@@ -4,6 +4,8 @@ import { useRelaysStore } from '../../stores/relays.store';
 import { useAuthStore } from '../../stores/auth.store';
 import { KIND_FOLLOW } from '../../lib/nostr/constants';
 import { fetchFollowList } from '../follow/services/follow';
+import { User } from '../timeline/types';
+import { fetchProfileForNotification } from './services/profile-cache';
 
 export interface FollowList {
   pubkeys: string[];
@@ -154,5 +156,123 @@ export async function isFollowing(targetNpubOrPubkey: string): Promise<boolean> 
   } catch (error) {
     console.error('[isFollowing] Failed to check follow status:', error);
     return false;
+  }
+}
+
+/**
+ * 特定ユーザーのフォロー/フォロワー一覧を取得
+ */
+export async function fetchUserFollowList(pubkey: string, type: 'following' | 'followers'): Promise<User[]> {
+  try {
+    const relays = useRelaysStore.getState().relays.filter(r => r.read).map(r => r.url);
+    
+    if (relays.length === 0) {
+      return [];
+    }
+
+    if (type === 'following') {
+      // フォロー中のユーザーを取得（kind:3）
+      return new Promise((resolve) => {
+        const users: User[] = [];
+        const userMap = new Map<string, User>();
+        
+        const timeout = setTimeout(() => {
+          sub.close();
+          resolve(Array.from(userMap.values()));
+        }, 3000);
+
+        const sub = subscribe(
+          relays,
+          [{ kinds: [KIND_FOLLOW], authors: [pubkey], limit: 1 }],
+          async (event: NostrEvent) => {
+            // kind:3のpタグからフォロー中のpubkeyリストを取得
+            const followingPubkeys = event.tags
+              .filter(tag => tag[0] === 'p' && tag[1])
+              .map(tag => tag[1]);
+            
+            // フォロー中のユーザーのプロフィールを取得
+            if (followingPubkeys.length > 0) {
+              const profileSub = subscribe(
+                relays,
+                [{ kinds: [0], authors: followingPubkeys }],
+                async (profileEvent: NostrEvent) => {
+                  try {
+                    const content = JSON.parse(profileEvent.content);
+                    const npub = nip19.npubEncode(profileEvent.pubkey);
+                    const user: User = {
+                      id: profileEvent.pubkey,
+                      username: content.username || content.name || 'nostr:' + profileEvent.pubkey.slice(0, 8),
+                      name: content.display_name || content.name || '',
+                      avatar: content.picture,
+                      bio: content.about || '',
+                      followersCount: 0,
+                      followingCount: 0,
+                      createdAt: new Date(profileEvent.created_at * 1000),
+                      npub,
+                    };
+                    userMap.set(profileEvent.pubkey, user);
+                  } catch (error) {
+                    console.error('Failed to parse profile:', error);
+                  }
+                }
+              );
+
+              // プロフィール取得のタイムアウト
+              setTimeout(() => {
+                profileSub.close();
+                clearTimeout(timeout);
+                resolve(Array.from(userMap.values()));
+              }, 2000);
+            } else {
+              clearTimeout(timeout);
+              sub.close();
+              resolve([]);
+            }
+          }
+        );
+      });
+    } else {
+      // フォロワーを取得（自分をpタグに含むkind:3イベントを探す）
+      return new Promise((resolve) => {
+        const userMap = new Map<string, User>();
+        
+        const timeout = setTimeout(() => {
+          sub.close();
+          resolve(Array.from(userMap.values()));
+        }, 5000);
+
+        // 自分をフォローしているユーザーを検索
+        const sub = subscribe(
+          relays,
+          [{ kinds: [KIND_FOLLOW], '#p': [pubkey] }],
+          async (event: NostrEvent) => {
+            // このイベントの作者がフォロワー
+            const followerPubkey = event.pubkey;
+            
+            // フォロワーのプロフィールを取得
+            try {
+              const profile = await fetchProfileForNotification(followerPubkey);
+              const user: User = {
+                id: profile.id,
+                username: profile.username,
+                name: profile.name,
+                avatar: profile.avatar,
+                bio: '',
+                followersCount: 0,
+                followingCount: 0,
+                createdAt: new Date(),
+                npub: profile.npub,
+              };
+              userMap.set(followerPubkey, user);
+            } catch (error) {
+              console.error('Failed to fetch follower profile:', error);
+            }
+          }
+        );
+      });
+    }
+  } catch (error) {
+    console.error('Failed to fetch follow list:', error);
+    return [];
   }
 }
