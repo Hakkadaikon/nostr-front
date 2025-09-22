@@ -138,7 +138,10 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
           </div>
         </div>
       )}
-      <div ref={containerRef} className={isLoading ? 'hidden' : ''} />
+      <div
+        ref={containerRef}
+        className={`twitter-embed${isLoading ? ' hidden' : ''}`}
+      />
     </div>
   );
 }

@@ -25,7 +25,7 @@ export function MobileNav() {
     <>
       {/* モバイル下部ナビゲーション */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 z-50">
-        <div className="grid grid-cols-5 h-16">
+        <div className="grid grid-cols-4 h-16">
           {mobileNavItems.map(({ href, label, icon: Icon }) => {
             const isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
             const actualHref = href === '/profile' && npub ? `/profile/${npub}` : href;
@@ -62,16 +62,6 @@ export function MobileNav() {
               </Link>
             );
           })}
-          
-          {/* 投稿ボタン */}
-          <button
-            onClick={openComposeModal}
-            className="flex flex-col items-center justify-center py-2 text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
-            aria-label="新しい投稿を作成"
-          >
-            <Plus className="w-6 h-6" />
-            <span className="text-[10px] mt-1">投稿</span>
-          </button>
         </div>
       </nav>
 

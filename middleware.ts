@@ -14,11 +14,11 @@ export function middleware(request: NextRequest) {
   // Content Security Policy
   const cspHeader = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.youtube.com https://s.ytimg.com", // Note: unsafe-inline/eval は段階的に削除すべき
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.youtube.com https://s.ytimg.com https://platform.twitter.com https://cdn.syndication.twimg.com https://syndication.twitter.com", // Note: unsafe-inline/eval は段階的に削除すべき
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https: blob:",
     "font-src 'self'",
-    "connect-src 'self' wss://* https://*.nostr.build https://cdn.nostrcheck.me https://blossom.primal.net",
+    "connect-src 'self' wss://* https://*.nostr.build https://cdn.nostrcheck.me https://blossom.primal.net https://platform.twitter.com https://cdn.syndication.twimg.com https://syndication.twitter.com",
     "media-src 'self' https:",
     "object-src 'none'",
     "base-uri 'self'",

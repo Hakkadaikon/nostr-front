@@ -19,7 +19,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   // Load relays from NIP-65 (kind:10002) when pubkey is ready
   useLoadNip65Relays();
 
-  const innerContainerClass = 'mx-auto min-h-screen max-w-2xl md:border-x border-gray-200 dark:border-gray-800';
+  const innerContainerClass = 'mx-auto w-full min-h-screen max-w-2xl md:border-x border-gray-200 dark:border-gray-800';
 
   return (
     <ThemeProvider>
