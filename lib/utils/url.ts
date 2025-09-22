@@ -1,6 +1,6 @@
 import { decode, encodeNevent } from '../nostr/nip19';
 
-export type NostrUri = { type: 'npub' | 'nsec' | 'note' | 'nevent'; data: any };
+export type NostrUri = { type: 'npub' | 'nsec' | 'note' | 'nevent' | 'nprofile'; data: any };
 
 export function parseNostrUri(input: string): NostrUri | null {
   if (!input?.startsWith('nostr:')) return null;

@@ -85,7 +85,8 @@ async function nostrEventToTweet(event: NostrEvent, relays: string[]): Promise<T
     repliesCount: 0, // Nostrでは返信数を別途集計する必要がある
     zapsCount: 0, // NostrではZap数を別途集計する必要がある
     isLiked: false, // ユーザーの反応状態は別途確認が必要
-    isRetweeted: false // ユーザーのリポスト状態は別途確認が必要
+    isRetweeted: false, // ユーザーのリポスト状態は別途確認が必要
+    tags: event.tags as string[][],
   };
 }
 

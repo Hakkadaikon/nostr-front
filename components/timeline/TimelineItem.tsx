@@ -3,6 +3,7 @@
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { SafeImage } from '../ui/SafeImage';
+import { RichContent } from './RichContent';
 import Link from 'next/link';
 import { Tweet } from '../../features/timeline/types';
 import { Heart, MessageCircle, Repeat2, Share, Zap } from 'lucide-react';
@@ -66,9 +67,7 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap }: TimelineItemPr
 
           {/* コンテンツ */}
           <div className="mt-2">
-            <p className="text-gray-900 dark:text-white whitespace-pre-wrap break-words">
-              {tweet.content}
-            </p>
+            <RichContent content={tweet.content} tags={tweet.tags} />
           </div>
 
           {/* メディア */}

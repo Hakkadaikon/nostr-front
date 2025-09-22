@@ -28,6 +28,7 @@ export interface Tweet {
   parentId?: string;
   quoteTweetId?: string;
   media?: TweetMedia[];
+  tags?: string[][];
 }
 
 // ツイートメディア
