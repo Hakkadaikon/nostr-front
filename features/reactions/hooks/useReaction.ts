@@ -11,9 +11,8 @@ export function useReaction({ eventId, authorPubkey }: UseReactionOptions) {
   const [isLiked, setIsLiked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [reactionEventId, setReactionEventId] = useState<string | null>(null);
-  const { showToast } = useToast();
+  const { show } = useToast();
 
-  // 初期ロード時に既存のリアクションをチェック
   useEffect(() => {
     const checkExistingReaction = async () => {
       try {
@@ -32,7 +31,7 @@ export function useReaction({ eventId, authorPubkey }: UseReactionOptions) {
 
   const toggleLike = async () => {
     if (!authorPubkey) {
-      showToast('エラー: 投稿者の情報が見つかりません', 'error');
+      show('エラー: 投稿者の情報が見つかりません');
       return;
     }
 
@@ -42,20 +41,17 @@ export function useReaction({ eventId, authorPubkey }: UseReactionOptions) {
       setIsLoading(true);
 
       if (isLiked && reactionEventId) {
-        // いいねを取り消す
         await deleteReaction(reactionEventId);
         setIsLiked(false);
         setReactionEventId(null);
       } else {
-        // いいねする
         const reaction = await createReaction(eventId, authorPubkey);
         setIsLiked(true);
         setReactionEventId(reaction.id);
       }
     } catch (error) {
       console.error('Failed to toggle like:', error);
-      showToast('いいねの処理に失敗しました', 'error');
-      // エラー時は元の状態に戻す
+      show('いいねの処理に失敗しました');
       setIsLiked(!isLiked);
     } finally {
       setIsLoading(false);
@@ -65,6 +61,6 @@ export function useReaction({ eventId, authorPubkey }: UseReactionOptions) {
   return {
     isLiked,
     isLoading,
-    toggleLike
+    toggleLike,
   };
 }

@@ -1,121 +1,87 @@
-import { Event as NostrEvent, getPublicKey, getEventHash, signEvent } from 'nostr-tools';
+import type { Event as NostrEvent } from 'nostr-tools';
 import { KIND_REACTION, KIND_DELETE } from '../../../lib/nostr/constants';
-import { getWriteRelays, getReadRelays, publishEvent, subscribeTo } from '../../relays/services/relayPool';
+import { getWriteRelays, getReadRelays, subscribeTo } from '../../relays/services/relayPool';
 import { useRelaysStore } from '../../../stores/relays.store';
 import { useAuthStore } from '../../../stores/auth.store';
+import { signEvent, hasNip07 } from '../../../lib/nostr/signatures';
+import { publish } from '../../../lib/nostr/client';
 
-/**
- * リアクション（いいね）を作成する
- * @param eventId - リアクション対象のイベントID
- * @param authorPubkey - リアクション対象のイベントの作者の公開鍵
- * @returns 作成されたリアクションイベント
- */
+function requireSigningCapability() {
+  const authStore = useAuthStore.getState();
+  if (!authStore.nsec && !hasNip07()) {
+    throw new Error('No signing method available');
+  }
+}
+
+function getSecretKey() {
+  const { nsec } = useAuthStore.getState();
+  return nsec || '';
+}
+
 export async function createReaction(eventId: string, authorPubkey: string): Promise<NostrEvent> {
+  requireSigningCapability();
   const authStore = useAuthStore.getState();
-  const { privateKey } = authStore;
-  
-  if (!privateKey) {
-    throw new Error('Private key not found');
-  }
 
-  const pubkey = getPublicKey(privateKey);
-  
-  // リアクションイベントの作成
-  const event: Omit<NostrEvent, 'id' | 'sig'> = {
+  const unsigned: Omit<NostrEvent, 'id' | 'sig'> = {
     kind: KIND_REACTION,
-    pubkey,
     created_at: Math.floor(Date.now() / 1000),
     tags: [
-      ['e', eventId], // リアクション対象のイベント
-      ['p', authorPubkey], // リアクション対象のイベントの作者
+      ['e', eventId],
+      ['p', authorPubkey],
     ],
-    content: '+' // Nostrでは「+」が「いいね」を表す
-  };
+    content: '+',
+    ...(authStore.publicKey ? { pubkey: authStore.publicKey } : {}),
+  } as Omit<NostrEvent, 'id' | 'sig'>;
 
-  // イベントIDを生成
-  const eventWithId = {
-    ...event,
-    id: getEventHash(event as NostrEvent)
-  };
+  const signedEvent = await signEvent(unsigned, getSecretKey);
 
-  // 署名
-  const signedEvent = {
-    ...eventWithId,
-    sig: signEvent(eventWithId as NostrEvent, privateKey)
-  } as NostrEvent;
-
-  // リレーに送信
   const relaysStore = useRelaysStore.getState();
   const writeRelays = getWriteRelays(relaysStore.relays);
-  
-  await publishEvent(signedEvent, writeRelays);
-  
-  return signedEvent;
-}
-
-/**
- * リアクション（いいね）を削除する
- * @param reactionEventId - 削除するリアクションイベントのID
- * @returns 作成された削除イベント
- */
-export async function deleteReaction(reactionEventId: string): Promise<NostrEvent> {
-  const authStore = useAuthStore.getState();
-  const { privateKey } = authStore;
-  
-  if (!privateKey) {
-    throw new Error('Private key not found');
+  if (writeRelays.length === 0) {
+    throw new Error('No write relays configured');
   }
 
-  const pubkey = getPublicKey(privateKey);
-  
-  // 削除イベントの作成
-  const event: Omit<NostrEvent, 'id' | 'sig'> = {
-    kind: KIND_DELETE,
-    pubkey,
-    created_at: Math.floor(Date.now() / 1000),
-    tags: [
-      ['e', reactionEventId] // 削除対象のリアクションイベント
-    ],
-    content: '' // 削除イベントのcontentは空
-  };
+  await publish(writeRelays, signedEvent);
 
-  // イベントIDを生成
-  const eventWithId = {
-    ...event,
-    id: getEventHash(event as NostrEvent)
-  };
-
-  // 署名
-  const signedEvent = {
-    ...eventWithId,
-    sig: signEvent(eventWithId as NostrEvent, privateKey)
-  } as NostrEvent;
-
-  // リレーに送信
-  const relaysStore = useRelaysStore.getState();
-  const writeRelays = getWriteRelays(relaysStore.relays);
-  
-  await publishEvent(signedEvent, writeRelays);
-  
   return signedEvent;
 }
 
-/**
- * 特定のイベントに対する自分のリアクションを取得する
- * @param eventId - チェック対象のイベントID
- * @returns リアクションイベントまたはnull
- */
+export async function deleteReaction(reactionEventId: string): Promise<NostrEvent> {
+  requireSigningCapability();
+  const authStore = useAuthStore.getState();
+
+  const unsigned: Omit<NostrEvent, 'id' | 'sig'> = {
+    kind: KIND_DELETE,
+    created_at: Math.floor(Date.now() / 1000),
+    tags: [['e', reactionEventId]],
+    content: '',
+    ...(authStore.publicKey ? { pubkey: authStore.publicKey } : {}),
+  } as Omit<NostrEvent, 'id' | 'sig'>;
+
+  const signedEvent = await signEvent(unsigned, getSecretKey);
+
+  const relaysStore = useRelaysStore.getState();
+  const writeRelays = getWriteRelays(relaysStore.relays);
+  if (writeRelays.length === 0) {
+    throw new Error('No write relays configured');
+  }
+
+  await publish(writeRelays, signedEvent);
+
+  return signedEvent;
+}
+
 export async function getMyReaction(eventId: string): Promise<NostrEvent | null> {
   const authStore = useAuthStore.getState();
   const { publicKey } = authStore;
-  
+
   if (!publicKey) {
     return null;
   }
 
   const relaysStore = useRelaysStore.getState();
   const readRelays = getReadRelays(relaysStore.relays);
-  
+
   return new Promise((resolve) => {
     let reaction: NostrEvent | null = null;
     let timeoutId: NodeJS.Timeout;
@@ -126,10 +92,9 @@ export async function getMyReaction(eventId: string): Promise<NostrEvent | null>
         kinds: [KIND_REACTION],
         authors: [publicKey],
         '#e': [eventId],
-        limit: 1
+        limit: 1,
       }],
       (event: NostrEvent) => {
-        // contentが'+'のリアクションのみを対象とする
         if (event.content === '+') {
           reaction = event;
           clearTimeout(timeoutId);
@@ -139,7 +104,6 @@ export async function getMyReaction(eventId: string): Promise<NostrEvent | null>
       }
     );
 
-    // タイムアウト設定（1秒）
     timeoutId = setTimeout(() => {
       sub.close();
       resolve(null);
