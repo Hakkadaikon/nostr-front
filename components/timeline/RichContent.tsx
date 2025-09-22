@@ -5,6 +5,7 @@ import { nip19 } from 'nostr-tools';
 import { parseNostrUri } from '../../lib/utils/url';
 import EmbeddedNote from '../notes/EmbeddedNote';
 import { useMemo, ReactNode } from 'react';
+import { LinkPreview } from './LinkPreview';
 
 interface RichContentProps {
   content: string;
@@ -19,17 +20,7 @@ function renderText(text: string) {
 }
 
 function renderLink(url: string, key: string) {
-  return (
-    <a
-      key={key}
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-purple-600 underline hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-200"
-    >
-      {url}
-    </a>
-  );
+  return <LinkPreview key={key} url={url} />;
 }
 
 function renderNostr(token: string, key: string, tags?: string[][]) {
