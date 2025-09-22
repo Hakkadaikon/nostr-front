@@ -10,7 +10,6 @@ import { useAuthStore } from '../../stores/auth.store';
 import { fetchProfile } from '../../features/profile/fetchProfile';
 import type { Profile } from '../../features/profile/types';
 import { useUiStore } from '../../stores/ui.store';
-import ThemeToggle from './ThemeToggle';
 import { SafeImage } from '../ui/SafeImage';
 
 const navItems = [
@@ -170,10 +169,6 @@ export default function NavSidebar() {
         >
           投稿する
         </button>
-        
-        <div className="flex justify-center">
-          <ThemeToggle />
-        </div>
       </div>
     </aside>
   );
