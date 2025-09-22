@@ -1,6 +1,6 @@
 import { finalizeEvent, getEventHash, validateEvent, verifyEvent, type Event as NostrEvent } from 'nostr-tools';
 
-let queue = Promise.resolve();
+let queue: Promise<any> = Promise.resolve();
 
 export function hasNip07() {
   return typeof (globalThis as any).nostr !== 'undefined';
@@ -18,7 +18,8 @@ export async function signEvent(event: Omit<NostrEvent, 'id' | 'sig'>, getSecret
     }
     if (!getSecretKey) throw new Error('No NIP-07 and no secret key provided');
     const sk = typeof getSecretKey === 'function' ? await getSecretKey() : getSecretKey;
-    const signed = finalizeEvent(event as any, sk);
+    const skBytes = new TextEncoder().encode(sk);
+    const signed = finalizeEvent(event as any, skBytes);
     return signed as NostrEvent;
   });
   return queue;

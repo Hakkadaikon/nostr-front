@@ -156,9 +156,11 @@ export function useTimeline(params: TimelineParams) {
 
     try {
       if (tweet.isRetweeted) {
+        // TODO: リポストイベントのIDを保存する必要がある
         await undoRetweet(tweetId);
       } else {
-        await retweet(tweetId);
+        // 作者のpubkeyを渡す
+        await retweet(tweetId, tweet.author.id);
       }
     } catch (error) {
       // エラー時は元に戻す
@@ -177,10 +179,11 @@ export function useTimeline(params: TimelineParams) {
     dispatch({ type: 'ADD_TWEET', tweet });
   }, []);
 
-  // 初回読み込み
+  // 初回読み込み・パラメータ変更時のリセット
   useEffect(() => {
+    reset();
     loadMore();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [params.type]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     tweets: state.tweets,

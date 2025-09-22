@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Nostr Follow List Test</title>
+  <script src="https://unpkg.com/nostr-tools/lib/nostr.bundle.js"></script>
+</head>
+<body>
+  <h1>Nostr Follow List Test</h1>
+  
+  <div>
+    <h2>ステップ1: 公開鍵を入力またはNIP-07で取得</h2>
+    <input type="text" id="pubkey" placeholder="hex public key" style="width: 500px;">
+    <button onclick="getFromNip07()">NIP-07から取得</button>
+    <div id="pubkey-result"></div>
+  </div>
+
+  <div style="margin-top: 20px;">
+    <h2>ステップ2: Kind3イベントを取得</h2>
+    <button onclick="fetchFollowList()">フォローリストを取得</button>
+    <div id="follow-result"></div>
+  </div>
+
+  <div style="margin-top: 20px;">
+    <h2>ステップ3: フォロー中のポストを取得</h2>
+    <button onclick="fetchFollowingPosts()">フォロー中のポストを取得</button>
+    <div id="posts-result"></div>
+  </div>
+
+  <script>
+    let currentPubkey = '';
+    let followList = [];
+    
+    async function getFromNip07() {
+      if (window.nostr) {
+        try {
+          const pubkey = await window.nostr.getPublicKey();
+          document.getElementById('pubkey').value = pubkey;
+          currentPubkey = pubkey;
+          document.getElementById('pubkey-result').textContent = `取得成功: ${pubkey}`;
+        } catch (e) {
+          document.getElementById('pubkey-result').textContent = `エラー: ${e.message}`;
+        }
+      } else {
+        document.getElementById('pubkey-result').textContent = 'NIP-07拡張機能が見つかりません';
+      }
+    }
+    
+    async function fetchFollowList() {
+      const pubkey = document.getElementById('pubkey').value || currentPubkey;
+      if (!pubkey) {
+        document.getElementById('follow-result').textContent = '公開鍵を入力してください';
+        return;
+      }
+      
+      const relay = 'wss://relay.damus.io';
+      const pool = new NostrTools.SimplePool();
+      
+      try {
+        const sub = pool.subscribeMany(
+          [relay],
+          [{
+            kinds: [3],
+            authors: [pubkey],
+            limit: 1
+          }],
+          {
+            onevent: (event) => {
+              followList = event.tags
+                .filter(tag => tag[0] === 'p' && tag[1])
+                .map(tag => tag[1]);
+              
+              document.getElementById('follow-result').innerHTML = `
+                <p>Kind3イベント取得成功!</p>
+                <p>フォロー数: ${followList.length}</p>
+                <details>
+                  <summary>フォローリスト (クリックして展開)</summary>
+                  <pre>${JSON.stringify(followList, null, 2)}</pre>
+                </details>
+              `;
+              
+              sub.close();
+            }
+          }
+        );
+        
+        // タイムアウト
+        setTimeout(() => {
+          sub.close();
+          if (followList.length === 0) {
+            document.getElementById('follow-result').textContent = 'タイムアウト: Kind3イベントが見つかりません';
+          }
+        }, 3000);
+      } catch (e) {
+        document.getElementById('follow-result').textContent = `エラー: ${e.message}`;
+      }
+    }
+    
+    async function fetchFollowingPosts() {
+      if (followList.length === 0) {
+        document.getElementById('posts-result').textContent = 'まずフォローリストを取得してください';
+        return;
+      }
+      
+      const relay = 'wss://relay.damus.io';
+      const pool = new NostrTools.SimplePool();
+      const posts = [];
+      
+      try {
+        const sub = pool.subscribeMany(
+          [relay],
+          [{
+            kinds: [1],
+            authors: followList,
+            limit: 10
+          }],
+          {
+            onevent: (event) => {
+              posts.push({
+                id: event.id,
+                author: event.pubkey,
+                content: event.content,
+                created_at: new Date(event.created_at * 1000).toLocaleString()
+              });
+              
+              document.getElementById('posts-result').innerHTML = `
+                <p>フォロー中のポスト: ${posts.length}件</p>
+                <div style="max-height: 400px; overflow-y: scroll;">
+                  ${posts.map(post => `
+                    <div style="border: 1px solid #ccc; padding: 10px; margin: 5px;">
+                      <p><strong>Author:</strong> ${post.author.slice(0, 16)}...</p>
+                      <p><strong>Time:</strong> ${post.created_at}</p>
+                      <p>${post.content}</p>
+                    </div>
+                  `).join('')}
+                </div>
+              `;
+            }
+          }
+        );
+        
+        // タイムアウト
+        setTimeout(() => {
+          sub.close();
+          if (posts.length === 0) {
+            document.getElementById('posts-result').textContent = 'タイムアウト: フォロー中のポストが見つかりません';
+          }
+        }, 3000);
+      } catch (e) {
+        document.getElementById('posts-result').textContent = `エラー: ${e.message}`;
+      }
+    }
+  </script>
+</body>
+</html>

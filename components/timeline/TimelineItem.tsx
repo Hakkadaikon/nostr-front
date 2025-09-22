@@ -5,15 +5,16 @@ import { ja } from 'date-fns/locale';
 import { SafeImage } from '../ui/SafeImage';
 import Link from 'next/link';
 import { Tweet } from '../../features/timeline/types';
-import { Heart, MessageCircle, Repeat2, Share } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share, Zap } from 'lucide-react';
 
 interface TimelineItemProps {
   tweet: Tweet;
   onLike: (tweetId: string) => void;
   onRetweet: (tweetId: string) => void;
+  onZap?: (tweetId: string) => void;
 }
 
-export function TimelineItem({ tweet, onLike, onRetweet }: TimelineItemProps) {
+export function TimelineItem({ tweet, onLike, onRetweet, onZap }: TimelineItemProps) {
   const timeAgo = formatDistanceToNow(new Date(tweet.createdAt), {
     addSuffix: true,
     locale: ja,
@@ -139,6 +140,20 @@ export function TimelineItem({ tweet, onLike, onRetweet }: TimelineItemProps) {
               </div>
               {tweet.likesCount > 0 && (
                 <span className="text-sm">{tweet.likesCount}</span>
+              )}
+            </button>
+
+            {/* Zap */}
+            <button
+              onClick={() => onZap?.(tweet.id)}
+              className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-yellow-500 dark:hover:text-yellow-400 transition-colors group"
+              aria-label="Zap"
+            >
+              <div className="p-2 rounded-full group-hover:bg-yellow-50 dark:group-hover:bg-yellow-950/20 transition-all duration-200 hover:scale-110">
+                <Zap size={18} />
+              </div>
+              {tweet.zapsCount > 0 && (
+                <span className="text-sm">{tweet.zapsCount}</span>
               )}
             </button>
 

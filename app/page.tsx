@@ -4,12 +4,14 @@ import { useTimeline } from '../features/timeline/hooks/useTimeline';
 import { TimelineList } from '../components/timeline/TimelineList';
 import { TweetComposer } from '../components/tweets/TweetComposer';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Tweet } from '../features/timeline/types';
 
 export default function HomePage() {
+  const [activeTab, setActiveTab] = useState<'recommended' | 'following'>('recommended');
+  
   const { tweets, isLoading, error, hasMore, loadMore, toggleLike, toggleRetweet, addTweet } = useTimeline({
-    type: 'home',
+    type: activeTab === 'recommended' ? 'home' : 'following',
     limit: 20,
   });
 
@@ -40,12 +42,31 @@ export default function HomePage() {
           </h1>
         </div>
         <div className="flex">
-          <button className="relative flex-1 px-4 py-4 text-center font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200">
+          <button 
+            onClick={() => setActiveTab('recommended')}
+            className={`relative flex-1 px-4 py-4 text-center font-medium transition-all duration-200 ${
+              activeTab === 'recommended'
+                ? 'text-purple-600 dark:text-purple-400' 
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/20'
+            }`}
+          >
             おすすめ
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-600 to-pink-600" />
+            {activeTab === 'recommended' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-600 to-pink-600" />
+            )}
           </button>
-          <button className="flex-1 px-4 py-4 text-center font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/20 transition-all duration-200">
+          <button 
+            onClick={() => setActiveTab('following')}
+            className={`relative flex-1 px-4 py-4 text-center font-medium transition-all duration-200 ${
+              activeTab === 'following'
+                ? 'text-purple-600 dark:text-purple-400' 
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/20'
+            }`}
+          >
             フォロー中
+            {activeTab === 'following' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-600 to-pink-600" />
+            )}
           </button>
         </div>
       </header>

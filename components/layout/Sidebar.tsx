@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Home, Bell, Mail, User, Settings, MoreHorizontal } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useAuthStore } from '../../stores/auth.store';
 
 interface NavItem {
   label: string;
@@ -14,6 +15,7 @@ interface NavItem {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { npub } = useAuthStore();
   
   const navItems: NavItem[] = [
     {
@@ -34,7 +36,7 @@ export function Sidebar() {
     },
     {
       label: 'プロフィール',
-      href: '/profile',
+      href: npub ? `/profile/${npub}` : '/onboarding',
       icon: <User size={24} />,
     },
     {
@@ -101,16 +103,31 @@ export function Sidebar() {
       </div>
 
       {/* ユーザープロファイル */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-800">
-        <button className="flex items-center gap-3 w-full hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full p-2 transition-all duration-200">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
-          <div className="flex-1 text-left">
-            <p className="font-semibold text-gray-900 dark:text-white">Current User</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">@current_user</p>
-          </div>
-          <MoreHorizontal size={20} className="text-gray-500" />
-        </button>
-      </div>
+      {npub && (
+        <div className="p-4 border-t border-gray-200 dark:border-gray-800">
+          <Link 
+            href={`/profile/${npub}` as any}
+            className="flex items-center gap-3 w-full hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full p-2 transition-all duration-200"
+          >
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 overflow-hidden">
+              <img 
+                src={`https://robohash.org/${npub}`}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="font-semibold text-gray-900 dark:text-white">
+                {npub.slice(0, 8)}...
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                @{npub.slice(0, 12)}
+              </p>
+            </div>
+            <MoreHorizontal size={20} className="text-gray-500" />
+          </Link>
+        </div>
+      )}
     </aside>
   );
 }

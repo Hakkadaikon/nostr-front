@@ -1,0 +1,158 @@
+import { SimplePool, type Event as NostrEvent, nip19, finalizeEvent } from 'nostr-tools';
+import { publish, subscribe } from '../../lib/nostr/client';
+import { useRelaysStore } from '../../stores/relays.store';
+import { useAuthStore } from '../../stores/auth.store';
+import { KIND_FOLLOW } from '../../lib/nostr/constants';
+import { fetchFollowList } from '../follow/services/follow';
+
+export interface FollowList {
+  pubkeys: string[];
+  tags: string[][];
+}
+
+/**
+ * Follow a user by adding their pubkey to the contact list (kind 3)
+ */
+export async function followUser(targetNpubOrPubkey: string): Promise<void> {
+  try {
+    // targetをpubkeyに変換
+    let targetPubkey = targetNpubOrPubkey;
+    if (targetNpubOrPubkey.startsWith('npub')) {
+      const decoded = nip19.decode(targetNpubOrPubkey);
+      if (decoded.type === 'npub') {
+        targetPubkey = decoded.data as string;
+      }
+    }
+
+    // 現在のフォローリストを取得
+    const currentFollowList = await fetchFollowList();
+    console.log('[followUser] Current follow list:', currentFollowList.length, 'users');
+    
+    // すでにフォローしているかチェック
+    if (currentFollowList.includes(targetPubkey)) {
+      console.log('[followUser] Already following:', targetPubkey);
+      return;
+    }
+    
+    // 新しいフォローリストを作成
+    const newFollowList = [...currentFollowList, targetPubkey];
+    const tags = newFollowList.map(pk => ['p', pk]);
+    
+    // リレーの設定を取得
+    let relays = useRelaysStore.getState().relays.filter(r => r.write).map(r => r.url);
+    if (relays.length === 0) {
+      const defaultRelays = process.env.NEXT_PUBLIC_DEFAULT_RELAYS;
+      if (defaultRelays) {
+        relays = defaultRelays.split(',').map(url => url.trim());
+      } else {
+        relays = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.nostr.band'];
+      }
+    }
+    
+    // イベントを作成
+    const unsignedEvent = {
+      kind: KIND_FOLLOW,
+      content: '',
+      tags,
+      created_at: Math.floor(Date.now() / 1000),
+      pubkey: '', // これは署名時に設定される
+    };
+    
+    // Nip07で署名
+    if (window.nostr) {
+      const signedEvent = await window.nostr.signEvent(unsignedEvent);
+      await publish(relays, signedEvent as NostrEvent);
+      console.log('[followUser] Successfully followed:', targetPubkey);
+    } else {
+      throw new Error('Nostr extension not found');
+    }
+  } catch (error) {
+    console.error('[followUser] Failed to follow user:', error);
+    throw error;
+  }
+}
+
+/**
+ * Unfollow a user by removing their pubkey from the contact list
+ */
+export async function unfollowUser(targetNpubOrPubkey: string): Promise<void> {
+  try {
+    // targetをpubkeyに変換
+    let targetPubkey = targetNpubOrPubkey;
+    if (targetNpubOrPubkey.startsWith('npub')) {
+      const decoded = nip19.decode(targetNpubOrPubkey);
+      if (decoded.type === 'npub') {
+        targetPubkey = decoded.data as string;
+      }
+    }
+
+    // 現在のフォローリストを取得
+    const currentFollowList = await fetchFollowList();
+    console.log('[unfollowUser] Current follow list:', currentFollowList.length, 'users');
+    
+    // フォローしていないかチェック
+    if (!currentFollowList.includes(targetPubkey)) {
+      console.log('[unfollowUser] Not following:', targetPubkey);
+      return;
+    }
+    
+    // 新しいフォローリストを作成（対象を除外）
+    const newFollowList = currentFollowList.filter(pk => pk !== targetPubkey);
+    const tags = newFollowList.map(pk => ['p', pk]);
+    
+    // リレーの設定を取得
+    let relays = useRelaysStore.getState().relays.filter(r => r.write).map(r => r.url);
+    if (relays.length === 0) {
+      const defaultRelays = process.env.NEXT_PUBLIC_DEFAULT_RELAYS;
+      if (defaultRelays) {
+        relays = defaultRelays.split(',').map(url => url.trim());
+      } else {
+        relays = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.nostr.band'];
+      }
+    }
+    
+    // イベントを作成
+    const unsignedEvent = {
+      kind: KIND_FOLLOW,
+      content: '',
+      tags,
+      created_at: Math.floor(Date.now() / 1000),
+      pubkey: '', // これは署名時に設定される
+    };
+    
+    // Nip07で署名
+    if (window.nostr) {
+      const signedEvent = await window.nostr.signEvent(unsignedEvent);
+      await publish(relays, signedEvent as NostrEvent);
+      console.log('[unfollowUser] Successfully unfollowed:', targetPubkey);
+    } else {
+      throw new Error('Nostr extension not found');
+    }
+  } catch (error) {
+    console.error('[unfollowUser] Failed to unfollow user:', error);
+    throw error;
+  }
+}
+
+/**
+ * Check if the current user is following a target user
+ */
+export async function isFollowing(targetNpubOrPubkey: string): Promise<boolean> {
+  try {
+    // targetをpubkeyに変換
+    let targetPubkey = targetNpubOrPubkey;
+    if (targetNpubOrPubkey.startsWith('npub')) {
+      const decoded = nip19.decode(targetNpubOrPubkey);
+      if (decoded.type === 'npub') {
+        targetPubkey = decoded.data as string;
+      }
+    }
+    
+    // 現在のフォローリストを取得
+    const currentFollowList = await fetchFollowList();
+    return currentFollowList.includes(targetPubkey);
+  } catch (error) {
+    console.error('[isFollowing] Failed to check follow status:', error);
+    return false;
+  }
+}

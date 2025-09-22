@@ -8,7 +8,7 @@ import { Tweet } from '../../timeline/types';
 interface UseTweetsReturn {
   isPosting: boolean;
   error: string | null;
-  postTweet: (content: string) => Promise<Tweet | null>;
+  postTweet: (content: string, media?: File[], hashtags?: string[], mentions?: string[], parentId?: string) => Promise<Tweet | null>;
   clearError: () => void;
 }
 
@@ -19,13 +19,23 @@ export function useTweets(): UseTweetsReturn {
   const [isPosting, setIsPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const postTweet = useCallback(async (content: string): Promise<Tweet | null> => {
+  const postTweet = useCallback(async (
+    content: string, 
+    media?: File[], 
+    hashtags?: string[], 
+    mentions?: string[],
+    parentId?: string
+  ): Promise<Tweet | null> => {
     setIsPosting(true);
     setError(null);
 
     try {
       const request: CreateTweetRequest = {
         content: content.trim(),
+        media,
+        hashtags,
+        mentions,
+        parentId
       };
 
       const response = await createTweet(request);

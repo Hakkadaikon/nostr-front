@@ -17,6 +17,22 @@ const mockCurrentUser = {
 };
 
 /**
+ * メディアファイルをアップロードする
+ */
+async function uploadMedia(files: File[]): Promise<string[]> {
+  // モック実装：実際にNostrのメディアサーバーにアップロード
+  const urls: string[] = [];
+  
+  for (const file of files) {
+    // モック：実際にはNIP-96に従ってアップロード
+    const mockUrl = `https://nostr.build/i/${Date.now()}_${file.name}`;
+    urls.push(mockUrl);
+  }
+  
+  return urls;
+}
+
+/**
  * ツイートを投稿する
  */
 export async function createTweet(request: CreateTweetRequest): Promise<CreateTweetResponse> {
@@ -35,6 +51,12 @@ export async function createTweet(request: CreateTweetRequest): Promise<CreateTw
         throw new Error('ツイートは280文字以内で入力してください');
       }
       
+      // メディアのアップロード
+      let mediaUrls: string[] = [];
+      if (request.media && request.media.length > 0) {
+        mediaUrls = await uploadMedia(request.media);
+      }
+
       // モックツイートを作成
       const newTweet: Tweet = {
         id: `tweet-${Date.now()}`,
@@ -44,10 +66,17 @@ export async function createTweet(request: CreateTweetRequest): Promise<CreateTw
         likesCount: 0,
         retweetsCount: 0,
         repliesCount: 0,
+        zapsCount: 0,
         isLiked: false,
         isRetweeted: false,
         parentId: request.parentId,
         quoteTweetId: request.quoteTweetId,
+        media: mediaUrls.map((url, index) => ({
+          id: `media-${index}`,
+          type: request.media![index].type.startsWith('video/') ? 'video' : 'image',
+          url,
+          thumbnailUrl: url,
+        })),
       };
       
       return { tweet: newTweet };

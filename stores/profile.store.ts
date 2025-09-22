@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-
-type Profile = { npub: string; name?: string; about?: string; picture?: string };
+import { Profile } from '../features/profile/types';
 
 type State = {
   current?: Profile;

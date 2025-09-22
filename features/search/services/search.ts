@@ -1,5 +1,6 @@
-import { SearchParams, SearchResult, Trend } from '../types';
+import { SearchParams, SearchResult } from '../types';
 import { Tweet, User } from '../../timeline/types';
+import { searchNostr } from './nostrSearch';
 
 // APIエンドポイント
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
@@ -47,6 +48,7 @@ const mockTweets: Tweet[] = [
     likesCount: 25,
     retweetsCount: 10,
     repliesCount: 5,
+    zapsCount: 0,
     isLiked: false,
     isRetweeted: false,
   },
@@ -58,6 +60,7 @@ const mockTweets: Tweet[] = [
     likesCount: 50,
     retweetsCount: 20,
     repliesCount: 8,
+    zapsCount: 0,
     isLiked: true,
     isRetweeted: false,
   },
@@ -69,115 +72,51 @@ const mockTweets: Tweet[] = [
     likesCount: 30,
     retweetsCount: 5,
     repliesCount: 3,
+    zapsCount: 0,
     isLiked: false,
     isRetweeted: false,
   },
 ];
 
-// トレンドデータ
-const mockTrends: Trend[] = [
-  { hashtag: '#coding', count: 15234, category: 'Technology' },
-  { hashtag: '#webdev', count: 12890, category: 'Technology' },
-  { hashtag: '#nextjs', count: 9876, category: 'Technology' },
-  { hashtag: '#tailwindcss', count: 8765, category: 'Technology' },
-  { hashtag: '#remotework', count: 6543, category: 'Lifestyle' },
-  { hashtag: '#AI', count: 25432, category: 'Technology' },
-  { hashtag: '#MachineLearning', count: 18765, category: 'Technology' },
-  { hashtag: '#Travel', count: 14567, category: 'Lifestyle' },
-];
 
 /**
  * 検索を実行
  */
 export async function searchContent(params: SearchParams): Promise<SearchResult> {
   try {
-    // 開発環境ではモックデータを返す
-    if (process.env.NODE_ENV === 'development' || !API_BASE_URL.startsWith('http')) {
-      // モック用の遅延
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const query = params.query.toLowerCase();
-      
-      // ユーザー検索
-      const filteredUsers = params.type === 'tweets' ? [] : 
-        mockUsers.filter(user => 
-          user.name.toLowerCase().includes(query) ||
-          user.username.toLowerCase().includes(query) ||
-          (user.bio && user.bio.toLowerCase().includes(query))
-        );
-      
-      // ツイート検索
-      const filteredTweets = params.type === 'users' ? [] :
-        mockTweets.filter(tweet => 
-          tweet.content.toLowerCase().includes(query)
-        );
-      
-      return {
-        users: filteredUsers,
-        tweets: filteredTweets,
-        hasMore: false,
-      };
-    }
-
-    // 本番環境ではAPIを呼び出す
-    const url = new URL(`${API_BASE_URL}/search`);
-    url.searchParams.set('q', params.query);
-    url.searchParams.set('type', params.type);
+    // Nostr検索を使用
+    const { users, tweets } = await searchNostr(params.query, params.type);
     
-    if (params.cursor) {
-      url.searchParams.set('cursor', params.cursor);
-    }
-    
-    if (params.limit) {
-      url.searchParams.set('limit', params.limit.toString());
-    }
-
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
+    return {
+      users,
+      tweets,
+      hasMore: false,
+    };
   } catch (error) {
     console.error('Failed to search:', error);
-    throw error;
+    
+    // エラーが発生した場合はモックデータにフォールバック
+    const query = params.query.toLowerCase();
+    
+    // ユーザー検索
+    const filteredUsers = params.type === 'tweets' ? [] : 
+      mockUsers.filter(user => 
+        user.name.toLowerCase().includes(query) ||
+        user.username.toLowerCase().includes(query) ||
+        (user.bio && user.bio.toLowerCase().includes(query))
+      );
+    
+    // ツイート検索
+    const filteredTweets = params.type === 'users' ? [] :
+      mockTweets.filter(tweet => 
+        tweet.content.toLowerCase().includes(query)
+      );
+    
+    return {
+      users: filteredUsers,
+      tweets: filteredTweets,
+      hasMore: false,
+    };
   }
 }
 
-/**
- * トレンドを取得
- */
-export async function fetchTrends(): Promise<Trend[]> {
-  try {
-    if (process.env.NODE_ENV === 'development' || !API_BASE_URL.startsWith('http')) {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      return mockTrends.slice(0, 10);
-    }
-
-    const response = await fetch(`${API_BASE_URL}/trends`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Failed to fetch trends:', error);
-    throw error;
-  }
-}

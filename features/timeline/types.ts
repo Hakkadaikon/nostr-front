@@ -22,6 +22,7 @@ export interface Tweet {
   likesCount: number;
   retweetsCount: number;
   repliesCount: number;
+  zapsCount: number;
   isLiked?: boolean;
   isRetweeted?: boolean;
   parentId?: string;
@@ -39,7 +40,7 @@ export interface TweetMedia {
 }
 
 // タイムラインの種類
-export type TimelineType = 'home' | 'latest' | 'trending' | 'user';
+export type TimelineType = 'home' | 'following' | 'latest' | 'trending' | 'user';
 
 // タイムラインのリクエストパラメータ
 export interface TimelineParams {

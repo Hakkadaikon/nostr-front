@@ -10,6 +10,7 @@ import { useAuthStore } from '../../stores/auth.store';
 import { fetchProfile } from '../../features/profile/fetchProfile';
 import type { Profile } from '../../features/profile/types';
 import { useUiStore } from '../../stores/ui.store';
+import ThemeToggle from './ThemeToggle';
 
 const navItems = [
   { href: '/', label: 'ホーム', icon: Home },
@@ -158,7 +159,7 @@ export default function NavSidebar() {
         })}
       </nav>
 
-      <div className="mt-auto px-4">
+      <div className="mt-auto px-4 space-y-4">
         <button 
           onClick={openComposeModal}
           className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-3 px-6 rounded-xl hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
@@ -166,6 +167,10 @@ export default function NavSidebar() {
         >
           投稿する
         </button>
+        
+        <div className="flex justify-center">
+          <ThemeToggle />
+        </div>
       </div>
     </aside>
   );

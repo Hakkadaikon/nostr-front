@@ -3,10 +3,9 @@ import { subscribeTo, getReadRelays } from '../../relays/services/relayPool';
 import { useRelaysStore } from '../../../stores/relays.store';
 import { type Event as NostrEvent, nip19 } from 'nostr-tools';
 import { format } from 'date-fns';
-
-// Nostrイベント種別
-const KIND_TEXT_NOTE = 1;
-const KIND_METADATA = 0;
+import { fetchFollowList } from '../../follow/services/follow';
+import { KIND_TEXT_NOTE, KIND_METADATA } from '../../../lib/nostr/constants';
+import { createRepost, deleteRepost } from '../../repost/services/repost';
 
 // プロフィール情報のキャッシュ
 const profileCache = new Map<string, any>();
@@ -84,6 +83,7 @@ async function nostrEventToTweet(event: NostrEvent, relays: string[]): Promise<T
     likesCount: 0, // Nostrでは反応数を別途集計する必要がある
     retweetsCount: 0, // Nostrではリポスト数を別途集計する必要がある
     repliesCount: 0, // Nostrでは返信数を別途集計する必要がある
+    zapsCount: 0, // NostrではZap数を別途集計する必要がある
     isLiked: false, // ユーザーの反応状態は別途確認が必要
     isRetweeted: false // ユーザーのリポスト状態は別途確認が必要
   };
@@ -116,6 +116,23 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
     const limit = params.limit || 20;
     const until = params.cursor ? parseInt(params.cursor) : Math.floor(Date.now() / 1000);
 
+    // フォロー中タブの場合、フォローリストを取得
+    let followingList: string[] = [];
+    if (params.type === 'following') {
+      console.log('[fetchTimeline] Fetching follow list for following tab');
+      followingList = await fetchFollowList();
+      console.log('[fetchTimeline] Follow list retrieved:', followingList.length, 'pubkeys');
+      
+      if (followingList.length === 0) {
+        console.log('[fetchTimeline] Follow list is empty, returning empty timeline');
+        // フォローリストが空の場合は空のタイムラインを返す
+        return {
+          tweets: [],
+          hasMore: false
+        };
+      }
+    }
+
     // Nostrイベントを収集
     const events: NostrEvent[] = [];
     const tweets: Tweet[] = [];
@@ -123,13 +140,22 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
     return new Promise((resolve) => {
       let timeoutId: NodeJS.Timeout;
 
+      // フィルター設定
+      const filters: any = {
+        kinds: [KIND_TEXT_NOTE],
+        limit: limit * 2, // フォローフィルタリングのため多めに取得
+        until: until
+      };
+
+      // フォロー中タブの場合は、フォローしている人のみを取得
+      if (params.type === 'following' && followingList.length > 0) {
+        filters.authors = followingList;
+        console.log('[fetchTimeline] Setting authors filter for following tab:', filters.authors.length, 'authors');
+      }
+
       const sub = subscribeTo(
         relays,
-        [{
-          kinds: [KIND_TEXT_NOTE],
-          limit: limit,
-          until: until
-        }],
+        [filters],
         async (event: NostrEvent) => {
           // 重複チェック
           if (!events.find(e => e.id === event.id)) {
@@ -173,7 +199,7 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
           : null;
         
         resolve({
-          tweets,
+          tweets: tweets.slice(0, limit),
           nextCursor: oldestEvent ? oldestEvent.created_at.toString() : undefined,
           hasMore: tweets.length === limit
         });
@@ -216,11 +242,15 @@ export async function unlikeTweet(tweetId: string): Promise<void> {
 /**
  * ツイートをリツイートする（Nostrではリポストイベントを送信）
  */
-export async function retweet(tweetId: string): Promise<void> {
+export async function retweet(tweetId: string, authorPubkey?: string): Promise<void> {
   try {
-    // TODO: Nostrのリポストイベント（Kind 6）を実装
-    console.log('Retweet:', tweetId);
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // 作者の公開鍵が提供されていない場合は、イベントから取得する必要がある
+    // 簡略化のため、ここでは必須パラメータとする
+    if (!authorPubkey) {
+      throw new Error('Author pubkey is required for repost');
+    }
+    
+    await createRepost(tweetId, authorPubkey);
   } catch (error) {
     console.error('Failed to retweet:', error);
     throw error;
@@ -229,12 +259,11 @@ export async function retweet(tweetId: string): Promise<void> {
 
 /**
  * リツイートを取り消す（Nostrでは削除イベントを送信）
+ * 注意: 実際にリポストイベントのIDが必要
  */
-export async function undoRetweet(tweetId: string): Promise<void> {
+export async function undoRetweet(repostEventId: string): Promise<void> {
   try {
-    // TODO: Nostrの削除イベント（Kind 5）を実装
-    console.log('Undo retweet:', tweetId);
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await deleteRepost(repostEventId);
   } catch (error) {
     console.error('Failed to undo retweet:', error);
     throw error;

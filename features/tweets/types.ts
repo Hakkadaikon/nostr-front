@@ -5,6 +5,9 @@ export interface CreateTweetRequest {
   content: string;
   parentId?: string; // 返信の場合
   quoteTweetId?: string; // 引用ツイートの場合
+  media?: File[]; // 添付メディアファイル
+  hashtags?: string[]; // ハッシュタグ
+  mentions?: string[]; // メンション
 }
 
 // ツイート作成のレスポンス

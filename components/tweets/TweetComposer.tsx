@@ -3,7 +3,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTweets } from '../../features/tweets/hooks/useTweets';
 import { Tweet } from '../../features/timeline/types';
-import { Image, Smile, Calendar, MapPin, X } from 'lucide-react';
+import { Image, Smile, Calendar, MapPin, X, Hash, AtSign, Eye } from 'lucide-react';
+import { EmojiPicker } from '../compose/EmojiPicker';
+import { MediaUploader } from '../compose/MediaUploader';
 
 interface TweetComposerProps {
   onTweetCreated?: (tweet: Tweet) => void;
@@ -18,6 +20,8 @@ export function TweetComposer({
 }: TweetComposerProps) {
   const [content, setContent] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState<File[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { postTweet, isPosting, error, clearError } = useTweets();
 
@@ -36,14 +40,54 @@ export function TweetComposer({
     }
   }, [content, maxHeight]);
 
+  // ハッシュタグとメンションの抽出
+  const extractHashtags = (text: string): string[] => {
+    const regex = /#[^\s#]+/g;
+    return (text.match(regex) || []).map(tag => tag.substring(1));
+  };
+
+  const extractMentions = (text: string): string[] => {
+    const regex = /@[^\s@]+/g;
+    return (text.match(regex) || []).map(mention => mention.substring(1));
+  };
+
+  // 絵文字の挿入
+  const handleEmojiSelect = (emoji: string) => {
+    if (textareaRef.current) {
+      const start = textareaRef.current.selectionStart;
+      const end = textareaRef.current.selectionEnd;
+      const newContent = content.slice(0, start) + emoji + content.slice(end);
+      setContent(newContent);
+      
+      // カーソル位置を絵文字の後に移動
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.selectionStart = start + emoji.length;
+          textareaRef.current.selectionEnd = start + emoji.length;
+          textareaRef.current.focus();
+        }
+      }, 0);
+    }
+  };
+
+  // メディアの削除
+  const handleRemoveMedia = (index: number) => {
+    setSelectedMedia(prev => prev.filter((_, i) => i !== index));
+  };
+
   // 投稿処理
   const handleSubmit = async () => {
     if (content.trim() === '' || isOverLimit || isPosting) return;
 
-    const tweet = await postTweet(content);
+    const hashtags = extractHashtags(content);
+    const mentions = extractMentions(content);
+
+    const tweet = await postTweet(content, selectedMedia, hashtags, mentions, undefined);
     if (tweet) {
       setContent('');
+      setSelectedMedia([]);
       setIsExpanded(false);
+      setShowPreview(false);
       if (onTweetCreated) {
         onTweetCreated(tweet);
       }
@@ -92,19 +136,23 @@ export function TweetComposer({
             <div className="flex justify-between items-center mt-3">
               {/* アクションボタン */}
               <div className="flex gap-1">
+                <MediaUploader
+                  onMediaSelect={setSelectedMedia}
+                  disabled={isPosting}
+                  selectedMedia={selectedMedia}
+                  onRemoveMedia={handleRemoveMedia}
+                />
+                <EmojiPicker
+                  onEmojiSelect={handleEmojiSelect}
+                  disabled={isPosting}
+                />
                 <button
+                  onClick={() => setShowPreview(!showPreview)}
                   className="p-2 rounded-full hover:bg-purple-50 dark:hover:bg-purple-950/20 text-purple-500 transition-all duration-200 hover:scale-110"
-                  title="画像を追加"
+                  title="プレビュー"
                   disabled={isPosting}
                 >
-                  <Image size={20} />
-                </button>
-                <button
-                  className="p-2 rounded-full hover:bg-purple-50 dark:hover:bg-purple-950/20 text-purple-500 transition-all duration-200 hover:scale-110"
-                  title="絵文字"
-                  disabled={isPosting}
-                >
-                  <Smile size={20} />
+                  <Eye size={20} />
                 </button>
                 <button
                   className="p-2 rounded-full hover:bg-purple-50 dark:hover:bg-purple-950/20 text-purple-500 transition-all duration-200 hover:scale-110"
@@ -175,6 +223,28 @@ export function TweetComposer({
                   {isPosting ? '投稿中...' : 'ポストする'}
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* プレビューエリア */}
+          {showPreview && content.trim() && (
+            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-800">
+              <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">プレビュー</div>
+              <div className="whitespace-pre-wrap break-words">
+                {content.split(/(#[^\s#]+|@[^\s@]+)/g).map((part, i) => {
+                  if (part.startsWith('#')) {
+                    return <span key={i} className="text-purple-600 dark:text-purple-400 font-semibold">{part}</span>;
+                  } else if (part.startsWith('@')) {
+                    return <span key={i} className="text-blue-600 dark:text-blue-400 font-semibold">{part}</span>;
+                  }
+                  return <span key={i}>{part}</span>;
+                })}
+              </div>
+              {selectedMedia.length > 0 && (
+                <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  {selectedMedia.length}個のメディアファイル
+                </div>
+              )}
             </div>
           )}
         </div>

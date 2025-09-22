@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Notification } from '../types/notification';
+import { useNotificationSettingsStore } from './notification-settings.store';
 
 interface NotificationStore {
   notifications: Notification[];
@@ -9,106 +10,57 @@ interface NotificationStore {
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   clearNotifications: () => void;
+  getFilteredNotifications: () => Notification[];
 }
 
-// モックデータ
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'like',
-    user: {
-      id: '1',
-      name: 'Satoshi Nakamoto',
-      username: 'satoshi',
-      npub: 'npub1234...',
-    },
-    postId: '123',
-    postContent: 'Nostrは素晴らしいプロトコルです！',
-    isRead: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 5), // 5分前
-  },
-  {
-    id: '2',
-    type: 'follow',
-    user: {
-      id: '2',
-      name: '山田太郎',
-      username: 'yamada',
-      npub: 'npub5678...',
-    },
-    isRead: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 30), // 30分前
-  },
-  {
-    id: '3',
-    type: 'reply',
-    user: {
-      id: '3',
-      name: 'Alice',
-      username: 'alice',
-      npub: 'npub9012...',
-    },
-    content: 'その通りですね！分散型は未来です。',
-    postId: '456',
-    postContent: 'Web3の時代が来ています',
-    isRead: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60), // 1時間前
-  },
-  {
-    id: '4',
-    type: 'zap',
-    user: {
-      id: '4',
-      name: 'Lightning User',
-      username: 'lightning',
-      npub: 'npub3456...',
-    },
-    amount: 1000,
-    postId: '789',
-    postContent: '素晴らしい記事をありがとう！',
-    isRead: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2時間前
-  },
-  {
-    id: '5',
-    type: 'repost',
-    user: {
-      id: '5',
-      name: 'Bob Smith',
-      username: 'bob',
-      npub: 'npub7890...',
-    },
-    postId: '101',
-    postContent: 'Nostrの未来は明るい',
-    isRead: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3), // 3時間前
-  },
-  {
-    id: '6',
-    type: 'mention',
-    user: {
-      id: '6',
-      name: 'Charlie Brown',
-      username: 'charlie',
-      npub: 'npub1111...',
-    },
-    content: '@you これを見てください！',
-    postId: '202',
-    isRead: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1日前
-  },
-];
+// 通知の有効期限（7日間）
+const NOTIFICATION_EXPIRY_DAYS = 7;
+
+// 期限切れの通知を削除
+function filterExpiredNotifications(notifications: Notification[]): Notification[] {
+  const now = Date.now();
+  const expiryTime = NOTIFICATION_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+  
+  return notifications.filter(n => {
+    const notificationTime = n.createdAt.getTime();
+    return now - notificationTime < expiryTime;
+  });
+}
 
 export const useNotificationStore = create<NotificationStore>()(
   persist(
     (set, get) => ({
-      notifications: mockNotifications,
-      unreadCount: mockNotifications.filter(n => !n.isRead).length,
+      notifications: [],
+      unreadCount: 0,
       
-      addNotification: (notification) => set((state) => ({
-        notifications: [notification, ...state.notifications],
-        unreadCount: state.unreadCount + (notification.isRead ? 0 : 1),
-      })),
+      addNotification: (notification) => {
+        const settings = useNotificationSettingsStore.getState().settings;
+        
+        // 設定に基づいて通知をフィルタリング
+        if (!settings[notification.type]) {
+          return; // 通知設定がオフの場合は追加しない
+        }
+        
+        set((state) => {
+          // 重複チェック
+          if (state.notifications.find(n => n.id === notification.id)) {
+            return state; // 既に存在する通知は追加しない
+          }
+          
+          // 通知を追加（最新のものを先頭に）
+          const notifications = [notification, ...state.notifications];
+          
+          // 古い通知を削除（最大100件まで保持）
+          if (notifications.length > 100) {
+            notifications.splice(100);
+          }
+          
+          return {
+            notifications,
+            unreadCount: state.unreadCount + (notification.isRead ? 0 : 1),
+          };
+        });
+      },
       
       markAsRead: (id) => set((state) => {
         const notifications = state.notifications.map(n =>
@@ -127,9 +79,30 @@ export const useNotificationStore = create<NotificationStore>()(
         notifications: [],
         unreadCount: 0,
       })),
+      
+      getFilteredNotifications: () => {
+        const state = get();
+        const settings = useNotificationSettingsStore.getState().settings;
+        
+        return state.notifications.filter(notification => 
+          settings[notification.type]
+        );
+      },
     }),
     {
       name: 'notification-storage',
+      onRehydrateStorage: () => (state) => {
+        // ストアが復元された時に期限切れの通知を削除
+        if (state) {
+          const filteredNotifications = filterExpiredNotifications(state.notifications);
+          const unreadCount = filteredNotifications.filter(n => !n.isRead).length;
+          
+          if (filteredNotifications.length !== state.notifications.length) {
+            state.notifications = filteredNotifications;
+            state.unreadCount = unreadCount;
+          }
+        }
+      },
     }
   )
 );

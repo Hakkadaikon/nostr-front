@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import Link from 'next/link';
@@ -7,13 +8,27 @@ import { Heart, MessageCircle, Repeat2, UserPlus, AtSign, Zap } from 'lucide-rea
 import { Notification } from '../../types/notification';
 import { useNotificationStore } from '../../stores/notification.store';
 import { clsx } from 'clsx';
+import { ReplyComposer } from '../compose/ReplyComposer';
+import { useFollow } from '../../features/follow/hooks/useFollow';
+import { useAuthStore } from '../../stores/auth.store';
+import { useReaction } from '../../features/reactions/hooks/useReaction';
 
 interface NotificationItemProps {
   notification: Notification;
 }
 
 export function NotificationItem({ notification }: NotificationItemProps) {
+  const [showReply, setShowReply] = useState(false);
   const markAsRead = useNotificationStore(s => s.markAsRead);
+  const { publicKey: currentUserPubkey } = useAuthStore();
+  const { isFollowing, isLoading: isFollowLoading, toggleFollow } = useFollow(notification.user.npub);
+  
+  // いいね機能のフック
+  const { isLiked, isLoading: isLikeLoading, toggleLike } = useReaction({
+    eventId: notification.postId || '',
+    authorPubkey: notification.user.pubkey
+  });
+  
   const timeAgo = formatDistanceToNow(notification.createdAt, {
     addSuffix: true,
     locale: ja,
@@ -28,17 +43,17 @@ export function NotificationItem({ notification }: NotificationItemProps) {
   const getIcon = () => {
     switch (notification.type) {
       case 'like':
-        return <Heart className="w-5 h-5 text-red-500" fill="currentColor" />;
+        return <Heart className="w-4 h-4 text-red-500" fill="currentColor" />;
       case 'reply':
-        return <MessageCircle className="w-5 h-5 text-blue-500" />;
+        return <MessageCircle className="w-4 h-4 text-blue-500" />;
       case 'repost':
-        return <Repeat2 className="w-5 h-5 text-green-500" />;
+        return <Repeat2 className="w-4 h-4 text-green-500" />;
       case 'follow':
-        return <UserPlus className="w-5 h-5 text-purple-500" />;
+        return <UserPlus className="w-4 h-4 text-purple-500" />;
       case 'mention':
-        return <AtSign className="w-5 h-5 text-blue-500" />;
+        return <AtSign className="w-4 h-4 text-blue-500" />;
       case 'zap':
-        return <Zap className="w-5 h-5 text-yellow-500" fill="currentColor" />;
+        return <Zap className="w-4 h-4 text-yellow-500" fill="currentColor" />;
     }
   };
 
@@ -68,16 +83,34 @@ export function NotificationItem({ notification }: NotificationItemProps) {
       )}
     >
       <div className="flex gap-3">
-        {/* アイコン */}
-        <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center">
-          {getIcon()}
+        {/* アイコンとアバター */}
+        <div className="flex-shrink-0 relative">
+          {/* ユーザーアバター */}
+          <Link
+            href={`/profile/${notification.user.npub}` as any}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {notification.user.avatar ? (
+              <img
+                src={notification.user.avatar}
+                alt={notification.user.name}
+                className="w-12 h-12 rounded-full object-cover hover:opacity-90 transition-opacity"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
+            )}
+          </Link>
+          {/* 通知タイプアイコン */}
+          <div className="absolute -bottom-1 -right-1 bg-white dark:bg-gray-900 rounded-full p-0.5">
+            {getIcon()}
+          </div>
         </div>
 
         <div className="flex-1 min-w-0">
           {/* ユーザー情報とアクション */}
           <div className="flex items-start gap-1 flex-wrap">
             <Link
-              href={`/${notification.user.username}` as any}
+              href={`/profile/${notification.user.npub}` as any}
               className="font-bold text-gray-900 dark:text-white hover:underline"
               onClick={(e) => e.stopPropagation()}
             >
@@ -113,12 +146,90 @@ export function NotificationItem({ notification }: NotificationItemProps) {
             </Link>
           )}
 
-          {/* 未読インジケーター */}
-          {!notification.isRead && (
-            <div className="absolute top-4 right-4 w-2 h-2 bg-purple-600 rounded-full" />
-          )}
+          {/* アクションボタン */}
+          <div className="mt-3 flex items-center gap-3">
+            {/* フォローボタン - フォロー通知の場合のみ表示（自分自身は除く） */}
+            {notification.type === 'follow' && notification.user.pubkey !== currentUserPubkey && (
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  try {
+                    await toggleFollow();
+                  } catch (error) {
+                    console.error('Failed to toggle follow:', error);
+                  }
+                }}
+                disabled={isFollowLoading}
+                className={clsx(
+                  'px-4 py-1.5 rounded-full text-sm font-medium transition-all',
+                  isFollowing
+                    ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    : 'bg-purple-600 text-white hover:bg-purple-700',
+                  isFollowLoading && 'opacity-50 cursor-not-allowed'
+                )}
+              >
+                {isFollowLoading ? (
+                  '...'
+                ) : isFollowing ? (
+                  'フォロー中'
+                ) : (
+                  'フォローする'
+                )}
+              </button>
+            )}
+            
+            {/* いいねボタン - いいね可能な通知タイプの場合のみ表示 */}
+            {(notification.type === 'reply' || notification.type === 'mention') && notification.postId && (
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  await toggleLike();
+                }}
+                disabled={isLikeLoading}
+                className={clsx(
+                  'text-sm transition-colors flex items-center gap-1',
+                  isLiked
+                    ? 'text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300'
+                    : 'text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400',
+                  isLikeLoading && 'opacity-50 cursor-not-allowed'
+                )}
+              >
+                <Heart size={16} className={clsx(isLiked && 'fill-current')} />
+                いいね
+              </button>
+            )}
+            
+            {/* 返信ボタン - 返信可能な通知タイプの場合のみ表示 */}
+            {(notification.type === 'reply' || notification.type === 'mention' || notification.type === 'like' || notification.type === 'repost') && notification.postId && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowReply(!showReply);
+                }}
+                className="text-sm text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 transition-colors flex items-center gap-1"
+              >
+                <MessageCircle size={16} />
+                返信
+              </button>
+            )}
+          </div>
         </div>
+        
+        {/* 未読インジケーター */}
+        {!notification.isRead && (
+          <div className="absolute top-4 right-4 w-2 h-2 bg-purple-600 rounded-full" />
+        )}
       </div>
+
+      {/* 返信コンポーザー */}
+      {showReply && notification.postId && (
+        <ReplyComposer
+          replyTo={notification.postId}
+          replyToUser={notification.user}
+          onClose={() => setShowReply(false)}
+          onSuccess={() => setShowReply(false)}
+        />
+      )}
     </article>
   );
 }

@@ -35,9 +35,3 @@ export interface SearchState {
   searchType: SearchType;
 }
 
-// トレンド
-export interface Trend {
-  hashtag: string;
-  count: number;
-  category?: string;
-}

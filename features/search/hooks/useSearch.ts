@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { searchContent } from '../services/search';
 import { SearchParams, SearchResult, SearchType } from '../types';
-import { useDebounce } from '../../../hooks/useDebounce';
 
 interface UseSearchReturn {
   query: string;
@@ -27,12 +26,10 @@ export function useSearch(initialQuery: string = ''): UseSearchReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // デバウンスされた検索クエリ
-  const debouncedQuery = useDebounce(query, 300);
 
   // 検索を実行
   const search = useCallback(async () => {
-    if (!debouncedQuery || debouncedQuery.trim() === '') {
+    if (!query || query.trim() === '') {
       setResults(null);
       return;
     }
@@ -42,7 +39,7 @@ export function useSearch(initialQuery: string = ''): UseSearchReturn {
 
     try {
       const params: SearchParams = {
-        query: debouncedQuery,
+        query: query,
         type: searchType,
         limit: 20,
       };
@@ -56,7 +53,7 @@ export function useSearch(initialQuery: string = ''): UseSearchReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedQuery, searchType]);
+  }, [query, searchType]);
 
   // 結果をクリア
   const clearResults = useCallback(() => {
@@ -64,21 +61,19 @@ export function useSearch(initialQuery: string = ''): UseSearchReturn {
     setError(null);
   }, []);
 
-  // 検索タイプが変更されたら再検索
+  // 検索タイプが変更されたら再検索（結果がある場合のみ）
   useEffect(() => {
-    if (debouncedQuery) {
+    if (query && results) {
       search();
     }
-  }, [searchType, search]);
+  }, [searchType]);
 
-  // デバウンスされたクエリが変更されたら検索
+  // クエリが空になったら結果をクリア
   useEffect(() => {
-    if (debouncedQuery) {
-      search();
-    } else {
+    if (!query) {
       clearResults();
     }
-  }, [debouncedQuery, search, clearResults]);
+  }, [query, clearResults]);
 
   return {
     query,
