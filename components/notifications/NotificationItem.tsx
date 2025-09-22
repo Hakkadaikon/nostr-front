@@ -182,7 +182,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
             )}
             
             {/* いいねボタン - いいね可能な通知タイプの場合のみ表示 */}
-            {(notification.type === 'reply' || notification.type === 'mention') && notification.postId && (
+            {(notification.type === 'reply' || notification.type === 'mention' || notification.type === 'like') && notification.postId && (
               <button
                 onClick={async (e) => {
                   e.stopPropagation();

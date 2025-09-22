@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTweets } from '../../features/tweets/hooks/useTweets';
 import { Tweet } from '../../features/timeline/types';
-import { Image, Smile, Calendar, MapPin, X, Hash, AtSign, Eye } from 'lucide-react';
+import { Image, Smile, X, Hash, AtSign, Eye } from 'lucide-react';
 import { EmojiPicker } from '../compose/EmojiPicker';
 import { MediaUploader } from '../compose/MediaUploader';
 
@@ -153,20 +153,6 @@ export function TweetComposer({
                   disabled={isPosting}
                 >
                   <Eye size={20} />
-                </button>
-                <button
-                  className="p-2 rounded-full hover:bg-purple-50 dark:hover:bg-purple-950/20 text-purple-500 transition-all duration-200 hover:scale-110"
-                  title="予約投稿"
-                  disabled={isPosting}
-                >
-                  <Calendar size={20} />
-                </button>
-                <button
-                  className="p-2 rounded-full hover:bg-purple-50 dark:hover:bg-purple-950/20 text-purple-500 transition-all duration-200 hover:scale-110"
-                  title="位置情報"
-                  disabled={isPosting}
-                >
-                  <MapPin size={20} />
                 </button>
               </div>
 

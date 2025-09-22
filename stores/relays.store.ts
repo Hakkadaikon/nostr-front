@@ -17,7 +17,7 @@ type State = {
 };
 
 const defaultRelays = [
-  { url: 'wss://relay.damus.io', read: true, write: true, nip50: false },
+  { url: 'wss://relay.damus.io', read: true, write: true, nip50: true },
   { url: 'wss://relay.nostr.band', read: false, write: false, nip50: true },
   { url: 'wss://relay.nostr.wine', read: false, write: false, nip50: true },
 ];
@@ -28,7 +28,7 @@ export const useRelaysStore = create<State>()(
       relays: (process.env.NEXT_PUBLIC_DEFAULT_RELAYS?.split(',') || []).map(url => ({ url, read: true, write: true, nip50: false })).length > 0 
         ? (process.env.NEXT_PUBLIC_DEFAULT_RELAYS?.split(',') || []).map(url => ({ url, read: true, write: true, nip50: false }))
         : defaultRelays,
-      searchRelay: 'wss://relay.nostr.band',
+      searchRelay: 'wss://relay.damus.io',
       add: (url) => set({ relays: [...get().relays, { url, read: true, write: true, nip50: false }] }),
       remove: (url) => set({ relays: get().relays.filter(r => r.url !== url) }),
       toggleRead: (url) => set({ relays: get().relays.map(r => (r.url === url ? { ...r, read: !r.read } : r)) }),

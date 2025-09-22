@@ -241,7 +241,7 @@ export default function ProfilePage({ params }: Props) {
           <ProfileSidebar profile={profile} />
 
           <section className="space-y-4">
-            <div className="sticky top-16 z-10 -mx-4 bg-gray-100/90 px-4 py-2 backdrop-blur dark:bg-black/70">
+            <div className="sticky top-16 z-10 -mx-4 bg-gray-100/95 backdrop-blur-sm dark:bg-black/95">
               <ProfileTabs
                 activeTab={activeTab}
                 onTabChange={setActiveTab}

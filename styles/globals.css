@@ -15,3 +15,13 @@ body {
 a { @apply text-blue-600 dark:text-blue-400; }
 
 .container { @apply mx-auto px-4; }
+
+/* スクロールバーを非表示にする */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}

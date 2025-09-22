@@ -8,7 +8,7 @@ import { useNotifications, useNotificationActions } from '../../features/notific
 import { Trash2 } from 'lucide-react';
 
 export default function NotificationsPage() {
-  const { getFilteredNotifications, unreadCount, markAllAsRead } = useNotificationStore();
+  const { getFilteredNotifications } = useNotificationStore();
   const [isMounted, setIsMounted] = useState(false);
   const filteredNotifications = getFilteredNotifications();
   const { handleClearAll } = useNotificationActions();
@@ -39,14 +39,6 @@ export default function NotificationsPage() {
             通知
           </h1>
           <div className="flex items-center gap-2">
-            {unreadCount > 0 && (
-              <button
-                onClick={markAllAsRead}
-                className="text-sm text-purple-600 dark:text-purple-400 hover:underline"
-              >
-                すべて既読にする
-              </button>
-            )}
             {filteredNotifications.length > 0 && (
               <button
                 onClick={handleClearAll}
