@@ -33,11 +33,6 @@ export function TweetComposer({
   const { postTweet, isPosting, error, clearError } = useTweets();
   const { current: currentProfile } = useProfileStore();
 
-  // 文字数計算
-  const charCount = content.length;
-  const remainingChars = 280 - charCount;
-  const isOverLimit = charCount > 280;
-  const isNearLimit = charCount > 260;
 
   // テキストエリアの高さを自動調整
   useEffect(() => {
@@ -85,14 +80,10 @@ export function TweetComposer({
 
   // 投稿処理
   const handleSubmit = async () => {
-    if (content.trim() === '' || isOverLimit || isPosting) return;
+    if (content.trim() === '' || isPosting) return;
     
     // 入力検証
     const sanitizedContent = content.trim();
-    if (sanitizedContent.length > 280) {
-      // エラーは useTweets のエラーハンドリングに任せる
-      return;
-    }
 
     const hashtags = extractHashtags(content);
     const mentions = extractMentions(content);
@@ -216,54 +207,11 @@ export function TweetComposer({
                   </button>
                 </div>
 
-              {/* 文字数と投稿ボタン */}
+              {/* 投稿ボタン */}
               <div className="flex items-center gap-3">
-                {/* 文字数カウンター */}
-                {content.length > 0 && (
-                  <div className="relative">
-                    <span 
-                      className={`text-sm ${
-                        isOverLimit ? 'text-red-500' : 
-                        isNearLimit ? 'text-yellow-500' : 
-                        'text-gray-500 dark:text-gray-400'
-                      }`}
-                    >
-                      {remainingChars}
-                    </span>
-                    {/* プログレスリング */}
-                    <svg className="absolute -inset-2 w-10 h-10 transform -rotate-90">
-                      <circle
-                        cx="20"
-                        cy="20"
-                        r="16"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="text-gray-300 dark:text-gray-700"
-                      />
-                      <circle
-                        cx="20"
-                        cy="20"
-                        r="16"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeDasharray={`${2 * Math.PI * 16}`}
-                        strokeDashoffset={`${2 * Math.PI * 16 * (1 - Math.min(charCount / 280, 1))}`}
-                        className={
-                          isOverLimit ? 'text-red-500' : 
-                          isNearLimit ? 'text-yellow-500' : 
-                          'text-purple-500'
-                        }
-                      />
-                    </svg>
-                  </div>
-                )}
-
-                {/* 投稿ボタン */}
                 <button
                   onClick={handleSubmit}
-                  disabled={content.trim() === '' || isOverLimit || isPosting}
+                  disabled={content.trim() === '' || isPosting}
                   className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-full hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
                 >
                   {isPosting ? '投稿中...' : 'ポストする'}
