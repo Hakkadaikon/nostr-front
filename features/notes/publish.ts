@@ -38,14 +38,12 @@ async function record(results: { relay: string; ok: boolean; error?: unknown }[]
 
 export async function publishNote(content: string, extra?: { rootId?: string; replyToId?: string }) {
   const relays = getWriteRelays();
-  const pubkey = (globalThis as any).nostr ? await (globalThis as any).nostr.getPublicKey() : '';
   const tags = buildReplyTags({ rootId: extra?.rootId, replyToId: extra?.replyToId });
   const unsigned: Omit<NostrEvent, 'id' | 'sig'> = {
     kind: KINDS.NOTE,
     content,
     created_at: Math.floor(Date.now() / 1000),
     tags,
-    pubkey,
   } as any;
   let signed: NostrEvent;
   try {
@@ -63,13 +61,11 @@ export async function publishNote(content: string, extra?: { rootId?: string; re
 export async function publishRepost(targetId: string, targetAuthor?: string) {
   const relays = getWriteRelays();
   const tags = buildRepostTags(targetId, targetAuthor, relays);
-  const pubkey = (globalThis as any).nostr ? await (globalThis as any).nostr.getPublicKey() : '';
   const unsigned: Omit<NostrEvent, 'id' | 'sig'> = {
     kind: KINDS.REPOST,
     content: '',
     created_at: Math.floor(Date.now() / 1000),
     tags,
-    pubkey,
   } as any;
   const signed = await signEvent(unsigned, getSecretKey);
   if (!verify(signed)) throw new Error('Invalid signature');
@@ -81,13 +77,11 @@ export async function publishRepost(targetId: string, targetAuthor?: string) {
 export async function publishQuote(targetId: string) {
   const relays = getWriteRelays();
   const { content, tags } = buildQuote(targetId, relays);
-  const pubkey = (globalThis as any).nostr ? await (globalThis as any).nostr.getPublicKey() : '';
   const unsigned: Omit<NostrEvent, 'id' | 'sig'> = {
     kind: KINDS.NOTE,
     content,
     created_at: Math.floor(Date.now() / 1000),
     tags,
-    pubkey,
   } as any;
   const signed = await signEvent(unsigned, getSecretKey);
   if (!verify(signed)) throw new Error('Invalid signature');
