@@ -159,15 +159,34 @@ export function TweetComposer({
             </div>
           )}
 
-          {/* メディアアップローダー */}
-          {(isExpanded || content.length > 0) && (
-            <MediaUploader
-              onMediaSelect={setSelectedMedia}
-              disabled={isPosting}
-              selectedMedia={selectedMedia}
-              onRemoveMedia={handleRemoveMedia}
-              hidePreview={false}
-            />
+          {/* メディアプレビュー */}
+          {selectedMedia.length > 0 && (
+            <div className="mt-3 grid grid-cols-2 gap-2 max-w-full">
+              {selectedMedia.map((file, index) => (
+                <div key={index} className="relative group">
+                  <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+                    {file.type.startsWith('image/') ? (
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : file.type.startsWith('video/') ? (
+                      <video
+                        src={URL.createObjectURL(file)}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : null}
+                  </div>
+                  <button
+                    onClick={() => handleRemoveMedia(index)}
+                    className="absolute -top-2 -right-2 bg-gray-900 dark:bg-gray-700 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
 
           {/* 下部コントロール */}
@@ -176,6 +195,13 @@ export function TweetComposer({
               <div className="flex justify-between items-center">
                 {/* アクションボタン */}
                 <div className="flex gap-1">
+                  <MediaUploader
+                    onMediaSelect={setSelectedMedia}
+                    disabled={isPosting}
+                    selectedMedia={selectedMedia}
+                    onRemoveMedia={handleRemoveMedia}
+                    hidePreview={true}
+                  />
                   <EmojiPicker
                     onEmojiSelect={handleEmojiSelect}
                     disabled={isPosting}

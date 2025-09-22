@@ -72,13 +72,23 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
                        (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches) 
                        ? 'dark' : 'light';
           
-          await window.twttr.widgets.createTweet(statusId, containerRef.current, {
-            theme,
-            dnt: true,
-            conversation: 'none',
-            width: 550,
-            align: 'center'
-          });
+          const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+          const isSmallScreen = viewportWidth < 640;
+          const calculatedWidth = isSmallScreen
+            ? Math.max(Math.min(viewportWidth - 32, 540), 280)
+            : undefined;
+
+          await window.twttr.widgets.createTweet(
+            statusId,
+            containerRef.current,
+            {
+              theme,
+              dnt: true,
+              conversation: 'none',
+              align: 'center',
+              ...(calculatedWidth ? { width: calculatedWidth } : {}),
+            }
+          );
           setIsLoading(false);
         }
       } catch (error) {

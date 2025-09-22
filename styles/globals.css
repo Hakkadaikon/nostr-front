@@ -25,3 +25,14 @@ a { @apply text-blue-600 dark:text-blue-400; }
 .scrollbar-hide::-webkit-scrollbar {
   display: none; /* Chrome, Safari and Opera */
 }
+
+.twitter-embed {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.twitter-embed iframe,
+.twitter-embed blockquote {
+  max-width: 100% !important;
+  width: 100% !important;
+}
