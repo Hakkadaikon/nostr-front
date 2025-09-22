@@ -94,13 +94,13 @@ export function ProfileHeader({
       <div className="mx-auto w-full max-w-6xl px-4 pb-6">
         <div className="-mt-16 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div className="flex flex-col gap-4 md:flex-row md:items-end">
-            <div className="relative h-32 w-32 overflow-hidden rounded-3xl border-4 border-white bg-gray-200 shadow-xl dark:border-gray-950 dark:bg-gray-800">
+            <div className="relative h-32 w-32 overflow-hidden rounded-full border-4 border-white bg-gray-200 shadow-xl dark:border-gray-950 dark:bg-gray-800">
               <SafeImage
                 src={avatarSrc}
                 alt={`${displayName} avatar`}
                 fill
                 sizes="256px"
-                className="object-cover"
+                className="object-cover rounded-full"
               />
             </div>
 
