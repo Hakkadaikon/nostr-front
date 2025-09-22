@@ -237,7 +237,7 @@ export default function ProfilePage({ params }: Props) {
       />
 
       <main className="mx-auto mt-10 w-full max-w-6xl px-4">
-        <div className="grid gap-6 lg:grid-cols-[320px,1fr] lg:items-start">
+        <div className="space-y-6">
           <ProfileSidebar profile={profile} />
 
           <section className="space-y-4">
@@ -249,7 +249,7 @@ export default function ProfilePage({ params }: Props) {
               />
             </div>
 
-            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/60">
+            <div>
               {activeTab === 'posts' && (
                 <TimelineList
                   tweets={tweets}
@@ -260,19 +260,19 @@ export default function ProfilePage({ params }: Props) {
               )}
 
               {activeTab === 'replies' && (
-                <div className="p-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
                   返信はまだありません
                 </div>
               )}
 
               {activeTab === 'media' && (
-                <div className="p-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
                   メディアはまだありません
                 </div>
               )}
 
               {activeTab === 'likes' && (
-                <div className="p-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
                   いいねした投稿はまだありません
                 </div>
               )}
