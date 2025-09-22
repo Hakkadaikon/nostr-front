@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { nip19 } from 'nostr-tools';
 
 export type AuthState = {
@@ -18,7 +19,9 @@ type Actions = {
   logout: () => void;
 };
 
-export const useAuthStore = create<AuthState & Actions>((set) => ({
+export const useAuthStore = create<AuthState & Actions>()(
+  persist(
+    (set, get) => ({
   hasNip07: false,
   locked: true,
   npub: null,
@@ -45,4 +48,18 @@ export const useAuthStore = create<AuthState & Actions>((set) => ({
     }
   },
   logout: () => set({ npub: null, nsec: null, publicKey: null, pubkey: null, locked: true }),
-}));
+    }),
+    {
+      name: 'auth-storage',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        // Do not persist secrets or environment flags
+        npub: state.npub,
+        publicKey: state.publicKey,
+        pubkey: state.pubkey,
+        locked: state.locked,
+      }),
+    }
+  )
+);
+

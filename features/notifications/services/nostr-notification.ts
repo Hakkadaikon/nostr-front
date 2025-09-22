@@ -131,19 +131,16 @@ export class NostrNotificationService {
       event.tags.filter(t => t[0] === 'p' && t[1]).map(t => t[1] as string)
     );
 
-    // 差分を計算: 新しく追加された公開鍵のみ
-    const containsMeNow = this.userPubkey ? currentContacts.has(this.userPubkey) : false;
-
-    // 通知判定
+    // 通知判断: 過去のkind3が存在する場合のみ差分（追加分）を評価
     let shouldNotify = false;
-    if (!prev) {
-      // 初回受信: 現在のリストに自分が含まれていれば「新規フォロー」とみなす
-      shouldNotify = containsMeNow;
-    } else {
-      // 以前は含まれておらず、今回含まれた場合のみ通知
-      if (this.userPubkey && !prev.contacts.has(this.userPubkey) && containsMeNow) {
-        shouldNotify = true;
+    if (prev) {
+      // 差分: 追加された公開鍵
+      let addedMyPubkey = false;
+      if (this.userPubkey) {
+        // 自分のpubkeyが新規に追加されたか
+        addedMyPubkey = !prev.contacts.has(this.userPubkey) && currentContacts.has(this.userPubkey);
       }
+      shouldNotify = addedMyPubkey;
     }
 
     // 状態を更新（常に最新を保存）

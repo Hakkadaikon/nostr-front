@@ -184,7 +184,7 @@ function ExplorePageInner() {
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/50'
               }`}
             >
-              ツイート
+              投稿
             </button>
           </div>
         )}
