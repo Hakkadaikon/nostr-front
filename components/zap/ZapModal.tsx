@@ -175,7 +175,10 @@ export function ZapModal({ isOpen, onClose, tweetId, recipientNpub, recipientLnA
               <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div id="qr-code" className="flex items-center justify-center">
                   {qrCodeDataUrl ? (
-                    <img src={qrCodeDataUrl} alt="Lightning Invoice QR Code" className="max-w-full h-auto" />
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={qrCodeDataUrl} alt="Lightning Invoice QR Code" className="max-w-full h-auto" />
+                    </>
                   ) : (
                     <div className="h-64 w-64 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded">
                       <Spinner />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from 'react';
-import { Image, X, Upload, Film } from 'lucide-react';
+import { Image as ImageIcon, X, Upload, Film } from 'lucide-react';
 
 interface MediaUploaderProps {
   onMediaSelect: (files: File[]) => void;
@@ -52,12 +52,15 @@ export function MediaUploader({
               </span>
             </div>
           ) : (
-            <img
-              src={url}
-              alt={file.name}
-              className="w-full h-full object-cover"
-              onLoad={() => URL.revokeObjectURL(url)}
-            />
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={url}
+                alt={file.name}
+                className="w-full h-full object-cover"
+                onLoad={() => URL.revokeObjectURL(url)}
+              />
+            </>
           )}
         </div>
         
@@ -96,7 +99,7 @@ export function MediaUploader({
         className="p-2 rounded-full hover:bg-purple-50 dark:hover:bg-purple-950/20 text-purple-500 transition-all duration-200 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
         title={selectedMedia.length >= 4 ? "最大4つまでです" : "画像・動画を追加"}
       >
-        <Image size={20} />
+        <ImageIcon size={20} />
       </button>
 
       {/* プレビューエリア */}

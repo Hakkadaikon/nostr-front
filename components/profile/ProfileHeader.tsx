@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Profile } from '../../features/profile/types';
 import { SafeImage } from '../ui/SafeImage';
 import { Button } from '../ui/Button';
-import { Calendar, Globe, Zap, Shield, Edit2 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { ja } from 'date-fns/locale';
+import {
+  Share2,
+  Zap,
+  Globe2,
+  ShieldCheck,
+} from 'lucide-react';
+import clsx from 'clsx';
 
 interface ProfileHeaderProps {
   profile: Profile;
@@ -16,146 +20,179 @@ interface ProfileHeaderProps {
   isFollowing?: boolean;
 }
 
-export function ProfileHeader({ 
-  profile, 
-  isOwnProfile = false, 
+export function ProfileHeader({
+  profile,
+  isOwnProfile = false,
   onEditClick,
   onFollowClick,
-  isFollowing = false
+  isFollowing = false,
 }: ProfileHeaderProps) {
   const [bannerError, setBannerError] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const displayName = profile.displayName || profile.name || 'Nostrユーザー';
+  const username = profile.name || profile.npub.slice(0, 12);
+  const truncatedNpub = `${profile.npub.slice(0, 8)}...${profile.npub.slice(-6)}`;
+  const avatarSrc = profile.picture || '/images/avatar-placeholder.png';
+
+  const stats = useMemo(
+    () => [
+      { key: 'following', label: 'フォロー中', value: profile.followingCount ?? 0 },
+      { key: 'followers', label: 'フォロワー', value: profile.followersCount ?? 0 },
+      { key: 'notes', label: 'ノート', value: profile.postsCount ?? 0 },
+    ],
+    [profile.followersCount, profile.followingCount, profile.postsCount]
+  );
+
+  const cleanWebsite = profile.website
+    ? profile.website.replace(/^https?:\/\//, '')
+    : null;
+
+  const handleShare = async () => {
+    const profileUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}/profile/${profile.npub}`
+      : `/profile/${profile.npub}`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: displayName,
+          text: `${displayName} (@${username})`,
+          url: profileUrl,
+        });
+        return;
+      }
+    } catch (error) {
+      console.error('Share failed:', error);
+    }
+
+    try {
+      await navigator.clipboard.writeText(profileUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy profile link:', error);
+    }
+  };
 
   return (
-    <div className="bg-white dark:bg-gray-900">
-      {/* バナー画像 */}
-      <div className="h-48 md:h-64 bg-gradient-to-br from-purple-500 to-pink-500 relative">
+    <header className="relative">
+      <div className="relative h-48 w-full overflow-hidden bg-gradient-to-r from-purple-700 via-pink-500 to-orange-400 md:h-56">
         {profile.banner && !bannerError && (
           <SafeImage
             src={profile.banner}
-            alt="プロフィールバナー"
+            alt={`${displayName} banner`}
             fill
+            sizes="100vw"
             className="object-cover"
             onError={() => setBannerError(true)}
           />
         )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
       </div>
 
-      {/* プロフィール情報 */}
-      <div className="px-4 pb-4">
-        <div className="flex justify-between items-start -mt-16 mb-4">
-          {/* アバター */}
-          <div className="relative">
-            {profile.picture ? (
+      <div className="mx-auto w-full max-w-6xl px-4 pb-6">
+        <div className="-mt-16 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end">
+            <div className="relative h-32 w-32 overflow-hidden rounded-3xl border-4 border-white bg-gray-200 shadow-xl dark:border-gray-950 dark:bg-gray-800">
               <SafeImage
-                src={profile.picture}
-                alt={profile.name || 'プロフィール画像'}
-                width={128}
-                height={128}
-                className="rounded-full border-4 border-white dark:border-gray-900 bg-white dark:bg-gray-900"
+                src={avatarSrc}
+                alt={`${displayName} avatar`}
+                fill
+                sizes="256px"
+                className="object-cover"
               />
-            ) : (
-              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 border-4 border-white dark:border-gray-900" />
-            )}
+            </div>
+
+            <div className="space-y-4 text-gray-900 dark:text-white">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-2xl font-bold md:text-3xl">
+                    {displayName}
+                  </h1>
+                  {profile.nip05 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-500 dark:bg-emerald-500/15 dark:text-emerald-300">
+                      <ShieldCheck size={14} />
+                      {profile.nip05}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-300">
+                  <span>@{username}</span>
+                  <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                    {truncatedNpub}
+                  </span>
+                  {profile.lud16 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-yellow-500/10 px-3 py-1 text-xs font-semibold text-yellow-600 dark:bg-yellow-500/15 dark:text-yellow-300">
+                      <Zap size={14} />
+                      {profile.lud16}
+                    </span>
+                  )}
+                  {cleanWebsite && (
+                    <a
+                      href={profile.website?.startsWith('http') ? profile.website : `https://${cleanWebsite}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-full bg-purple-600/10 px-3 py-1 text-xs font-semibold text-purple-600 transition hover:bg-purple-600/20 dark:bg-purple-400/10 dark:text-purple-200"
+                    >
+                      <Globe2 size={14} />
+                      {cleanWebsite}
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-6 text-sm">
+                {stats.map((stat) => (
+                  <div key={stat.key} className="min-w-[88px]">
+                    <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                      {stat.label}
+                    </p>
+                    <p className="text-xl font-semibold text-gray-900 dark:text-white">
+                      {stat.value.toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
-          {/* アクションボタン */}
-          <div className="mt-20">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleShare}
+              className={clsx(
+                'inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/80 px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm backdrop-blur transition hover:bg-white dark:border-gray-800/60 dark:bg-gray-900/70 dark:text-gray-200'
+              )}
+            >
+              <Share2 size={16} />
+              {copiedLink ? 'コピーしました' : 'シェア'}
+            </button>
+
             {isOwnProfile ? (
               <Button
                 onClick={onEditClick}
-                variant="secondary"
-                className="flex items-center gap-2"
+                className="inline-flex items-center gap-2 rounded-full bg-purple-600 px-5 py-2 text-sm font-semibold text-white shadow-sm shadow-purple-500/30 hover:bg-purple-700"
               >
-                <Edit2 size={16} />
                 プロフィールを編集
               </Button>
             ) : (
               <Button
                 onClick={onFollowClick}
-                variant={isFollowing ? "secondary" : "primary"}
+                className={clsx(
+                  'inline-flex items-center gap-2 rounded-full px-6 py-2 text-sm font-semibold shadow-sm transition',
+                  isFollowing
+                    ? 'bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-200'
+                    : 'bg-purple-600 text-white hover:bg-purple-700'
+                )}
               >
                 {isFollowing ? 'フォロー中' : 'フォロー'}
               </Button>
             )}
           </div>
         </div>
-
-        {/* 名前と認証 */}
-        <div className="mb-2">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            {profile.displayName || profile.name || 'Nostr User'}
-            {profile.nip05 && (
-              <Shield className="text-purple-500" size={20} title="認証済み" />
-            )}
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400">
-            @{profile.name || profile.npub.slice(0, 16)}...
-          </p>
-        </div>
-
-        {/* 自己紹介 */}
-        {profile.about && (
-          <p className="text-gray-700 dark:text-gray-300 mb-4 whitespace-pre-wrap">
-            {profile.about}
-          </p>
-        )}
-
-        {/* メタ情報 */}
-        <div className="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
-          {profile.website && (
-            <a
-              href={profile.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 hover:text-purple-500 transition-colors"
-            >
-              <Globe size={16} />
-              {profile.website.replace(/^https?:\/\//, '')}
-            </a>
-          )}
-          
-          {profile.lud16 && (
-            <div className="flex items-center gap-1">
-              <Zap size={16} className="text-yellow-500" />
-              {profile.lud16}
-            </div>
-          )}
-
-          {profile.nip05 && (
-            <div className="flex items-center gap-1">
-              <Shield size={16} />
-              {profile.nip05}
-            </div>
-          )}
-
-          <div className="flex items-center gap-1">
-            <Calendar size={16} />
-            参加: {formatDistanceToNow(new Date(), { addSuffix: true, locale: ja })}
-          </div>
-        </div>
-
-        {/* 統計情報 */}
-        <div className="flex gap-6">
-          <button className="hover:underline">
-            <span className="font-bold text-gray-900 dark:text-white">
-              {profile.followingCount?.toLocaleString() || '0'}
-            </span>
-            <span className="text-gray-500 dark:text-gray-400 ml-1">フォロー中</span>
-          </button>
-          <button className="hover:underline">
-            <span className="font-bold text-gray-900 dark:text-white">
-              {profile.followersCount?.toLocaleString() || '0'}
-            </span>
-            <span className="text-gray-500 dark:text-gray-400 ml-1">フォロワー</span>
-          </button>
-          <div>
-            <span className="font-bold text-gray-900 dark:text-white">
-              {profile.postsCount?.toLocaleString() || '0'}
-            </span>
-            <span className="text-gray-500 dark:text-gray-400 ml-1">ポスト</span>
-          </div>
-        </div>
       </div>
-    </div>
+    </header>
   );
 }

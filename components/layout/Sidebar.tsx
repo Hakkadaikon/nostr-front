@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Home, Bell, Mail, User, Settings, MoreHorizontal } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuthStore } from '../../stores/auth.store';
+import { SafeImage } from '../ui/SafeImage';
 
 interface NavItem {
   label: string;
@@ -109,11 +110,12 @@ export function Sidebar() {
             href={`/profile/${npub}` as any}
             className="flex items-center gap-3 w-full hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full p-2 transition-all duration-200"
           >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 overflow-hidden">
-              <img 
+            <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 overflow-hidden">
+              <SafeImage
                 src={`https://robohash.org/${npub}`}
                 alt="Profile"
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
               />
             </div>
             <div className="flex-1 text-left">

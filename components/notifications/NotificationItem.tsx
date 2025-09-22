@@ -12,6 +12,7 @@ import { ReplyComposer } from '../compose/ReplyComposer';
 import { useFollow } from '../../features/follow/hooks/useFollow';
 import { useAuthStore } from '../../stores/auth.store';
 import { useReaction } from '../../features/reactions/hooks/useReaction';
+import { SafeImage } from '../ui/SafeImage';
 
 interface NotificationItemProps {
   notification: Notification;
@@ -91,9 +92,11 @@ export function NotificationItem({ notification }: NotificationItemProps) {
             onClick={(e) => e.stopPropagation()}
           >
             {notification.user.avatar ? (
-              <img
+              <SafeImage
                 src={notification.user.avatar}
                 alt={notification.user.name}
+                width={48}
+                height={48}
                 className="w-12 h-12 rounded-full object-cover hover:opacity-90 transition-opacity"
               />
             ) : (

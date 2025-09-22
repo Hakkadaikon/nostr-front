@@ -11,6 +11,7 @@ import { fetchProfile } from '../../features/profile/fetchProfile';
 import type { Profile } from '../../features/profile/types';
 import { useUiStore } from '../../stores/ui.store';
 import ThemeToggle from './ThemeToggle';
+import { SafeImage } from '../ui/SafeImage';
 
 const navItems = [
   { href: '/', label: 'ホーム', icon: Home },
@@ -75,9 +76,11 @@ export default function NavSidebar() {
             {isLoading ? (
               <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
             ) : profile?.picture ? (
-              <img
+              <SafeImage
                 src={profile.picture}
                 alt={profile.name || 'Profile'}
+                width={48}
+                height={48}
                 className="w-12 h-12 rounded-full object-cover ring-2 ring-purple-600/20 group-hover:ring-purple-600/40 transition-all duration-200"
               />
             ) : (

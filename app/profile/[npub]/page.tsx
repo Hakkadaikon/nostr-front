@@ -7,6 +7,7 @@ import { ProfileTabs, ProfileTab } from '../../../components/profile/ProfileTabs
 import { ProfileEditModal } from '../../../components/profile/ProfileEditModal';
 import { TimelineList } from '../../../components/timeline/TimelineList';
 import { Spinner } from '../../../components/ui/Spinner';
+import { ProfileSidebar } from '../../../components/profile/ProfileSidebar';
 import { Profile } from '../../../features/profile/types';
 import { fetchProfile } from '../../../features/profile/fetchProfile';
 import { fetchUserPosts } from '../../../features/profile/fetchUserPosts';
@@ -226,8 +227,7 @@ export default function ProfilePage({ params }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-black">
-      {/* プロフィールヘッダー */}
+    <div className="min-h-screen bg-gray-100/80 pb-16 dark:bg-black">
       <ProfileHeader
         profile={profile}
         isOwnProfile={isOwnProfile}
@@ -236,43 +236,51 @@ export default function ProfilePage({ params }: Props) {
         isFollowing={isFollowing}
       />
 
-      {/* タブ */}
-      <ProfileTabs
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-      />
+      <main className="mx-auto mt-10 w-full max-w-6xl px-4">
+        <div className="grid gap-6 lg:grid-cols-[320px,1fr] lg:items-start">
+          <ProfileSidebar profile={profile} />
 
-      {/* コンテンツエリア */}
-      <div className="bg-white dark:bg-gray-900 min-h-[400px]">
-        {activeTab === 'posts' && (
-          <TimelineList
-            tweets={tweets}
-            isLoading={tweetsLoading}
-            onLike={handleLike}
-            onRetweet={handleRetweet}
-          />
-        )}
-        
-        {activeTab === 'replies' && (
-          <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-            返信はまだありません
-          </div>
-        )}
-        
-        {activeTab === 'media' && (
-          <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-            メディアはまだありません
-          </div>
-        )}
-        
-        {activeTab === 'likes' && (
-          <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-            いいねした投稿はまだありません
-          </div>
-        )}
-      </div>
+          <section className="space-y-4">
+            <div className="sticky top-16 z-10 -mx-4 bg-gray-100/90 px-4 py-2 backdrop-blur dark:bg-black/70">
+              <ProfileTabs
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                counts={{ posts: profile.postsCount ?? tweets.length }}
+              />
+            </div>
 
-      {/* 編集モーダル */}
+            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/60">
+              {activeTab === 'posts' && (
+                <TimelineList
+                  tweets={tweets}
+                  isLoading={tweetsLoading}
+                  onLike={handleLike}
+                  onRetweet={handleRetweet}
+                />
+              )}
+
+              {activeTab === 'replies' && (
+                <div className="p-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                  返信はまだありません
+                </div>
+              )}
+
+              {activeTab === 'media' && (
+                <div className="p-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                  メディアはまだありません
+                </div>
+              )}
+
+              {activeTab === 'likes' && (
+                <div className="p-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                  いいねした投稿はまだありません
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      </main>
+
       {isOwnProfile && (
         <ProfileEditModal
           isOpen={isEditModalOpen}
