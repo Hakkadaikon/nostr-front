@@ -115,11 +115,11 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
             containerRef.current,
             {
               theme,
-              dnt: true,
+              dnt: false, // Do Not Trackを無効にして、メディアの読み込みを許可
               conversation: 'none',
               align: 'center',
               width: calculatedWidth,
-              cards: 'visible',
+              cards: 'visible', // メディアカードを表示
               linkColor: theme === 'dark' ? '#8B5CF6' : '#7C3AED',
             }
           );

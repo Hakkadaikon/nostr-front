@@ -80,7 +80,7 @@ export function IconButton({
       <div className={clsx(ICON_WRAPPER_CLASSES, variantStyles.hover)}>
         {children}
       </div>
-      {count !== undefined && count > 0 && (
+      {count !== undefined && (
         <span className="text-sm">{count}</span>
       )}
     </button>

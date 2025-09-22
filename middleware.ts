@@ -15,15 +15,15 @@ export function middleware(request: NextRequest) {
   const cspHeader = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.youtube.com https://s.ytimg.com https://platform.twitter.com https://cdn.syndication.twimg.com https://syndication.twitter.com", // Note: unsafe-inline/eval は段階的に削除すべき
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https: blob:",
+    "style-src 'self' 'unsafe-inline' https://platform.twitter.com",
+    "img-src 'self' data: https: blob: https://pbs.twimg.com https://abs.twimg.com https://platform.twitter.com https://syndication.twitter.com",
     "font-src 'self'",
-    "connect-src 'self' wss://* https://*.nostr.build https://cdn.nostrcheck.me https://blossom.primal.net https://platform.twitter.com https://cdn.syndication.twimg.com https://syndication.twitter.com",
-    "media-src 'self' https:",
+    "connect-src 'self' wss://* https://*.nostr.build https://cdn.nostrcheck.me https://blossom.primal.net https://platform.twitter.com https://cdn.syndication.twimg.com https://syndication.twitter.com https://pbs.twimg.com",
+    "media-src 'self' https: https://pbs.twimg.com https://video.twimg.com",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    "frame-src 'self' https://www.youtube.com https://youtube.com https://platform.twitter.com https://open.spotify.com",
+    "frame-src 'self' https://www.youtube.com https://youtube.com https://platform.twitter.com https://syndication.twitter.com https://open.spotify.com",
     "frame-ancestors 'none'",
     "upgrade-insecure-requests"
   ].join('; ');

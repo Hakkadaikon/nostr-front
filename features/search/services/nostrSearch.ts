@@ -46,16 +46,20 @@ export function eventToUser(event: NostrEvent): User | null {
   if (event.kind !== 0) return null;
 
   try {
+    const { nip19 } = require('nostr-tools');
     const content = JSON.parse(event.content);
+    const npub = nip19.npubEncode(event.pubkey);
+    
     return {
       id: event.pubkey,
       username: content.username || content.name || 'nostr:' + event.pubkey.slice(0, 8),
       name: content.display_name || content.name || '',
-      avatar: content.picture || '',
+      avatar: content.picture || undefined,
       bio: content.about || '',
       followersCount: 0,
       followingCount: 0,
       createdAt: new Date(event.created_at * 1000),
+      npub,
     };
   } catch (e) {
     console.error('Failed to parse user profile:', e);
@@ -113,14 +117,18 @@ export async function searchNostr(
   const filters = createNip50Filter(query, type);
   console.log('[NIP-50 Search] Filters:', JSON.stringify(filters, null, 2));
   
-  const users: User[] = [];
   const tweets: Tweet[] = [];
   const userCache = new Map<string, User>();
+  const eventCache = new Map<string, NostrEvent>();
 
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       console.log('[NIP-50 Search] Timeout reached, closing subscription');
-      console.log('[NIP-50 Search] Found users:', users.length);
+      
+      // userCacheからユニークなユーザーの配列を作成
+      const users = Array.from(userCache.values());
+      
+      console.log('[NIP-50 Search] Found unique users:', users.length);
       console.log('[NIP-50 Search] Found tweets:', tweets.length);
       sub.close();
       resolve({ users, tweets });
@@ -133,16 +141,24 @@ export async function searchNostr(
         id: event.id,
         kind: event.kind,
         content: event.content.slice(0, 100) + '...',
-        pubkey: event.pubkey
+        pubkey: event.pubkey,
+        created_at: event.created_at
       });
 
       if (event.kind === 0) {
         // ユーザープロフィール
-        const user = eventToUser(event);
-        if (user) {
-          users.push(user);
-          userCache.set(event.pubkey, user);
-          console.log('[NIP-50 Search] User found:', user.username);
+        const existingEvent = eventCache.get(event.pubkey);
+        
+        // 既存のイベントがない、または新しいイベントのタイムスタンプが新しい場合のみ処理
+        if (!existingEvent || event.created_at > existingEvent.created_at) {
+          const user = eventToUser(event);
+          if (user) {
+            userCache.set(event.pubkey, user);
+            eventCache.set(event.pubkey, event);
+            console.log('[NIP-50 Search] User updated/added:', user.username, 'created_at:', event.created_at);
+          }
+        } else {
+          console.log('[NIP-50 Search] Skipping older user profile for pubkey:', event.pubkey);
         }
       } else if (event.kind === 1) {
         // テキストノート
@@ -157,10 +173,13 @@ export async function searchNostr(
 
     // エラーハンドリング
     setTimeout(() => {
-      if (users.length === 0 && tweets.length === 0 && eventCount === 0) {
+      if (userCache.size === 0 && tweets.length === 0 && eventCount === 0) {
         console.log('[NIP-50 Search] No events received after 1 second');
         clearTimeout(timeout);
         sub.close();
+        
+        // userCacheからユニークなユーザーの配列を作成
+        const users = Array.from(userCache.values());
         resolve({ users, tweets });
       }
     }, 1000);
@@ -179,6 +198,7 @@ export async function fetchUserProfiles(pubkeys: string[]): Promise<Map<string, 
   }
 
   const userMap = new Map<string, User>();
+  const eventCache = new Map<string, NostrEvent>();
   const filter: Filter = {
     kinds: [0],
     authors: pubkeys,
@@ -191,9 +211,18 @@ export async function fetchUserProfiles(pubkeys: string[]): Promise<Map<string, 
     }, 3000);
 
     const sub = subscribe(readRelays, [filter], (event: NostrEvent) => {
-      const user = eventToUser(event);
-      if (user) {
-        userMap.set(event.pubkey, user);
+      const existingEvent = eventCache.get(event.pubkey);
+      
+      // 既存のイベントがない、または新しいイベントのタイムスタンプが新しい場合のみ処理
+      if (!existingEvent || event.created_at > existingEvent.created_at) {
+        const user = eventToUser(event);
+        if (user) {
+          userMap.set(event.pubkey, user);
+          eventCache.set(event.pubkey, event);
+          console.log('[fetchUserProfiles] User profile updated for:', event.pubkey, 'created_at:', event.created_at);
+        }
+      } else {
+        console.log('[fetchUserProfiles] Skipping older profile for pubkey:', event.pubkey);
       }
     });
   });

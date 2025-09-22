@@ -58,6 +58,61 @@ export async function setDesktopViewport(page: Page) {
 }
 
 /**
+ * 大画面デスクトップビューポートに設定
+ */
+export async function setLargeDesktopViewport(page: Page) {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+}
+
+/**
+ * 大型モバイルビューポートに設定（iPhone 14 Pro Max相当）
+ */
+export async function setLargeMobileViewport(page: Page) {
+  await page.setViewportSize({ width: 414, height: 896 });
+}
+
+/**
+ * 横向きモバイルビューポートに設定
+ */
+export async function setMobileLandscapeViewport(page: Page) {
+  await page.setViewportSize({ width: 667, height: 375 });
+}
+
+/**
+ * 横向きタブレットビューポートに設定
+ */
+export async function setTabletLandscapeViewport(page: Page) {
+  await page.setViewportSize({ width: 1024, height: 768 });
+}
+
+/**
+ * ビューポートサイズのプリセット
+ */
+export const ViewportPresets = {
+  // モバイル
+  mobileSmall: { width: 320, height: 568 }, // iPhone SE
+  mobile: { width: 375, height: 667 }, // iPhone 8
+  mobileLarge: { width: 414, height: 896 }, // iPhone 14 Pro Max
+  mobileLandscape: { width: 667, height: 375 },
+  
+  // タブレット
+  tabletPortrait: { width: 768, height: 1024 }, // iPad
+  tabletLandscape: { width: 1024, height: 768 },
+  
+  // デスクトップ
+  desktop: { width: 1280, height: 720 },
+  desktopLarge: { width: 1920, height: 1080 },
+  desktopUltrawide: { width: 2560, height: 1080 },
+} as const;
+
+/**
+ * カスタムビューポートに設定
+ */
+export async function setViewport(page: Page, preset: keyof typeof ViewportPresets) {
+  await page.setViewportSize(ViewportPresets[preset]);
+}
+
+/**
  * ダークモードに切り替え
  */
 export async function enableDarkMode(page: Page) {
@@ -143,4 +198,77 @@ export async function waitForText(page: Page, text: string, timeout = 5000) {
     state: 'visible', 
     timeout 
   });
+}
+
+/**
+ * タッチイベントをシミュレート
+ */
+export async function simulateTap(page: Page, selector: string) {
+  const element = page.locator(selector).first();
+  const box = await element.boundingBox();
+  if (!box) throw new Error(`Element ${selector} not found`);
+  
+  await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+}
+
+/**
+ * スワイプジェスチャーをシミュレート
+ */
+export async function simulateSwipe(page: Page, direction: 'left' | 'right' | 'up' | 'down', distance = 200) {
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error('No viewport size set');
+  
+  const centerX = viewport.width / 2;
+  const centerY = viewport.height / 2;
+  
+  let endX = centerX;
+  let endY = centerY;
+  
+  switch (direction) {
+    case 'left':
+      endX = centerX - distance;
+      break;
+    case 'right':
+      endX = centerX + distance;
+      break;
+    case 'up':
+      endY = centerY - distance;
+      break;
+    case 'down':
+      endY = centerY + distance;
+      break;
+  }
+  
+  await page.touchscreen.swipe({
+    startX: centerX,
+    startY: centerY,
+    endX,
+    endY,
+    steps: 10
+  });
+}
+
+/**
+ * 要素がビューポート内に表示されているか確認
+ */
+export async function isElementInViewport(page: Page, selector: string) {
+  return await page.evaluate((sel) => {
+    const element = document.querySelector(sel);
+    if (!element) return false;
+    
+    const rect = element.getBoundingClientRect();
+    return (
+      rect.top >= 0 &&
+      rect.left >= 0 &&
+      rect.bottom <= window.innerHeight &&
+      rect.right <= window.innerWidth
+    );
+  }, selector);
+}
+
+/**
+ * メディアクエリの状態を確認
+ */
+export async function checkMediaQuery(page: Page, query: string) {
+  return await page.evaluate((q) => window.matchMedia(q).matches, query);
 }

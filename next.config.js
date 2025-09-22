@@ -31,6 +31,21 @@ const nextConfig = {
         hostname: 'blossom.primal.net',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'pbs.twimg.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'abs.twimg.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'platform.twitter.com',
+        pathname: '/**',
+      },
     ],
   }
 };

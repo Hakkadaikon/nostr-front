@@ -1,8 +1,57 @@
 import { type Event as NostrEvent, nip19 } from 'nostr-tools';
 import { subscribeTo, getReadRelays } from '../relays/services/relayPool';
 import { useRelaysStore } from '../../stores/relays.store';
-import { KIND_TEXT_NOTE } from '../../lib/nostr/constants';
+import { KIND_TEXT_NOTE, KIND_REACTION, KIND_REPOST, KIND_ZAP_RECEIPT } from '../../lib/nostr/constants';
 import { Tweet } from '../timeline/types';
+
+/**
+ * 投稿のリアクション数を取得
+ */
+async function fetchPostReactions(postIds: string[], relays: string[]): Promise<Map<string, { likes: number; reposts: number; zaps: number }>> {
+  const reactionCounts = new Map<string, { likes: number; reposts: number; zaps: number }>();
+  
+  // 初期化
+  postIds.forEach(id => {
+    reactionCounts.set(id, { likes: 0, reposts: 0, zaps: 0 });
+  });
+
+  return new Promise((resolve) => {
+    let timeoutId: NodeJS.Timeout;
+
+    const sub = subscribeTo(
+      relays,
+      [{
+        kinds: [KIND_REACTION, KIND_REPOST, KIND_ZAP_RECEIPT],
+        '#e': postIds,
+      }],
+      (event: NostrEvent) => {
+        const targetPostId = event.tags.find(tag => tag[0] === 'e')?.[1];
+        if (!targetPostId || !reactionCounts.has(targetPostId)) return;
+
+        const counts = reactionCounts.get(targetPostId)!;
+        
+        if (event.kind === KIND_REACTION) {
+          // リアクション（いいね）をカウント
+          if (event.content === '+' || event.content === '🤙' || event.content === '❤️' || event.content === '👍') {
+            counts.likes++;
+          }
+        } else if (event.kind === KIND_REPOST) {
+          // リポストをカウント
+          counts.reposts++;
+        } else if (event.kind === KIND_ZAP_RECEIPT) {
+          // Zapをカウント
+          counts.zaps++;
+        }
+      }
+    );
+
+    // タイムアウト設定（2秒）
+    timeoutId = setTimeout(() => {
+      sub.close();
+      resolve(reactionCounts);
+    }, 2000);
+  });
+}
 
 /**
  * 特定ユーザーの投稿を取得
@@ -85,6 +134,20 @@ export async function fetchUserPosts(npub: string, limit: number = 20): Promise<
             clearTimeout(timeoutId);
             sub.close();
             
+            // リアクション数を取得
+            const postIds = posts.map(p => p.id);
+            const reactionCounts = await fetchPostReactions(postIds.slice(0, limit), relays);
+            
+            // リアクション数を更新
+            posts.forEach(post => {
+              const counts = reactionCounts.get(post.id);
+              if (counts) {
+                post.likesCount = counts.likes;
+                post.retweetsCount = counts.reposts;
+                post.zapsCount = counts.zaps;
+              }
+            });
+            
             // 時系列でソート（新しい順）
             posts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
             resolve(posts.slice(0, limit));
@@ -93,8 +156,24 @@ export async function fetchUserPosts(npub: string, limit: number = 20): Promise<
       );
 
       // タイムアウト設定（3秒）
-      timeoutId = setTimeout(() => {
+      timeoutId = setTimeout(async () => {
         sub.close();
+        
+        // リアクション数を取得
+        if (posts.length > 0) {
+          const postIds = posts.map(p => p.id);
+          const reactionCounts = await fetchPostReactions(postIds, relays);
+          
+          // リアクション数を更新
+          posts.forEach(post => {
+            const counts = reactionCounts.get(post.id);
+            if (counts) {
+              post.likesCount = counts.likes;
+              post.retweetsCount = counts.reposts;
+              post.zapsCount = counts.zaps;
+            }
+          });
+        }
         
         // 時系列でソート（新しい順）
         posts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());

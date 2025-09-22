@@ -10,6 +10,7 @@ export interface User {
   followersCount: number;
   followingCount: number;
   createdAt: Date;
+  npub?: string;
 }
 
 // ツイート（投稿）

@@ -15,14 +15,14 @@ export function UserCard({ user, onFollow }: UserCardProps) {
     <div className="p-4 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
       <div className="flex items-start gap-3">
         {/* アバター */}
-        <Link href={`/${user.username}` as any} className="flex-shrink-0">
+        <Link href={`/profile/${user.npub || user.id}` as any} className="flex-shrink-0">
           {user.avatar ? (
             <SafeImage
               src={user.avatar}
               alt={user.name}
               width={48}
               height={48}
-              className="rounded-full hover:opacity-90 transition-opacity"
+              className="w-12 h-12 rounded-full hover:opacity-90 transition-opacity"
             />
           ) : (
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
@@ -34,7 +34,7 @@ export function UserCard({ user, onFollow }: UserCardProps) {
           <div className="flex items-start justify-between">
             <div>
               <Link
-                href={`/${user.username}` as any}
+                href={`/profile/${user.npub || user.id}` as any}
                 className="hover:underline"
               >
                 <h3 className="font-bold text-gray-900 dark:text-white">
