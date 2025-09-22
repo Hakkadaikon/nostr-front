@@ -19,9 +19,9 @@ interface UseSearchReturn {
 /**
  * 検索機能のカスタムフック
  */
-export function useSearch(initialQuery: string = ''): UseSearchReturn {
+export function useSearch(initialQuery: string = '', initialType: SearchType = 'all'): UseSearchReturn {
   const [query, setQuery] = useState(initialQuery);
-  const [searchType, setSearchType] = useState<SearchType>('all');
+  const [searchType, setSearchType] = useState<SearchType>(initialType);
   const [results, setResults] = useState<SearchResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

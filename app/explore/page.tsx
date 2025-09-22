@@ -1,12 +1,29 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import type { SearchType } from '../../features/search/types';
 import { useSearch } from '../../features/search/hooks/useSearch';
 import { SearchBox } from '../../components/search/SearchBox';
 import { SearchResults } from '../../components/search/SearchResults';
 import { likeTweet, unlikeTweet, retweet, undoRetweet } from '../../features/timeline/services/timeline';
 
+const ALLOWED_TYPES: SearchType[] = ['all', 'users', 'tweets'];
+
 export default function ExplorePage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-sm text-gray-500 dark:text-gray-400">検索を読み込んでいます...</div>}>
+      <ExplorePageInner />
+    </Suspense>
+  );
+}
+
+function ExplorePageInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const skipSyncRef = useRef(false);
+
   const {
     query,
     setQuery,
@@ -16,9 +33,76 @@ export default function ExplorePage() {
     isLoading,
     error,
     search,
+    clearResults,
   } = useSearch();
 
-  // いいねの処理
+  const [pendingSync, setPendingSync] = useState<{ q: string; type: SearchType } | null>(null);
+
+  useEffect(() => {
+    if (skipSyncRef.current) {
+      skipSyncRef.current = false;
+      return;
+    }
+
+    const qParam = searchParams.get('q') ?? '';
+    const typeParamRaw = searchParams.get('type') ?? 'all';
+    const typeParam = ALLOWED_TYPES.includes(typeParamRaw as SearchType)
+      ? (typeParamRaw as SearchType)
+      : 'all';
+
+    setPendingSync({ q: qParam, type: typeParam });
+    setQuery(qParam);
+    setSearchType(typeParam);
+  }, [searchParams, setQuery, setSearchType]);
+
+  useEffect(() => {
+    if (!pendingSync) return;
+    if (query === pendingSync.q && searchType === pendingSync.type) {
+      if (pendingSync.q) {
+        search();
+      } else {
+        clearResults();
+      }
+      setPendingSync(null);
+    }
+  }, [pendingSync, query, searchType, search, clearResults]);
+
+  const replaceUrl = useCallback((nextQuery: string, nextType: SearchType) => {
+    const params = new URLSearchParams();
+    const trimmed = nextQuery.trim();
+    if (trimmed) {
+      params.set('q', trimmed);
+      if (nextType !== 'all') {
+        params.set('type', nextType);
+      }
+    }
+    skipSyncRef.current = true;
+    const queryString = params.toString();
+    const target = queryString ? `${pathname}?${queryString}` : pathname;
+    router.replace(target as any, { scroll: false });
+  }, [router, pathname]);
+
+  const handleSearchSubmit = useCallback(async () => {
+    await search();
+    replaceUrl(query, searchType);
+  }, [search, replaceUrl, query, searchType]);
+
+  const handleSearchTypeChange = useCallback((type: SearchType) => {
+    setSearchType(type);
+    if (query.trim()) {
+      replaceUrl(query, type);
+    } else {
+      replaceUrl('', 'all');
+    }
+  }, [setSearchType, replaceUrl, query]);
+
+  const handleClear = useCallback(() => {
+    setQuery('');
+    setSearchType('all');
+    clearResults();
+    replaceUrl('', 'all');
+  }, [setQuery, setSearchType, clearResults, replaceUrl]);
+
   const handleLike = useCallback(async (tweetId: string) => {
     const tweet = results?.tweets.find(t => t.id === tweetId);
     if (!tweet) return;
@@ -34,7 +118,6 @@ export default function ExplorePage() {
     }
   }, [results]);
 
-  // リツイートの処理
   const handleRetweet = useCallback(async (tweetId: string) => {
     const tweet = results?.tweets.find(t => t.id === tweetId);
     if (!tweet) return;
@@ -63,9 +146,10 @@ export default function ExplorePage() {
           <SearchBox
             value={query}
             onChange={setQuery}
-            onSubmit={search}
+            onSubmit={handleSearchSubmit}
             placeholder="検索"
             autoFocus
+            onClear={handleClear}
           />
         </div>
 
@@ -73,7 +157,7 @@ export default function ExplorePage() {
         {query && (
           <div className="flex border-t border-gray-200 dark:border-gray-800">
             <button
-              onClick={() => setSearchType('all')}
+              onClick={() => handleSearchTypeChange('all')}
               className={`flex-1 px-4 py-3 text-center font-medium transition-all duration-200 ${
                 searchType === 'all'
                   ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-600'
@@ -83,7 +167,7 @@ export default function ExplorePage() {
               すべて
             </button>
             <button
-              onClick={() => setSearchType('users')}
+              onClick={() => handleSearchTypeChange('users')}
               className={`flex-1 px-4 py-3 text-center font-medium transition-all duration-200 ${
                 searchType === 'users'
                   ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-600'
@@ -93,7 +177,7 @@ export default function ExplorePage() {
               ユーザー
             </button>
             <button
-              onClick={() => setSearchType('tweets')}
+              onClick={() => handleSearchTypeChange('tweets')}
               className={`flex-1 px-4 py-3 text-center font-medium transition-all duration-200 ${
                 searchType === 'tweets'
                   ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-600'
