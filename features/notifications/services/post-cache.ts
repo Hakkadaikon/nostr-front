@@ -12,8 +12,9 @@ export interface PostData {
     id: string;
     name: string;
     username: string;
-    avatar: string;
+    avatar?: string;
     npub: string;
+    pubkey?: string;
   };
   createdAt: Date;
   media?: Array<{
