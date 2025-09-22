@@ -9,10 +9,10 @@ import { Tweet } from '../features/timeline/types';
 import { useAuthStore } from '../stores/auth.store';
 
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState<'recommended' | 'following'>('recommended');
+  const [activeTab, setActiveTab] = useState<'global' | 'following'>('global');
   
   const { tweets, isLoading, error, hasMore, loadMore, toggleLike, toggleRetweet, addTweet } = useTimeline({
-    type: activeTab === 'recommended' ? 'home' : 'following',
+    type: activeTab === 'global' ? 'home' : 'following',
     limit: 10, // 初期表示件数を20件から10件に削減
   });
 
@@ -44,15 +44,15 @@ export default function HomePage() {
         </div>
         <div className="flex">
           <button 
-            onClick={() => setActiveTab('recommended')}
+            onClick={() => setActiveTab('global')}
             className={`relative flex-1 px-4 py-4 text-center font-medium transition-all duration-200 ${
-              activeTab === 'recommended'
+              activeTab === 'global'
                 ? 'text-purple-600 dark:text-purple-400' 
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/20'
             }`}
           >
-            おすすめ
-            {activeTab === 'recommended' && (
+            グローバル
+            {activeTab === 'global' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-600 to-pink-600" />
             )}
           </button>
