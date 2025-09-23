@@ -59,13 +59,59 @@ export function SearchResults({
             </h2>
           )}
           <div className="divide-y divide-gray-200 dark:divide-gray-800">
-            {results.users.map((user) => (
-              <UserCard
-                key={user.id}
-                user={user}
-                onFollow={onFollow}
-              />
-            ))}
+            {results.users
+              .filter((user, index, self) => 
+                // 公開鍵（user.id）でユニークにする
+                index === self.findIndex((u) => u.id === user.id)
+              )
+              .sort((a, b) => {
+                // ソート優先順位:
+                // 1. botでないアカウントを優先
+                const aIsBot = a.bio?.toLowerCase().includes('bot') || 
+                               a.username.toLowerCase().includes('bot') ||
+                               a.bio?.includes('author :') ||
+                               a.bio?.includes('author:');
+                const bIsBot = b.bio?.toLowerCase().includes('bot') || 
+                               b.username.toLowerCase().includes('bot') ||
+                               b.bio?.includes('author :') ||
+                               b.bio?.includes('author:');
+                
+                if (aIsBot !== bIsBot) {
+                  return aIsBot ? 1 : -1;
+                }
+                
+                // 2. テストアカウントでないものを優先
+                const aIsTest = a.username.toLowerCase().includes('test') ||
+                               a.bio?.toLowerCase().includes('test') ||
+                               a.bio?.includes('owner :') ||
+                               a.bio?.includes('owner:');
+                const bIsTest = b.username.toLowerCase().includes('test') ||
+                               b.bio?.toLowerCase().includes('test') ||
+                               b.bio?.includes('owner :') ||
+                               b.bio?.includes('owner:');
+                
+                if (aIsTest !== bIsTest) {
+                  return aIsTest ? 1 : -1;
+                }
+                
+                // 3. プロフィールが充実しているものを優先（bioの長さ）
+                const aBioLength = a.bio?.length || 0;
+                const bBioLength = b.bio?.length || 0;
+                if (aBioLength !== bBioLength) {
+                  return bBioLength - aBioLength;
+                }
+                
+                // 4. 作成日時が新しいものを優先
+                return b.createdAt.getTime() - a.createdAt.getTime();
+              })
+              .slice(0, 10) // 上位10件のみ表示
+              .map((user) => (
+                <UserCard
+                  key={user.id}
+                  user={user}
+                  onFollow={onFollow}
+                />
+              ))}
           </div>
         </div>
       )}

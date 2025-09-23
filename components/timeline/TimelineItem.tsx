@@ -10,6 +10,8 @@ import { Tweet } from '../../features/timeline/types';
 import { Heart, MessageCircle, Repeat2, Share, Zap } from 'lucide-react';
 import { IconButton } from '../ui/IconButton';
 import { QuotedTweet } from './QuotedTweet';
+import { ActivityPubBadge } from '../ui/ActivityPubBadge';
+import { isActivityPubUser } from '../../lib/utils/activitypub';
 
 interface TimelineItemProps {
   tweet: Tweet;
@@ -59,6 +61,9 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply }: Timel
               >
                 @{tweet.author.username}
               </Link>
+              {isActivityPubUser(tweet.author) && (
+                <ActivityPubBadge size="small" className="ml-1" />
+              )}
               <span className="text-gray-500 dark:text-gray-400">·</span>
               <Link
                 href={`/status/${tweet.id}` as any}

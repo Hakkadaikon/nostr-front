@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { SafeImage } from '../ui/SafeImage';
 import { User } from '../../features/timeline/types';
 import { Button } from '../ui/Button';
+import { ActivityPubBadge } from '../ui/ActivityPubBadge';
+import { isActivityPubUser } from '../../lib/utils/activitypub';
 
 interface UserCardProps {
   user: User;
@@ -37,8 +39,11 @@ export function UserCard({ user, onFollow }: UserCardProps) {
                 href={`/profile/${user.npub || user.id}` as any}
                 className="hover:underline"
               >
-                <h3 className="font-bold text-gray-900 dark:text-white">
+                <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   {user.name}
+                  {isActivityPubUser(user) && (
+                    <ActivityPubBadge size="small" />
+                  )}
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400">
                   @{user.username}
@@ -64,21 +69,7 @@ export function UserCard({ user, onFollow }: UserCardProps) {
             )}
           </div>
 
-          {/* フォロワー数 */}
-          <div className="mt-2 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-            <span>
-              <span className="font-semibold text-gray-900 dark:text-white">
-                {user.followingCount.toLocaleString()}
-              </span>{' '}
-              フォロー中
-            </span>
-            <span>
-              <span className="font-semibold text-gray-900 dark:text-white">
-                {user.followersCount.toLocaleString()}
-              </span>{' '}
-              フォロワー
-            </span>
-          </div>
+          {/* フォロワー数 - 高速化のため非表示 */}
         </div>
       </div>
     </div>

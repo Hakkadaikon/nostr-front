@@ -12,6 +12,9 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import clsx from 'clsx';
+import { ActivityPubBadge } from '../ui/ActivityPubBadge';
+import { isActivityPubUser } from '../../lib/utils/activitypub';
+import { User } from '../../features/timeline/types';
 
 interface ProfileHeaderProps {
   profile: Profile;
@@ -42,7 +45,20 @@ export function ProfileHeader({
   const truncatedNpub = `${profile.npub.slice(0, 8)}...${profile.npub.slice(-6)}`;
   const avatarSrc = profile.picture || '';
 
-  
+  // ActivityPubチェック用のUserオブジェクトを作成
+  const profileAsUser: User = {
+    id: profile.npub,
+    npub: profile.npub,
+    username: username,
+    name: displayName,
+    bio: profile.about || '',
+    avatar: profile.picture,
+    nip05: profile.nip05,
+    website: profile.website,
+    followersCount: 0,
+    followingCount: 0,
+    createdAt: new Date(),
+  };
 
   const cleanWebsite = profile.website
     ? profile.website.replace(/^https?:\/\//, '')
@@ -114,6 +130,9 @@ export function ProfileHeader({
                   <h1 className="text-2xl font-bold md:text-3xl">
                     {displayName}
                   </h1>
+                  {isActivityPubUser(profileAsUser) && (
+                    <ActivityPubBadge size="medium" />
+                  )}
                   {profile.nip05 && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-500 dark:bg-emerald-500/15 dark:text-emerald-300">
                       <ShieldCheck size={14} />
@@ -156,7 +175,7 @@ export function ProfileHeader({
                 )}
                 {followCount !== null && followCount !== undefined && (
                   <Link 
-                    href={`/profile/${profile.npub}/following`}
+                    href={`/profile/${profile.npub}/following` as any}
                     className="hover:underline cursor-pointer"
                   >
                     <span className="font-bold text-gray-900 dark:text-white">{followCount.toLocaleString()}</span>{' '}
@@ -165,7 +184,7 @@ export function ProfileHeader({
                 )}
                 {followerCount !== null && followerCount !== undefined && (
                   <Link 
-                    href={`/profile/${profile.npub}/followers`}
+                    href={`/profile/${profile.npub}/followers` as any}
                     className="hover:underline cursor-pointer"
                   >
                     <span className="font-bold text-gray-900 dark:text-white">{followerCount.toLocaleString()}</span>{' '}
@@ -176,17 +195,15 @@ export function ProfileHeader({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <button
-              type="button"
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <Button
               onClick={handleShare}
-              className={clsx(
-                'inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/80 px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm backdrop-blur transition hover:bg-white dark:border-gray-800/60 dark:bg-gray-900/70 dark:text-gray-200'
-              )}
+              variant="ghost"
+              className="gap-2"
             >
               <Share2 size={16} />
               {copiedLink ? 'コピーしました' : 'シェア'}
-            </button>
+            </Button>
 
             {isOwnProfile ? (
               <Button

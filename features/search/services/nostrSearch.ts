@@ -39,59 +39,6 @@ export function createNip50Filter(query: string, type: 'all' | 'users' | 'tweets
   }
 }
 
-/**
- * フォロー数を取得する
- */
-async function getFollowCounts(pubkey: string): Promise<{ followingCount: number; followersCount: number }> {
-  const relayStore = useRelaysStore.getState();
-  const readRelays = relayStore.relays.filter(r => r.read).map(r => r.url);
-  
-  if (readRelays.length === 0) {
-    return { followingCount: 0, followersCount: 0 };
-  }
-
-  let followingCount = 0;
-  let followersCount = 0;
-
-  // フォロー中の数を取得（自分のkind 3イベント）
-  const followingFilter: Filter = {
-    kinds: [3],
-    authors: [pubkey],
-    limit: 1,
-  };
-
-  // フォロワー数を取得（他の人のkind 3イベントで自分がタグに含まれているもの）
-  const followersFilter: Filter = {
-    kinds: [3],
-    '#p': [pubkey],
-    limit: 500,
-  };
-
-  return new Promise((resolve) => {
-    const timeout = setTimeout(() => {
-      sub.close();
-      resolve({ followingCount, followersCount });
-    }, 2000);
-
-    const processedAuthors = new Set<string>();
-
-    const sub = subscribe(readRelays, [followingFilter, followersFilter], (event: NostrEvent) => {
-      if (event.kind === 3) {
-        if (event.pubkey === pubkey) {
-          // 自分のフォローリスト
-          const pTags = event.tags.filter(tag => tag[0] === 'p');
-          followingCount = pTags.length;
-        } else {
-          // 他の人のフォローリストに自分が含まれている
-          if (!processedAuthors.has(event.pubkey)) {
-            processedAuthors.add(event.pubkey);
-            followersCount++;
-          }
-        }
-      }
-    });
-  });
-}
 
 /**
  * 投稿の統計情報を取得する
@@ -166,7 +113,7 @@ async function getPostStats(eventId: string): Promise<{ likesCount: number; repo
 /**
  * NostrイベントからUserに変換
  */
-export function eventToUser(event: NostrEvent, followCounts?: { followingCount: number; followersCount: number }): User | null {
+export function eventToUser(event: NostrEvent): User | null {
   if (event.kind !== 0) return null;
 
   try {
@@ -180,10 +127,12 @@ export function eventToUser(event: NostrEvent, followCounts?: { followingCount: 
       name: content.display_name || content.name || '',
       avatar: content.picture || undefined,
       bio: content.about || '',
-      followersCount: followCounts?.followersCount || 0,
-      followingCount: followCounts?.followingCount || 0,
+      followersCount: 0,
+      followingCount: 0,
       createdAt: new Date(event.created_at * 1000),
       npub,
+      nip05: content.nip05,
+      website: content.website,
     };
   } catch (e) {
     console.error('Failed to parse user profile:', e);
@@ -250,16 +199,21 @@ export async function searchNostr(
       console.log('[NIP-50 Search] Timeout reached, closing subscription');
       sub.close();
       
-      // ユーザーのフォロー数を取得
-      const usersWithStats: User[] = [];
-      for (const user of userCache.values()) {
-        const followCounts = await getFollowCounts(user.id);
-        const userWithStats = {
-          ...user,
-          followingCount: followCounts.followingCount,
-          followersCount: followCounts.followersCount,
-        };
-        usersWithStats.push(userWithStats);
+      // フォロー数の取得は削除（高速化のため）
+      const usersWithStats: User[] = Array.from(userCache.values())
+      
+      // デバッグ用: ユーザーキャッシュの内容を出力
+      console.log('[NIP-50 Search] UserCache size:', userCache.size);
+      console.log('[NIP-50 Search] EventCache size:', eventCache.size);
+      for (const [pubkey, user] of userCache) {
+        const event = eventCache.get(pubkey);
+        console.log('[NIP-50 Search] Cached user:', {
+          pubkey: pubkey.slice(0, 8) + '...',
+          username: user.username,
+          name: user.name,
+          created_at: event?.created_at || 'unknown',
+          id: user.id
+        });
       }
       
       // ツイートの統計情報を取得
@@ -278,12 +232,43 @@ export async function searchNostr(
       
       console.log('[NIP-50 Search] Found unique users:', usersWithStats.length);
       console.log('[NIP-50 Search] Found tweets:', tweetsWithStats.length);
+      
+      // 重複チェック
+      const uniquePubkeys = new Set(usersWithStats.map(u => u.id));
+      if (uniquePubkeys.size !== usersWithStats.length) {
+        console.error('[NIP-50 Search] DUPLICATE USERS DETECTED!', {
+          totalUsers: usersWithStats.length,
+          uniquePubkeys: uniquePubkeys.size,
+          duplicates: usersWithStats.length - uniquePubkeys.size
+        });
+        
+        // 重複しているユーザーを特定
+        const pubkeyCount = new Map<string, number>();
+        for (const user of usersWithStats) {
+          pubkeyCount.set(user.id, (pubkeyCount.get(user.id) || 0) + 1);
+        }
+        for (const [pubkey, count] of pubkeyCount) {
+          if (count > 1) {
+            console.error('[NIP-50 Search] Duplicate pubkey:', pubkey.slice(0, 8) + '...', 'count:', count);
+          }
+        }
+      }
+      
       resolve({ users: usersWithStats, tweets: tweetsWithStats });
     }, 5000); // 5秒でタイムアウト
 
     let eventCount = 0;
+    const receivedEventIds = new Set<string>();
     const sub = subscribe(searchRelays, filters, (event: NostrEvent) => {
       eventCount++;
+      
+      // イベントIDの重複チェック
+      if (receivedEventIds.has(event.id || '')) {
+        console.warn('[NIP-50 Search] Duplicate event ID received:', event.id);
+        return;
+      }
+      receivedEventIds.add(event.id || '');
+      
       console.log(`[NIP-50 Search] Event #${eventCount} received:`, {
         id: event.id,
         kind: event.kind,
@@ -300,12 +285,25 @@ export async function searchNostr(
         if (!existingEvent || event.created_at > existingEvent.created_at) {
           const user = eventToUser(event);
           if (user) {
+            // 既存のユーザーがいるかチェック
+            const existingUser = userCache.get(event.pubkey);
+            if (existingUser) {
+              console.log('[NIP-50 Search] Updating existing user for pubkey:', event.pubkey.slice(0, 8) + '...', {
+                oldUsername: existingUser.username,
+                newUsername: user.username,
+                oldCreatedAt: existingEvent?.created_at,
+                newCreatedAt: event.created_at
+              });
+            }
             userCache.set(event.pubkey, user);
             eventCache.set(event.pubkey, event);
-            console.log('[NIP-50 Search] User updated/added:', user.username, 'created_at:', event.created_at);
+            console.log('[NIP-50 Search] User updated/added:', user.username, 'created_at:', event.created_at, 'pubkey:', event.pubkey.slice(0, 8) + '...');
           }
         } else {
-          console.log('[NIP-50 Search] Skipping older user profile for pubkey:', event.pubkey);
+          console.log('[NIP-50 Search] Skipping older user profile for pubkey:', event.pubkey.slice(0, 8) + '...', {
+            existingCreatedAt: existingEvent.created_at,
+            newCreatedAt: event.created_at
+          });
         }
       } else if (event.kind === 1) {
         // テキストノート
@@ -353,19 +351,8 @@ export async function fetchUserProfiles(pubkeys: string[]): Promise<Map<string, 
     const timeout = setTimeout(async () => {
       sub.close();
       
-      // 各ユーザーのフォロー数を取得
-      const usersWithStats = new Map<string, User>();
-      for (const [pubkey, user] of userMap) {
-        const followCounts = await getFollowCounts(pubkey);
-        const userWithStats = {
-          ...user,
-          followingCount: followCounts.followingCount,
-          followersCount: followCounts.followersCount,
-        };
-        usersWithStats.set(pubkey, userWithStats);
-      }
-      
-      resolve(usersWithStats);
+      // フォロー数の取得は削除（高速化のため）
+      resolve(userMap);
     }, 3000);
 
     const sub = subscribe(readRelays, [filter], (event: NostrEvent) => {

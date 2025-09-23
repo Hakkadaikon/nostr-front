@@ -81,6 +81,19 @@ function getSpotifyInfo(url: string): { type: string; id: string } | null {
 export function isImageUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
+    
+    // 特定の画像共有サービスは除外
+    const excludedHosts = [
+      'share.yabu.me',
+      'imgur.com/gallery',
+      'gyazo.com',
+    ];
+    
+    if (excludedHosts.some(host => parsed.hostname.includes(host))) {
+      return false;
+    }
+    
+    // 直接的な画像URLかチェック
     return IMAGE_EXTENSIONS.test(parsed.pathname);
   } catch {
     return false;

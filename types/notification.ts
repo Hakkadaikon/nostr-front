@@ -6,7 +6,7 @@ export interface NotificationUser {
   username: string;
   avatar?: string;
   npub: string;
-  pubkey?: string;
+  pubkey: string;
 }
 
 export interface Notification {

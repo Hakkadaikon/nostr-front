@@ -321,9 +321,42 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
  */
 export async function likeTweet(tweetId: string): Promise<void> {
   try {
-    // TODO: Nostrの反応イベント（Kind 7）を実装
-    console.log('Like tweet:', tweetId);
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // リレー設定を取得
+    const relaysStore = useRelaysStore.getState();
+    let relays = relaysStore.relays.filter(r => r.write).map(r => r.url);
+    
+    if (relays.length === 0) {
+      const defaultRelays = process.env.NEXT_PUBLIC_DEFAULT_RELAYS;
+      if (defaultRelays) {
+        relays = defaultRelays.split(',').map(url => url.trim());
+      } else {
+        relays = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.nostr.band'];
+      }
+    }
+    
+    // イベントを作成
+    const unsignedEvent = {
+      kind: KIND_REACTION,
+      content: '+',
+      tags: [
+        ['e', tweetId],
+        ['p', ''] // 投稿者のpubkeyは本来必要だが、ここでは省略
+      ],
+      created_at: Math.floor(Date.now() / 1000),
+      pubkey: '', // これは署名時に設定される
+    };
+    
+    // Nip07で署名
+    if (window.nostr) {
+      const signedEvent = await window.nostr.signEvent(unsignedEvent);
+      
+      // リレーに送信
+      const { publish } = await import('../../../lib/nostr/client');
+      await publish(relays, signedEvent as NostrEvent);
+      console.log('Successfully liked tweet:', tweetId);
+    } else {
+      throw new Error('Nostr extension not found');
+    }
   } catch (error) {
     console.error('Failed to like tweet:', error);
     throw error;
@@ -335,8 +368,14 @@ export async function likeTweet(tweetId: string): Promise<void> {
  */
 export async function unlikeTweet(tweetId: string): Promise<void> {
   try {
-    // TODO: Nostrの削除イベント（Kind 5）を実装
-    console.log('Unlike tweet:', tweetId);
+    // 注意: 実際にはリアクションイベントのIDが必要
+    // 現在の実装では、リアクションイベントIDを追跡していないため、
+    // いいねの取り消しは機能しません
+    console.log('Unlike tweet (not implemented):', tweetId);
+    
+    // 将来的な実装:
+    // 1. いいねした際にリアクションイベントのIDを保存
+    // 2. そのIDを使ってKIND_DELETE (5) イベントを送信
     await new Promise(resolve => setTimeout(resolve, 200));
   } catch (error) {
     console.error('Failed to unlike tweet:', error);

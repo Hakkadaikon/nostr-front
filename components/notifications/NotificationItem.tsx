@@ -137,17 +137,31 @@ export function NotificationItem({ notification }: NotificationItemProps) {
           {notification.content && (
             <div className="mt-2 text-gray-900 dark:text-white">
               {notification.type === 'zap' ? (
-                <div className="flex items-start gap-2">
-                  <span className="text-2xl">⚡</span>
-                  <div className="flex-1">
-                    <div className="font-semibold text-yellow-600 dark:text-yellow-400">
-                      {notification.amount?.toLocaleString() || '0'} sats
-                    </div>
-                    {notification.content && (
-                      <div className="mt-1 text-sm">
-                        <RichContent content={notification.content} />
+                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg p-3 mt-2">
+                  <div className="flex items-start gap-3">
+                    <span className="text-3xl">⚡</span>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-2xl text-yellow-600 dark:text-yellow-400">
+                          {notification.amount?.toLocaleString() || '0'} sats
+                        </span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          from
+                        </span>
+                        <Link
+                          href={`/profile/${notification.user.npub}` as any}
+                          className="font-semibold text-purple-600 dark:text-purple-400 hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {notification.user.name || notification.user.username}
+                        </Link>
                       </div>
-                    )}
+                      {notification.content && (
+                        <div className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                          <RichContent content={notification.content} />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ) : (

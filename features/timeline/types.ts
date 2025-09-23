@@ -11,6 +11,8 @@ export interface User {
   followingCount: number;
   createdAt: Date;
   npub?: string;
+  nip05?: string;
+  website?: string;
 }
 
 // ツイート（投稿）

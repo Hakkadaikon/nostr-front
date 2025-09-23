@@ -92,24 +92,49 @@ export class NostrNotificationService {
       return;
     }
 
-    // 返信検出
+    // 返信検出 - 複数の形式をサポート
+    let isReply = false;
+    let replyToPostId: string | null = null;
+    
+    // 1. NIP-10形式: eタグに'reply'マーカーがある場合
     const replyTags = event.tags.filter(tag => 
       tag[0] === 'e' && tag[3] === 'reply'
     );
     
     if (replyTags.length > 0) {
-      // この投稿が自分の投稿への返信かチェックする必要がある
-      // ここでは簡略化のため、pタグで自分がタグ付けされているかチェック
-      const pTags = event.tags.filter(tag => 
-        tag[0] === 'p' && tag[1] === this.userPubkey
-      );
+      isReply = true;
+      replyToPostId = replyTags[0][1];
+    }
+    
+    // 2. eタグとpタグの組み合わせで判定（レガシー形式）
+    if (!isReply) {
+      const eTags = event.tags.filter(tag => tag[0] === 'e');
+      const pTags = event.tags.filter(tag => tag[0] === 'p' && tag[1] === this.userPubkey);
       
-      if (pTags.length > 0) {
+      // eタグがあり、かつ自分宛のpタグがある場合は返信とみなす
+      if (eTags.length > 0 && pTags.length > 0) {
+        isReply = true;
+        // 最後のeタグが返信先（NIP-10準拠）
+        replyToPostId = eTags[eTags.length - 1][1];
+      }
+    }
+    
+    // 3. 返信を作成（自分の投稿への返信かどうかを確認）
+    if (isReply && replyToPostId) {
+      // 自分の投稿への返信かチェック
+      const postData = await fetchPostData(replyToPostId);
+      if (postData && postData.author.pubkey === this.userPubkey) {
         await this.createNotification({
           type: 'reply',
           event,
           content: event.content,
+          postId: replyToPostId,
+          postContent: postData.content,
+          postAuthor: postData.author,
+          postCreatedAt: postData.createdAt,
+          postMedia: postData.media,
         });
+        return; // 返信として処理したら終了
       }
     }
   }
