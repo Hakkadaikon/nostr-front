@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { MainLayout } from '../components/layout/MainLayout';
 
 export const metadata = {
-  title: 'X Clone',
+  title: 'hamnostr',
   description: 'A Twitter/X clone built with Next.js + Tailwind',
 };
 
