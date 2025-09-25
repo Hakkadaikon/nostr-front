@@ -60,7 +60,7 @@ export default function Nip07LoginPrompt() {
         ) : isMobile ? (
           <Link
             href="/settings"
-            className="px-4 py-2 rounded bg-purple-600 text-white font-semibold hover:bg-purple-700"
+            className="inline-block whitespace-nowrap px-4 py-2 rounded bg-purple-600 text-white font-semibold hover:bg-purple-700"
           >
             キー管理を開く
           </Link>
