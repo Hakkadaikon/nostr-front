@@ -104,12 +104,14 @@ export function SecureMediaUploader({
       <label
         htmlFor="media-upload"
         className={`inline-flex items-center gap-2 p-2 rounded-full transition-all duration-200 ${
-          disabled 
-            ? 'opacity-50 cursor-not-allowed' 
+          disabled
+            ? 'opacity-50 cursor-not-allowed'
             : 'hover:bg-purple-50 dark:hover:bg-purple-950/20 text-purple-500 hover:scale-110 cursor-pointer'
         }`}
+        aria-label="画像をアップロード"
       >
-        <Image size={20} />
+        {/* eslint-disable-next-line jsx-a11y/alt-text */}
+        <Image size={20} aria-hidden="true" />
       </label>
 
       {uploadError && (
@@ -125,6 +127,7 @@ export function SecureMediaUploader({
         <div className="mt-3 grid grid-cols-2 gap-2">
           {selectedMedia.map((file, index) => (
             <div key={index} className="relative group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={URL.createObjectURL(file)}
                 alt={`アップロード画像 ${index + 1}`}

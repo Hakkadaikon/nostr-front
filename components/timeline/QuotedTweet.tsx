@@ -45,7 +45,7 @@ export function QuotedTweet({ quoteId, relays = [] }: QuotedTweetProps) {
         // コンテンツから画像URLを抽出
         const urlRegex = /https?:\/\/[^\s]+/g;
         const urls = event.content.match(urlRegex) || [];
-        const images = urls.filter(url => isImageUrl(url));
+        const images = Array.from(new Set(urls.filter(url => isImageUrl(url))));
         setImageUrls(images);
 
         // 画像URLを除いたコンテンツを設定
@@ -99,7 +99,7 @@ export function QuotedTweet({ quoteId, relays = [] }: QuotedTweetProps) {
     return () => {
       active = false;
     };
-  }, [quoteId, relays]);
+  }, [quoteId, relays, author]);
 
   if (isLoading) {
     return (

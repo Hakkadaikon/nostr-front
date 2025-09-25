@@ -28,8 +28,8 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply }: Timel
   });
 
   return (
-    <article className="max-w-full overflow-hidden border-b border-gray-200 dark:border-gray-800 p-4 sm:p-6 hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition-all duration-200 group">
-      <div className="flex gap-3 sm:gap-4">
+    <article className="overflow-hidden border-b border-gray-200 dark:border-gray-800 p-4 sm:p-6 hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition-all duration-200 group">
+      <div className="flex gap-3 sm:gap-4 w-full">
         {/* アバター */}
         <Link href={`/profile/${tweet.author.npub || tweet.author.id}` as any} className="flex-shrink-0">
           {tweet.author.avatar ? (
@@ -45,7 +45,7 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply }: Timel
           )}
         </Link>
 
-        <div className="flex-1 min-w-0 overflow-hidden">
+        <div className="flex-1 min-w-0">
           {/* ヘッダー */}
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-1 flex-wrap">

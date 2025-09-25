@@ -180,6 +180,7 @@ export function TweetComposer({
                 <div key={index} className="relative group">
                   <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
                     {file.type.startsWith('image/') ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={URL.createObjectURL(file)}
                         alt={`Preview ${index + 1}`}

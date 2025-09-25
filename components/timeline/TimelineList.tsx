@@ -74,7 +74,7 @@ export function TimelineList({
 
   return (
     <>
-      <div className="w-full max-w-full overflow-x-hidden divide-y divide-gray-200 dark:divide-gray-800">
+      <div className="w-full overflow-hidden divide-y divide-gray-200 dark:divide-gray-800">
         {tweets.map((tweet) => (
           <TimelineItem
             key={tweet.id}

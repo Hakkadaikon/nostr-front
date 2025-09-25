@@ -71,8 +71,8 @@ export default function HomePage() {
   }, [shouldBlockFollowingTimeline, reset]);
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 dark:bg-black">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+    <div className="min-h-screen w-full overflow-x-hidden bg-gray-50 dark:bg-black">
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 overflow-hidden">
         <header className="flex flex-col gap-4 rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-gray-800 dark:bg-gray-950/70">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h1 className="text-2xl font-semibold text-gray-900 dark:text-white sm:text-3xl">ホーム</h1>
@@ -104,7 +104,7 @@ export default function HomePage() {
         </header>
 
         <div className="flex flex-1 flex-col gap-6 lg:flex-row">
-          <main className="min-w-0 flex-1 space-y-6">
+          <main className="min-w-0 flex-1 space-y-6 overflow-hidden">
             {isAuthenticated ? (
               <section className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950">
                 <TweetComposer onTweetCreated={addTweet} />
@@ -117,7 +117,7 @@ export default function HomePage() {
               </section>
             )}
 
-            <section className="rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-950">
+            <section className="rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-950 overflow-hidden">
               {shouldBlockFollowingTimeline ? (
                 <div className="px-6 py-12 text-center">
                   <p className="text-base font-medium text-gray-700 dark:text-gray-300">

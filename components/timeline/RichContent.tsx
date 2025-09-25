@@ -20,12 +20,22 @@ function renderText(text: string) {
   return text;
 }
 
-function renderLink(url: string, key: string) {
+function renderLink(url: string, key: string, seenUrls: Set<string>) {
+  if (seenUrls.has(url)) {
+    return null;
+  }
+  seenUrls.add(url);
   return <MediaEmbed key={key} url={url} />;
 }
 
 
-function renderNostr(token: string, key: string, tags?: string[][], suppressNoteIds?: string[]) {
+function renderNostr(
+  token: string,
+  key: string,
+  tags: string[][] | undefined,
+  suppressNoteIds: string[] | undefined,
+  seenNoteIds: Set<string>
+) {
   const parsed = parseNostrUri(token);
   if (!parsed) {
     return (
@@ -37,6 +47,10 @@ function renderNostr(token: string, key: string, tags?: string[][], suppressNote
 
   if (parsed.type === 'note') {
     const noteId = parsed.data as string;
+    if (seenNoteIds.has(noteId)) {
+      return null;
+    }
+    seenNoteIds.add(noteId);
     if (suppressNoteIds?.includes(noteId)) {
       return null;
     }
@@ -51,6 +65,10 @@ function renderNostr(token: string, key: string, tags?: string[][], suppressNote
 
   if (parsed.type === 'nevent') {
     const data = parsed.data as { id: string; relays?: string[] };
+    if (seenNoteIds.has(data.id)) {
+      return null;
+    }
+    seenNoteIds.add(data.id);
     if (suppressNoteIds?.includes(data.id)) {
       return null;
     }
@@ -101,6 +119,8 @@ function renderNostr(token: string, key: string, tags?: string[][], suppressNote
 export function RichContent({ content, tags, suppressNoteIds }: RichContentProps) {
   const nodes = useMemo(() => {
     const elements: ReactNode[] = [];
+    const seenNoteIds = new Set<string>();
+    const seenUrls = new Set<string>();
     let lastIndex = 0;
     const matches = content.matchAll(TOKEN_REGEX);
 
@@ -113,9 +133,21 @@ export function RichContent({ content, tags, suppressNoteIds }: RichContentProps
       }
 
       if (token.startsWith('nostr:')) {
-        elements.push(renderNostr(token, `${match.index}-${token}`, tags, suppressNoteIds));
+        const node = renderNostr(
+          token,
+          `${match.index}-${token}`,
+          tags,
+          suppressNoteIds,
+          seenNoteIds
+        );
+        if (node) {
+          elements.push(node);
+        }
       } else if (token.startsWith('http')) {
-        elements.push(renderLink(token, `${match.index}-${token}`));
+        const node = renderLink(token, `${match.index}-${token}`, seenUrls);
+        if (node) {
+          elements.push(node);
+        }
       }
 
       lastIndex = match.index + token.length;
@@ -129,7 +161,7 @@ export function RichContent({ content, tags, suppressNoteIds }: RichContentProps
   }, [content, tags, suppressNoteIds]);
 
   return (
-    <div className="text-gray-900 dark:text-white whitespace-pre-wrap break-words">
+    <div className="text-gray-900 dark:text-white whitespace-pre-wrap break-all overflow-hidden">
       {nodes}
     </div>
   );
