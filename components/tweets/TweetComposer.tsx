@@ -134,8 +134,8 @@ export function TweetComposer({
   }, [error, clearError]);
 
   return (
-    <div className="border-b border-gray-200 dark:border-gray-800 p-4 hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition-colors duration-200">
-      <div className="flex gap-3">
+    <div className="border-b border-gray-200 dark:border-gray-800 p-4 sm:p-6 hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition-colors duration-200">
+      <div className="flex gap-3 sm:gap-4">
         {/* アバター */}
         <Avatar 
           src={currentProfile?.picture} 
@@ -156,7 +156,7 @@ export function TweetComposer({
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onFocus={() => setIsExpanded(true)}
-            className="w-full p-3 text-xl bg-transparent text-gray-900 dark:text-white placeholder-gray-500 resize-none focus:outline-none overflow-y-auto"
+            className="w-full p-3 text-lg sm:text-xl bg-transparent text-gray-900 dark:text-white placeholder-gray-500 resize-none focus:outline-none overflow-y-auto"
             placeholder={placeholder}
             style={{ minHeight: isExpanded ? '100px' : '56px' }}
             disabled={isPosting}
@@ -172,7 +172,10 @@ export function TweetComposer({
 
           {/* メディアプレビュー */}
           {selectedMedia.length > 0 && (
-            <div className="mt-3 grid grid-cols-2 gap-2 max-w-full">
+            <div className={`mt-3 grid gap-2 max-w-full ${
+              selectedMedia.length === 1 ? 'grid-cols-1' : 
+              'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'
+            }`}>
               {selectedMedia.map((file, index) => (
                 <div key={index} className="relative group">
                   <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">

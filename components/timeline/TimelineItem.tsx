@@ -28,8 +28,8 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply }: Timel
   });
 
   return (
-    <article className="border-b border-gray-200 dark:border-gray-800 p-4 hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition-all duration-200 group">
-      <div className="flex gap-3">
+    <article className="border-b border-gray-200 dark:border-gray-800 p-4 sm:p-6 hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition-all duration-200 group">
+      <div className="flex gap-3 sm:gap-4">
         {/* アバター */}
         <Link href={`/profile/${tweet.author.npub || tweet.author.id}` as any} className="flex-shrink-0">
           {tweet.author.avatar ? (
@@ -38,10 +38,10 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply }: Timel
               alt={tweet.author.name}
               width={48}
               height={48}
-              className="rounded-full hover:opacity-90 transition-opacity"
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:opacity-90 transition-opacity"
             />
           ) : (
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
           )}
         </Link>
 
@@ -86,9 +86,16 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply }: Timel
 
           {/* メディア */}
           {tweet.media && tweet.media.length > 0 && (
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {tweet.media.map((media) => (
-                <div key={media.id} className="relative aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+            <div className={`mt-3 grid gap-2 ${
+              tweet.media.length === 1 ? 'grid-cols-1' : 
+              tweet.media.length === 2 ? 'grid-cols-2' : 
+              tweet.media.length === 3 ? 'grid-cols-2 sm:grid-cols-3' : 
+              'grid-cols-2'
+            }`}>
+              {tweet.media.map((media, index) => (
+                <div key={media.id} className={`relative aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 ${
+                  tweet.media && tweet.media.length === 3 && index === 2 ? 'col-span-2 sm:col-span-1' : ''
+                }`}>
                   {media.type === 'image' && (
                     <SafeImage
                       src={media.url}
@@ -103,7 +110,7 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply }: Timel
           )}
 
           {/* アクションバー */}
-          <div className="mt-3 flex items-center justify-between max-w-md">
+          <div className="mt-3 flex items-center justify-between sm:max-w-lg lg:max-w-xl">
             {/* 返信 */}
             <IconButton
               onClick={() => onReply?.(tweet)}

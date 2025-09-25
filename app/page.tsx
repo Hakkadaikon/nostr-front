@@ -37,8 +37,8 @@ export default function HomePage() {
     <div className="min-h-screen">
       {/* ヘッダー */}
       <header className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
-        <div className="px-4 py-4">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+        <div className="px-4 sm:px-6 lg:px-8 py-4">
+          <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
             ホーム
           </h1>
         </div>

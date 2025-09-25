@@ -19,7 +19,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   // Load relays from NIP-65 (kind:10002) when pubkey is ready
   useLoadNip65Relays();
 
-  const innerContainerClass = 'mx-auto w-full min-h-screen max-w-2xl md:border-x border-gray-200 dark:border-gray-800';
+  const innerContainerClass = 'mx-auto w-full min-h-screen lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl md:border-x border-gray-200 dark:border-gray-800';
 
   return (
     <ThemeProvider>
@@ -46,7 +46,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         </div>
         
         {/* 右サイドバー（将来的な拡張用） */}
-        <div className="hidden xl:block w-80 p-4">
+        <div className="hidden 2xl:block w-80 p-4">
           {/* トレンド、おすすめユーザーなどを表示予定 */}
         </div>
       </div>
