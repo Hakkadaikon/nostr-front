@@ -34,7 +34,7 @@ export default function HomePage() {
   });
 
   return (
-    <div className="min-h-screen">
+    <div className="w-full">
       {/* ヘッダー */}
       <header className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
         <div className="px-4 sm:px-6 lg:px-8 py-4">
@@ -79,7 +79,7 @@ export default function HomePage() {
       ) : null}
 
       {/* タイムライン */}
-      <main>
+      <main className="w-full">
         <TimelineList
           tweets={tweets}
           isLoading={isLoading}
