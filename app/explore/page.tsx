@@ -148,7 +148,7 @@ function ExplorePageInner() {
             onChange={setQuery}
             onSubmit={handleSearchSubmit}
             placeholder="検索"
-            autoFocus
+            autoFocus={false}
             onClear={handleClear}
           />
         </div>
