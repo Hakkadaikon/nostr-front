@@ -60,18 +60,18 @@ export function FollowList({ npub, type }: FollowListProps) {
     <div className="min-h-screen">
       {/* ヘッダー */}
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800">
-        <div className="flex items-center gap-4 px-4 py-3">
+        <div className="flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-2.5 sm:py-3">
           <button
             onClick={handleBack}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+            className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
           <div>
-            <h1 className="text-xl font-bold">
+            <h1 className="text-lg sm:text-xl font-bold">
               {type === 'following' ? 'フォロー中' : 'フォロワー'}
             </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
               {users.length} 人
             </p>
           </div>
@@ -79,7 +79,7 @@ export function FollowList({ npub, type }: FollowListProps) {
       </div>
 
       {/* コンテンツ */}
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto px-3 sm:px-4 lg:px-6">
         {isLoading ? (
           <div className="flex justify-center py-8">
             <Spinner />

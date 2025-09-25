@@ -93,7 +93,7 @@ export function ProfileHeader({
 
   return (
     <header className="relative">
-      <div className="relative h-48 w-full overflow-hidden bg-gradient-to-r from-purple-700 via-pink-500 to-orange-400 md:h-56">
+      <div className="relative h-32 w-full overflow-hidden bg-gradient-to-r from-purple-700 via-pink-500 to-orange-400 sm:h-48 md:h-56 lg:h-64">
         {profile.banner && !bannerError && (
           <SafeImage
             src={profile.banner}
@@ -107,10 +107,10 @@ export function ProfileHeader({
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
       </div>
 
-      <div className="mx-auto w-full max-w-6xl px-4 pb-6">
-        <div className="-mt-16 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end">
-            <div className="relative h-32 w-32 flex-shrink-0 aspect-square overflow-hidden rounded-full border-4 border-white bg-gray-200 shadow-xl dark:border-gray-950 dark:bg-gray-800">
+      <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-6 pb-4 sm:pb-6">
+        <div className="-mt-10 sm:-mt-12 md:-mt-16 flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-end">
+            <div className="relative h-20 w-20 sm:h-24 sm:w-24 md:h-32 md:w-32 flex-shrink-0 aspect-square overflow-hidden rounded-full border-2 sm:border-4 border-white bg-gray-200 shadow-lg sm:shadow-xl dark:border-gray-950 dark:bg-gray-800">
               {avatarSrc ? (
                 <SafeImage
                   src={avatarSrc}
@@ -124,10 +124,10 @@ export function ProfileHeader({
               )}
             </div>
 
-            <div className="space-y-4 text-gray-900 dark:text-white">
-              <div className="space-y-2">
+            <div className="space-y-2 sm:space-y-3 md:space-y-4 text-gray-900 dark:text-white">
+              <div className="space-y-1 sm:space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-2xl font-bold md:text-3xl">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
                     {displayName}
                   </h1>
                   {isActivityPubUser(profileAsUser) && (
@@ -141,13 +141,13 @@ export function ProfileHeader({
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-300">
+                <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-500 dark:text-gray-300">
                   <span>@{username}</span>
-                  <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                  <span className="hidden sm:inline-flex rounded-full bg-gray-200 px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-gray-700 dark:bg-gray-800 dark:text-gray-200">
                     {truncatedNpub}
                   </span>
                   {profile.lud16 && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-yellow-500/10 px-3 py-1 text-xs font-semibold text-yellow-600 dark:bg-yellow-500/15 dark:text-yellow-300">
+                    <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-yellow-500/10 px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-yellow-600 dark:bg-yellow-500/15 dark:text-yellow-300">
                       <Zap size={14} />
                       {profile.lud16}
                     </span>
@@ -157,7 +157,7 @@ export function ProfileHeader({
                       href={profile.website?.startsWith('http') ? profile.website : `https://${cleanWebsite}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 rounded-full bg-purple-600/10 px-3 py-1 text-xs font-semibold text-purple-600 transition hover:bg-purple-600/20 dark:bg-purple-400/10 dark:text-purple-200"
+                      className="inline-flex items-center gap-1 rounded-full bg-purple-600/10 px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-purple-600 transition hover:bg-purple-600/20 dark:bg-purple-400/10 dark:text-purple-200"
                     >
                       <Globe2 size={14} />
                       {cleanWebsite}
@@ -166,7 +166,7 @@ export function ProfileHeader({
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 {postCount !== null && postCount !== undefined && (
                   <div>
                     <span className="font-bold text-gray-900 dark:text-white">{postCount.toLocaleString()}</span>{' '}
@@ -195,7 +195,7 @@ export function ProfileHeader({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-3">
+          <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2 sm:gap-3 mt-4 lg:mt-0">
             <Button
               onClick={handleShare}
               variant="ghost"

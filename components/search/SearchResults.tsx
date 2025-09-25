@@ -49,16 +49,16 @@ export function SearchResults({
   }
 
   return (
-    <div className="divide-y divide-gray-200 dark:divide-gray-800">
+    <div className="w-full overflow-hidden">
       {/* ユーザー検索結果 */}
       {searchType !== 'tweets' && results.users.length > 0 && (
-        <div>
+        <div className="w-full">
           {searchType === 'all' && (
-            <h2 className="px-4 py-3 text-lg font-semibold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900/50">
+            <h2 className="px-4 sm:px-6 py-3 text-base sm:text-lg font-semibold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900/50">
               ユーザー
             </h2>
           )}
-          <div className="divide-y divide-gray-200 dark:divide-gray-800">
+          <div className="divide-y divide-gray-200 dark:divide-gray-800 overflow-hidden">
             {results.users
               .filter((user, index, self) => 
                 // 公開鍵（user.id）でユニークにする
@@ -118,13 +118,13 @@ export function SearchResults({
 
       {/* ツイート検索結果 */}
       {searchType !== 'users' && results.tweets.length > 0 && (
-        <div>
+        <div className="w-full">
           {searchType === 'all' && (
-            <h2 className="px-4 py-3 text-lg font-semibold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900/50">
+            <h2 className="px-4 sm:px-6 py-3 text-base sm:text-lg font-semibold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900/50">
               ツイート
             </h2>
           )}
-          <div className="divide-y divide-gray-200 dark:divide-gray-800">
+          <div className="divide-y divide-gray-200 dark:divide-gray-800 overflow-hidden">
             {results.tweets.map((tweet) => (
               <TimelineItem
                 key={tweet.id}

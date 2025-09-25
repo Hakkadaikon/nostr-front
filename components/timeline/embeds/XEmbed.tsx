@@ -35,31 +35,40 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
     const loadTweet = async () => {
       if (!containerRef.current || !statusId) return;
 
+      console.log('[XEmbed] Starting to load tweet:', statusId);
+
       try {
         setIsLoading(true);
         setHasError(false);
 
         // Load Twitter widget script if not already loaded
         if (!window.twttr?.widgets) {
+          console.log('[XEmbed] Twitter widgets not found, loading script...');
           await new Promise<void>((resolve, reject) => {
-            // タイムアウト設定（10秒）
+            // タイムアウト設定（20秒に延長）
             const timeout = setTimeout(() => {
+              console.error('[XEmbed] Twitter script load timeout');
               reject(new Error('Twitter script load timeout'));
-            }, 10000);
+            }, 20000);
 
             const existingScript = document.querySelector('script[src="https://platform.twitter.com/widgets.js"]');
-            
+
             if (existingScript) {
+              console.log('[XEmbed] Script element exists, checking if loaded...');
               // Script already exists, wait for it to load
               if (window.twttr?.widgets) {
+                console.log('[XEmbed] Twitter widgets already available');
                 clearTimeout(timeout);
                 resolve();
               } else {
+                console.log('[XEmbed] Waiting for existing script to load...');
                 const handleLoad = () => {
+                  console.log('[XEmbed] Existing script loaded');
                   clearTimeout(timeout);
                   resolve();
                 };
                 const handleError = () => {
+                  console.error('[XEmbed] Failed to load existing Twitter script');
                   clearTimeout(timeout);
                   reject(new Error('Failed to load Twitter script'));
                 };
@@ -69,22 +78,33 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
               return;
             }
 
+            console.log('[XEmbed] Creating new script element...');
             const script = document.createElement('script');
             script.src = 'https://platform.twitter.com/widgets.js';
             script.async = true;
             script.charset = 'utf-8';
             script.onload = () => {
+              console.log('[XEmbed] Script loaded, checking for widgets...');
               clearTimeout(timeout);
               // widgets.jsがロードされても即座にtwttr.widgetsが利用可能にならない場合があるため、少し待つ
-              timeoutId = setTimeout(() => {
+              let retryCount = 0;
+              const checkWidgets = () => {
                 if (window.twttr?.widgets) {
+                  console.log('[XEmbed] Twitter widgets now available');
                   resolve();
+                } else if (retryCount < 10) {
+                  retryCount++;
+                  console.log('[XEmbed] Waiting for widgets...', retryCount);
+                  setTimeout(checkWidgets, 200);
                 } else {
+                  console.error('[XEmbed] Twitter widgets not available after retries');
                   reject(new Error('Twitter widgets not available'));
                 }
-              }, 100);
+              };
+              checkWidgets();
             };
-            script.onerror = () => {
+            script.onerror = (error) => {
+              console.error('[XEmbed] Script load error:', error);
               clearTimeout(timeout);
               reject(new Error('Failed to load Twitter script'));
             };
@@ -99,9 +119,10 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
 
         // Create tweet embed
         if (window.twttr?.widgets && containerRef.current && isMounted) {
+          console.log('[XEmbed] Creating tweet embed...');
           // Check theme from localStorage or system preference
-          const theme = localStorage.getItem('theme') === 'dark' || 
-                       (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches) 
+          const theme = localStorage.getItem('theme') === 'dark' ||
+                       (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
                        ? 'dark' : 'light';
           
           const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
@@ -125,16 +146,24 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
           );
 
           if (tweetElement && isMounted) {
+            console.log('[XEmbed] Tweet embed created successfully');
             setIsLoading(false);
             setHasError(false);
           } else if (isMounted) {
             // ツイートが見つからない、削除された、または非公開の場合
+            console.warn('[XEmbed] Tweet not found or unavailable:', statusId);
             setHasError(true);
             setIsLoading(false);
           }
         }
       } catch (error) {
-        console.error('Error loading tweet:', error);
+        console.error('[XEmbed] Error loading tweet:', error);
+        console.error('[XEmbed] Error details:', {
+          statusId,
+          url,
+          twttrAvailable: !!window.twttr,
+          widgetsAvailable: !!window.twttr?.widgets,
+        });
         if (isMounted) {
           setHasError(true);
           setIsLoading(false);

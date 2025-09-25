@@ -78,19 +78,27 @@ export function QuotedTweet({ quoteId, relays = [] }: QuotedTweetProps) {
         );
 
         // タイムアウト設定
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
           authorSub.close();
-          if (!author) {
-            // デフォルトプロフィール
-            setAuthor({
-              id: event.pubkey,
-              username: nip19.npubEncode(event.pubkey).slice(0, 12),
-              name: 'Nostr User',
-              avatar: `https://robohash.org/${event.pubkey}`,
-            });
-          }
+          setAuthor((prevAuthor: any) => {
+            if (!prevAuthor) {
+              // デフォルトプロフィール
+              return {
+                id: event.pubkey,
+                username: nip19.npubEncode(event.pubkey).slice(0, 12),
+                name: 'Nostr User',
+                avatar: `https://robohash.org/${event.pubkey}`,
+              };
+            }
+            return prevAuthor;
+          });
           setIsLoading(false);
         }, 2000);
+
+        return () => {
+          clearTimeout(timeoutId);
+          authorSub.close();
+        };
       } else {
         setIsLoading(false);
       }
@@ -99,7 +107,7 @@ export function QuotedTweet({ quoteId, relays = [] }: QuotedTweetProps) {
     return () => {
       active = false;
     };
-  }, [quoteId, relays, author]);
+  }, [quoteId, relays]);
 
   if (isLoading) {
     return (
