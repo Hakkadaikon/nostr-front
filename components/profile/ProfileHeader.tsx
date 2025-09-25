@@ -25,6 +25,10 @@ interface ProfileHeaderProps {
   followCount?: number | null;
   followerCount?: number | null;
   postCount?: number | null;
+  onLoadFollowingCount?: () => void;
+  onLoadFollowerCount?: () => void;
+  isLoadingFollowingCount?: boolean;
+  isLoadingFollowerCount?: boolean;
 }
 
 export function ProfileHeader({
@@ -36,6 +40,10 @@ export function ProfileHeader({
   followCount,
   followerCount,
   postCount,
+  onLoadFollowingCount,
+  onLoadFollowerCount,
+  isLoadingFollowingCount = false,
+  isLoadingFollowerCount = false,
 }: ProfileHeaderProps) {
   const [bannerError, setBannerError] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -173,23 +181,47 @@ export function ProfileHeader({
                     <span>ポスト</span>
                   </div>
                 )}
-                {followCount !== null && followCount !== undefined && (
-                  <Link 
+                {followCount !== null && followCount !== undefined ? (
+                  <Link
                     href={`/profile/${profile.npub}/following` as any}
                     className="hover:underline cursor-pointer"
                   >
                     <span className="font-bold text-gray-900 dark:text-white">{followCount.toLocaleString()}</span>{' '}
                     <span>フォロー中</span>
                   </Link>
+                ) : (
+                  <button
+                    onClick={onLoadFollowingCount}
+                    disabled={isLoadingFollowingCount}
+                    className="hover:underline cursor-pointer text-purple-600 dark:text-purple-400 disabled:opacity-50 disabled:cursor-wait"
+                  >
+                    {isLoadingFollowingCount ? (
+                      <span>読み込み中...</span>
+                    ) : (
+                      <span>フォロー数を表示</span>
+                    )}
+                  </button>
                 )}
-                {followerCount !== null && followerCount !== undefined && (
-                  <Link 
+                {followerCount !== null && followerCount !== undefined ? (
+                  <Link
                     href={`/profile/${profile.npub}/followers` as any}
                     className="hover:underline cursor-pointer"
                   >
                     <span className="font-bold text-gray-900 dark:text-white">{followerCount.toLocaleString()}</span>{' '}
                     <span>フォロワー</span>
                   </Link>
+                ) : (
+                  <button
+                    onClick={onLoadFollowerCount}
+                    disabled={isLoadingFollowerCount}
+                    className="hover:underline cursor-pointer text-purple-600 dark:text-purple-400 disabled:opacity-50 disabled:cursor-wait"
+                  >
+                    {isLoadingFollowerCount ? (
+                      <span>読み込み中...</span>
+                    ) : (
+                      <span>フォロワー数を表示</span>
+                    )}
+                  </button>
                 )}
               </div>
             </div>

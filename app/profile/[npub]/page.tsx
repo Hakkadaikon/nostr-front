@@ -32,6 +32,10 @@ export default function ProfilePage({ params }: Props) {
   const [tweetsLoading, setTweetsLoading] = useState(false);
   const [followingCount, setFollowingCount] = useState<number | null>(null);
   const [followerCount, setFollowerCount] = useState<number | null>(null);
+  const [isLoadingFollowingCount, setIsLoadingFollowingCount] = useState(false);
+  const [isLoadingFollowerCount, setIsLoadingFollowerCount] = useState(false);
+  const [hasLoadedFollowingCount, setHasLoadedFollowingCount] = useState(false);
+  const [hasLoadedFollowerCount, setHasLoadedFollowerCount] = useState(false);
   
   const { current: currentUser } = useProfileStore();
   const { publicKey } = useAuthStore();
@@ -82,12 +86,7 @@ export default function ProfilePage({ params }: Props) {
           setIsFollowing(status);
         }
 
-        // プロフィール統計情報を取得
-        if (pubkey) {
-          const stats = await fetchProfileStats(pubkey);
-          setFollowingCount(stats.followingCount);
-          setFollowerCount(stats.followerCount);
-        }
+        // プロフィール統計情報はクリック時に取得するため、ここでは取得しない
       } catch (error) {
         console.error('Failed to load profile:', error);
         // エラー時にもデフォルト値を設定
@@ -179,7 +178,13 @@ export default function ProfilePage({ params }: Props) {
   const handleLike = async (tweetId: string) => {
     const tweet = tweets.find(t => t.id === tweetId);
     if (!tweet) return;
-    
+
+    // 認証チェック
+    if (!publicKey) {
+      console.warn('Cannot like: User is not authenticated');
+      return;
+    }
+
     try {
       // 楽観的更新
       setTweets(tweets.map(t => {
@@ -192,11 +197,11 @@ export default function ProfilePage({ params }: Props) {
         }
         return t;
       }));
-      
+
       if (tweet.isLiked) {
         await unlikeTweet(tweetId);
       } else {
-        await likeTweet(tweetId);
+        await likeTweet(tweetId, tweet.author.id);
       }
     } catch (error) {
       // エラー時は元に戻す
@@ -214,10 +219,48 @@ export default function ProfilePage({ params }: Props) {
     }
   };
 
+  const handleLoadFollowingCount = async () => {
+    if (isLoadingFollowingCount || hasLoadedFollowingCount || !pubkey) return;
+
+    setIsLoadingFollowingCount(true);
+    try {
+      const stats = await fetchProfileStats(pubkey);
+      setFollowingCount(stats.followingCount);
+      setHasLoadedFollowingCount(true);
+    } catch (error) {
+      console.error('Failed to load following count:', error);
+      setFollowingCount(0);
+    } finally {
+      setIsLoadingFollowingCount(false);
+    }
+  };
+
+  const handleLoadFollowerCount = async () => {
+    if (isLoadingFollowerCount || hasLoadedFollowerCount || !pubkey) return;
+
+    setIsLoadingFollowerCount(true);
+    try {
+      const stats = await fetchProfileStats(pubkey);
+      setFollowerCount(stats.followerCount);
+      setHasLoadedFollowerCount(true);
+    } catch (error) {
+      console.error('Failed to load follower count:', error);
+      setFollowerCount(0);
+    } finally {
+      setIsLoadingFollowerCount(false);
+    }
+  };
+
   const handleRetweet = async (tweetId: string) => {
     const tweet = tweets.find(t => t.id === tweetId);
     if (!tweet) return;
-    
+
+    // 認証チェック
+    if (!publicKey) {
+      console.warn('Cannot retweet: User is not authenticated');
+      return;
+    }
+
     try {
       // 楽観的更新
       setTweets(tweets.map(t => {
@@ -230,11 +273,11 @@ export default function ProfilePage({ params }: Props) {
         }
         return t;
       }));
-      
+
       if (tweet.isRetweeted) {
         await undoRetweet(tweetId);
       } else {
-        await retweet(tweetId);
+        await retweet(tweetId, tweet.author.id);
       }
     } catch (error) {
       // エラー時は元に戻す
@@ -279,6 +322,10 @@ export default function ProfilePage({ params }: Props) {
         followCount={followingCount}
         followerCount={followerCount}
         postCount={tweets.length}
+        onLoadFollowingCount={handleLoadFollowingCount}
+        onLoadFollowerCount={handleLoadFollowerCount}
+        isLoadingFollowingCount={isLoadingFollowingCount}
+        isLoadingFollowerCount={isLoadingFollowerCount}
       />
 
       <main className="mx-auto mt-4 sm:mt-6 md:mt-8 lg:mt-10 w-full max-w-6xl px-3 sm:px-4 lg:px-6">

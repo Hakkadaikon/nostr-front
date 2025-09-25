@@ -1,6 +1,7 @@
 import { TimelineParams, TimelineResponse, Tweet } from '../types';
 import { subscribeTo, getReadRelays } from '../../relays/services/relayPool';
 import { useRelaysStore } from '../../../stores/relays.store';
+import { useAuthStore } from '../../../stores/auth.store';
 import { type Event as NostrEvent, nip19 } from 'nostr-tools';
 import { format } from 'date-fns';
 import { fetchFollowList } from '../../follow/services/follow';
@@ -319,12 +320,19 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
 /**
  * ツイートをいいねする（Nostrでは反応イベントを送信）
  */
-export async function likeTweet(tweetId: string): Promise<void> {
+export async function likeTweet(tweetId: string, authorPubkey?: string): Promise<void> {
   try {
+    // 認証チェック
+    const authStore = useAuthStore.getState();
+    if (!authStore.publicKey && !authStore.npub) {
+      console.warn('Cannot like: User is not authenticated');
+      throw new Error('Authentication required to like posts');
+    }
+
     // リレー設定を取得
     const relaysStore = useRelaysStore.getState();
     let relays = relaysStore.relays.filter(r => r.write).map(r => r.url);
-    
+
     if (relays.length === 0) {
       const defaultRelays = process.env.NEXT_PUBLIC_DEFAULT_RELAYS;
       if (defaultRelays) {
@@ -333,23 +341,25 @@ export async function likeTweet(tweetId: string): Promise<void> {
         relays = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.nostr.band'];
       }
     }
-    
+
     // イベントを作成
+    const tags: string[][] = [['e', tweetId]];
+    if (authorPubkey) {
+      tags.push(['p', authorPubkey]);
+    }
+
     const unsignedEvent = {
       kind: KIND_REACTION,
       content: '+',
-      tags: [
-        ['e', tweetId],
-        ['p', ''] // 投稿者のpubkeyは本来必要だが、ここでは省略
-      ],
+      tags,
       created_at: Math.floor(Date.now() / 1000),
       pubkey: '', // これは署名時に設定される
     };
-    
+
     // Nip07で署名
     if (window.nostr) {
       const signedEvent = await window.nostr.signEvent(unsignedEvent);
-      
+
       // リレーに送信
       const { publish } = await import('../../../lib/nostr/client');
       await publish(relays, signedEvent as NostrEvent);
@@ -368,11 +378,18 @@ export async function likeTweet(tweetId: string): Promise<void> {
  */
 export async function unlikeTweet(tweetId: string): Promise<void> {
   try {
+    // 認証チェック
+    const authStore = useAuthStore.getState();
+    if (!authStore.publicKey && !authStore.npub) {
+      console.warn('Cannot unlike: User is not authenticated');
+      throw new Error('Authentication required to unlike posts');
+    }
+
     // 注意: 実際にはリアクションイベントのIDが必要
     // 現在の実装では、リアクションイベントIDを追跡していないため、
     // いいねの取り消しは機能しません
     console.log('Unlike tweet (not implemented):', tweetId);
-    
+
     // 将来的な実装:
     // 1. いいねした際にリアクションイベントのIDを保存
     // 2. そのIDを使ってKIND_DELETE (5) イベントを送信
@@ -388,12 +405,19 @@ export async function unlikeTweet(tweetId: string): Promise<void> {
  */
 export async function retweet(tweetId: string, authorPubkey?: string): Promise<void> {
   try {
+    // 認証チェック
+    const authStore = useAuthStore.getState();
+    if (!authStore.publicKey && !authStore.npub) {
+      console.warn('Cannot retweet: User is not authenticated');
+      throw new Error('Authentication required to retweet posts');
+    }
+
     // 作者の公開鍵が提供されていない場合は、イベントから取得する必要がある
     // 簡略化のため、ここでは必須パラメータとする
     if (!authorPubkey) {
       throw new Error('Author pubkey is required for repost');
     }
-    
+
     await createRepost(tweetId, authorPubkey);
   } catch (error) {
     console.error('Failed to retweet:', error);
@@ -407,6 +431,13 @@ export async function retweet(tweetId: string, authorPubkey?: string): Promise<v
  */
 export async function undoRetweet(repostEventId: string): Promise<void> {
   try {
+    // 認証チェック
+    const authStore = useAuthStore.getState();
+    if (!authStore.publicKey && !authStore.npub) {
+      console.warn('Cannot undo retweet: User is not authenticated');
+      throw new Error('Authentication required to undo retweet');
+    }
+
     await deleteRepost(repostEventId);
   } catch (error) {
     console.error('Failed to undo retweet:', error);

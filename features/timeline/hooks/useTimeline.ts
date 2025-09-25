@@ -131,6 +131,13 @@ export function useTimeline(params: TimelineParams) {
     const tweet = state.tweets.find(t => t.id === tweetId);
     if (!tweet) return;
 
+    // 認証チェック
+    const authStore = useAuthStore.getState();
+    if (!authStore.publicKey && !authStore.npub) {
+      console.warn('Cannot like: User is not authenticated');
+      return;
+    }
+
     // 楽観的更新
     dispatch({ type: 'TOGGLE_LIKE', tweetId });
 
@@ -138,7 +145,7 @@ export function useTimeline(params: TimelineParams) {
       if (tweet.isLiked) {
         await unlikeTweet(tweetId);
       } else {
-        await likeTweet(tweetId);
+        await likeTweet(tweetId, tweet.author.id);
       }
     } catch (error) {
       // エラー時は元に戻す
@@ -151,6 +158,13 @@ export function useTimeline(params: TimelineParams) {
   const toggleRetweet = useCallback(async (tweetId: string) => {
     const tweet = state.tweets.find(t => t.id === tweetId);
     if (!tweet) return;
+
+    // 認証チェック
+    const authStore = useAuthStore.getState();
+    if (!authStore.publicKey && !authStore.npub) {
+      console.warn('Cannot retweet: User is not authenticated');
+      return;
+    }
 
     // 楽観的更新
     dispatch({ type: 'TOGGLE_RETWEET', tweetId });

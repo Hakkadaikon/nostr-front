@@ -51,9 +51,9 @@ export function QuotedTweet({ quoteId, relays = [] }: QuotedTweetProps) {
         // 画像URLを除いたコンテンツを設定
         let content = event.content;
         images.forEach(imageUrl => {
-          content = content.replace(imageUrl, '').trim();
+          content = content.replace(imageUrl, '');
         });
-        setDisplayContent(content);
+        setDisplayContent(content.trim());
         // 作者情報を取得
         const authorSub = subscribeTo(
           allRelays,
@@ -172,7 +172,7 @@ export function QuotedTweet({ quoteId, relays = [] }: QuotedTweetProps) {
           {/* コンテンツ */}
           <div className="mt-1">
             <p className="text-gray-900 dark:text-white text-sm line-clamp-3">
-              {displayContent || note.content}
+              {displayContent}
             </p>
           </div>
 

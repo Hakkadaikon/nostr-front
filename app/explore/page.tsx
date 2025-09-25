@@ -7,6 +7,7 @@ import { useSearch } from '../../features/search/hooks/useSearch';
 import { SearchBox } from '../../components/search/SearchBox';
 import { SearchResults } from '../../components/search/SearchResults';
 import { likeTweet, unlikeTweet, retweet, undoRetweet } from '../../features/timeline/services/timeline';
+import { useAuthStore } from '../../stores/auth.store';
 
 const ALLOWED_TYPES: SearchType[] = ['all', 'users', 'tweets'];
 
@@ -103,35 +104,49 @@ function ExplorePageInner() {
     replaceUrl('', 'all');
   }, [setQuery, setSearchType, clearResults, replaceUrl]);
 
+  const { publicKey } = useAuthStore();
+
   const handleLike = useCallback(async (tweetId: string) => {
     const tweet = results?.tweets.find(t => t.id === tweetId);
     if (!tweet) return;
+
+    // 認証チェック
+    if (!publicKey) {
+      console.warn('Cannot like: User is not authenticated');
+      return;
+    }
 
     try {
       if (tweet.isLiked) {
         await unlikeTweet(tweetId);
       } else {
-        await likeTweet(tweetId);
+        await likeTweet(tweetId, tweet.author.id);
       }
     } catch (error) {
       console.error('Failed to toggle like:', error);
     }
-  }, [results]);
+  }, [results, publicKey]);
 
   const handleRetweet = useCallback(async (tweetId: string) => {
     const tweet = results?.tweets.find(t => t.id === tweetId);
     if (!tweet) return;
 
+    // 認証チェック
+    if (!publicKey) {
+      console.warn('Cannot retweet: User is not authenticated');
+      return;
+    }
+
     try {
       if (tweet.isRetweeted) {
         await undoRetweet(tweetId);
       } else {
-        await retweet(tweetId);
+        await retweet(tweetId, tweet.author.id);
       }
     } catch (error) {
       console.error('Failed to toggle retweet:', error);
     }
-  }, [results]);
+  }, [results, publicKey]);
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-gray-50 dark:bg-black">
