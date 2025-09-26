@@ -84,10 +84,18 @@ export class NostrNotificationService {
 
     // メンション通知を作成
     if (isMention) {
+      // メンション投稿自体の情報を取得（リポスト同様の処理）
+      const postData = await fetchPostData(event.id);
+
       await this.createNotification({
         type: 'mention',
         event,
         content: event.content,
+        postId: event.id,
+        postContent: postData?.content || event.content,
+        postAuthor: postData?.author,
+        postCreatedAt: postData?.createdAt || new Date(event.created_at * 1000),
+        postMedia: postData?.media,
       });
       return;
     }
