@@ -171,15 +171,21 @@ export function NotificationItem({ notification }: NotificationItemProps) {
           )}
 
           {/* 元の投稿内容 - 埋め込み表示 */}
-          {notification.postContent && notification.postId && (
-            <EmbeddedPost
-              postId={notification.postId}
-              content={notification.postContent}
-              author={notification.postAuthor}
-              createdAt={notification.postCreatedAt}
-              media={notification.type === 'repost' ? undefined : notification.postMedia}
-            />
-          )}
+          {notification.postContent && notification.postId && (() => {
+            // リポストとメンションではRichContent内でメディアが表示されるため、
+            // EmbeddedPostにはmediaを渡さない（DRY/KISS原則）
+            const shouldExcludeMedia = notification.type === 'repost' || notification.type === 'mention';
+
+            return (
+              <EmbeddedPost
+                postId={notification.postId}
+                content={notification.postContent}
+                author={notification.postAuthor}
+                createdAt={notification.postCreatedAt}
+                media={shouldExcludeMedia ? undefined : notification.postMedia}
+              />
+            );
+          })()}
 
           {/* アクションボタン */}
           <div className="mt-3 flex items-center gap-3">
