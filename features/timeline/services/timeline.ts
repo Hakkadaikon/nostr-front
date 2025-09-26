@@ -322,14 +322,25 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
           // 重複チェック
           if (!events.find(e => e.id === event.id)) {
             events.push(event);
+            // プロフィール取得を非同期で行う
+            nostrEventToTweet(event, relays).then(tweet => {
+              tweets.push(tweet);
+
+              // 必要数に達したら完了
+              if (tweets.length >= limit) {
+                clearTimeout(timeoutId);
+                sub.close();
+                processAndResolve();
+              }
+            }).catch(error => {
+              console.error('[fetchTimeline] Failed to convert event to tweet:', error);
+            });
           }
         }
       );
 
       // 結果を処理して返す関数
       const processAndResolve = async () => {
-        console.log(`[fetchTimeline] Processing and resolving ${tweets.length} tweets`);
-
         // リアクション数をバッチで取得
         if (tweets.length > 0) {
           const eventIds = tweets.map(t => t.id);
@@ -350,61 +361,18 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
             )
           : null;
 
-        const result = {
+        resolve({
           tweets: tweets.slice(0, limit),
           nextCursor: oldestEvent ? oldestEvent.created_at.toString() : undefined,
-          hasMore: events.length >= limit // eventsの数で判定するように変更
-        };
-
-        console.log(`[fetchTimeline] Resolving with ${result.tweets.length} tweets, hasMore: ${result.hasMore}`);
-
-        // 結果が空で、カーソルもない場合はhasMoreをfalseに
-        if (result.tweets.length === 0 && !result.nextCursor) {
-          result.hasMore = false;
-        }
-
-        resolve(result);
+          hasMore: tweets.length >= limit
+        });
       };
 
-      // タイムアウト設定（3秒でイベント収集、その後プロフィール取得）
+      // タイムアウト設定（4秒に延長してプロフィール取得の時間を確保）
       timeoutId = setTimeout(async () => {
         sub.close();
-        console.log(`[fetchTimeline] Timeout reached, processing ${events.length} events`);
-
-        // イベントを日時でソート（新しい順）
-        events.sort((a, b) => b.created_at - a.created_at);
-
-        // 最大数で切り取り
-        const limitedEvents = events.slice(0, limit);
-        console.log(`[fetchTimeline] Processing ${limitedEvents.length} events for tweets`);
-
-        // プロフィール取得とツイート変換を並列処理
-        const tweetPromises = limitedEvents.map(event =>
-          nostrEventToTweet(event, relays).catch(error => {
-            console.error('[fetchTimeline] Failed to convert event to tweet:', error);
-            return null;
-          })
-        );
-
-        const tweetResults = await Promise.all(tweetPromises);
-        const validTweets = tweetResults.filter(tweet => tweet !== null) as Tweet[];
-
-        console.log(`[fetchTimeline] Successfully converted ${validTweets.length} tweets`);
-
-        tweets.splice(0, tweets.length, ...validTweets);
-
-        // ツイートが空の場合でも結果を返す
-        if (validTweets.length === 0 && events.length === 0) {
-          console.log('[fetchTimeline] No events found, returning empty result');
-          resolve({
-            tweets: [],
-            hasMore: false
-          });
-          return;
-        }
-
         await processAndResolve();
-      }, 3000);
+      }, 4000);
     });
   } catch (error) {
     console.error('Failed to fetch timeline:', error);

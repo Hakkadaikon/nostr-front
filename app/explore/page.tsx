@@ -35,7 +35,6 @@ function ExplorePageInner() {
     error,
     search,
     clearResults,
-    debouncedSearch,
   } = useSearch();
 
   const [pendingSync, setPendingSync] = useState<{ q: string; type: SearchType } | null>(null);
@@ -167,11 +166,6 @@ function ExplorePageInner() {
               placeholder="検索"
               autoFocus={false}
               onClear={handleClear}
-              searchType={searchType}
-              onHistorySelect={(selectedQuery) => {
-                setQuery(selectedQuery);
-                setTimeout(() => search(), 100); // 少し遅延してから検索実行
-              }}
             />
           </div>
 

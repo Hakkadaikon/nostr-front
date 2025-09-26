@@ -2,11 +2,22 @@
 
 import Link from 'next/link';
 import { Zap, Settings } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import { useAuthStore } from '../../stores/auth.store';
 
 export function MobileHeader() {
+  const pathname = usePathname();
   const npub = useAuthStore((state) => state.npub);
 
+  // ページタイトルの取得
+  const getPageTitle = () => {
+    if (pathname === '/') return 'ホーム';
+    if (pathname === '/explore') return '検索';
+    if (pathname === '/notifications') return '通知';
+    if (pathname.startsWith('/profile')) return 'プロフィール';
+    if (pathname === '/settings') return '設定';
+    return 'Nostr';
+  };
 
   return (
     <header className="md:hidden fixed top-0 left-0 right-0 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 z-40">
@@ -22,9 +33,9 @@ export function MobileHeader() {
           </div>
         </Link>
 
-        {/* アプリ名 */}
+        {/* ページタイトル */}
         <h1 className="font-bold text-lg bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-          hamnoster
+          {getPageTitle()}
         </h1>
 
         {/* 設定ボタン */}

@@ -105,24 +105,14 @@ export function useTimeline(params: TimelineParams) {
 
   // タイムラインを読み込む
   const loadMore = useCallback(async () => {
-    if (state.isLoading || !state.hasMore) {
-      console.log(`[useTimeline] loadMore skipped - isLoading: ${state.isLoading}, hasMore: ${state.hasMore}`);
-      return;
-    }
+    if (state.isLoading || !state.hasMore) return;
 
-    console.log(`[useTimeline] loadMore starting for type: ${params.type}`);
     dispatch({ type: 'FETCH_START' });
 
     try {
       const response = await fetchTimeline({
         ...params,
         cursor: state.nextCursor,
-      });
-
-      console.log(`[useTimeline] fetchTimeline response:`, {
-        tweetsCount: response.tweets.length,
-        hasMore: response.hasMore,
-        nextCursor: response.nextCursor
       });
 
       dispatch({
@@ -132,7 +122,6 @@ export function useTimeline(params: TimelineParams) {
         hasMore: response.hasMore,
       });
     } catch (error) {
-      console.error('[useTimeline] Failed to fetch timeline:', error);
       dispatch({ type: 'FETCH_ERROR', error: error as Error });
     }
   }, [params, state.isLoading, state.hasMore, state.nextCursor]);
@@ -217,17 +206,9 @@ export function useTimeline(params: TimelineParams) {
   useEffect(() => {
     // フォロー中タブは公開鍵が必要（kind3でフォローリストを取得するため）
     if (params.type === 'following' && !authPubkey) return;
-
-    console.log(`[useTimeline] Initializing timeline for type: ${params.type}`);
     reset();
-
-    // 少し遅延させてリセット後にデータ取得
-    const timeoutId = setTimeout(() => {
-      loadMore();
-    }, 100);
-
-    return () => clearTimeout(timeoutId);
-  }, [params.type, authPubkey, reset, loadMore]);
+    loadMore();
+  }, [params.type, authPubkey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     tweets: state.tweets,
