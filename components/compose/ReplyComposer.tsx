@@ -27,7 +27,10 @@ export function ReplyComposer({ replyTo, replyToUser, onClose, onSuccess }: Repl
 
     setIsSubmitting(true);
     try {
-      await publishNote(content, { replyToId: replyTo });
+      await publishNote(content, {
+        replyToId: replyTo,
+        replyAuthor: replyToUser.pubkey
+      });
 
       show(`@${replyToUser.name} への返信を送信しました`);
 

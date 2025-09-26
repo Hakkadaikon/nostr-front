@@ -272,7 +272,14 @@ export function NotificationItem({ notification }: NotificationItemProps) {
       {showReply && notification.postId && (
         <ReplyComposer
           replyTo={notification.postId}
-          replyToUser={notification.user}
+          replyToUser={{
+            id: notification.postAuthor?.id || notification.user.id,
+            name: notification.postAuthor?.name || notification.user.name,
+            username: notification.postAuthor?.username || notification.user.username,
+            avatar: notification.postAuthor?.avatar || notification.user.avatar,
+            npub: notification.postAuthor?.npub || notification.user.npub,
+            pubkey: notification.postAuthor?.id || notification.user.pubkey
+          }}
           onClose={() => setShowReply(false)}
           onSuccess={() => setShowReply(false)}
         />
