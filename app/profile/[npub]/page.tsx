@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ProfileHeader } from '../../../components/profile/ProfileHeader';
 import { ProfileTabs, ProfileTab } from '../../../components/profile/ProfileTabs';
@@ -11,6 +11,9 @@ import { ProfileSidebar } from '../../../components/profile/ProfileSidebar';
 import { Profile } from '../../../features/profile/types';
 import { fetchProfile } from '../../../features/profile/fetchProfile';
 import { fetchUserPosts } from '../../../features/profile/fetchUserPosts';
+import { fetchUserReplies } from '../../../features/profile/fetchUserReplies';
+import { fetchUserMedia } from '../../../features/profile/fetchUserMedia';
+import { fetchUserLikes } from '../../../features/profile/fetchUserLikes';
 import { followUser, unfollowUser, isFollowing as checkFollowStatus } from '../../../features/profile/follow';
 import { useProfileStore } from '../../../stores/profile.store';
 import { useAuthStore } from '../../../stores/auth.store';
@@ -30,7 +33,13 @@ export default function ProfilePage({ params }: Props) {
   const [isFollowing, setIsFollowing] = useState(false);
   const [tweets, setTweets] = useState<Tweet[]>([]);
   const [tweetsLoading, setTweetsLoading] = useState(false);
-  const [followingCount, setFollowingCount] = useState<number | null>(null);
+  const [replies, setReplies] = useState<Tweet[]>([]);
+  const [repliesLoading, setRepliesLoading] = useState(false);
+  const [mediaPosts, setMediaPosts] = useState<Tweet[]>([]);
+  const [mediaLoading, setMediaLoading] = useState(false);
+  const [likedPosts, setLikedPosts] = useState<Tweet[]>([]);
+  const [likesLoading, setLikesLoading] = useState(false);
+  const [followingCount, setFollowingCount] = useState<number | null>(0);
   const [followerCount, setFollowerCount] = useState<number | null>(null);
   const [isLoadingFollowingCount, setIsLoadingFollowingCount] = useState(false);
   const [isLoadingFollowerCount, setIsLoadingFollowerCount] = useState(false);
@@ -86,7 +95,10 @@ export default function ProfilePage({ params }: Props) {
           setIsFollowing(status);
         }
 
-        // プロフィール統計情報はクリック時に取得するため、ここでは取得しない
+        // フォロー数は初期表示時に取得、フォロワー数はクリック時に取得
+        if (pubkey) {
+          loadFollowingCount(pubkey);
+        }
       } catch (error) {
         console.error('Failed to load profile:', error);
         // エラー時にもデフォルト値を設定
@@ -110,38 +122,85 @@ export default function ProfilePage({ params }: Props) {
     loadProfile();
   }, [params.npub, isOwnProfile, publicKey, pubkey]);
 
-  // ユーザーの投稿を取得
+  // タブに応じたデータを取得
   useEffect(() => {
+    const updateAuthorInfo = (posts: Tweet[]) => {
+      if (profile && posts.length > 0) {
+        return posts.map(post => ({
+          ...post,
+          author: {
+            ...post.author,
+            name: profile.displayName || profile.name || post.author.name,
+            username: profile.name || post.author.username,
+            avatar: profile.picture || post.author.avatar,
+            bio: profile.about || post.author.bio
+          }
+        }));
+      }
+      return posts;
+    };
+
     const loadTweets = async () => {
       setTweetsLoading(true);
       try {
         const userPosts = await fetchUserPosts(params.npub);
-        
-        // プロフィール情報でauthor情報を更新
-        if (profile && userPosts.length > 0) {
-          const updatedPosts = userPosts.map(post => ({
-            ...post,
-            author: {
-              ...post.author,
-              name: profile.displayName || profile.name || post.author.name,
-              username: profile.name || post.author.username,
-              avatar: profile.picture || post.author.avatar,
-              bio: profile.about || post.author.bio
-            }
-          }));
-          setTweets(updatedPosts);
-        } else {
-          setTweets(userPosts);
-        }
+        setTweets(updateAuthorInfo(userPosts));
       } catch (error) {
         console.error('Failed to load tweets:', error);
       } finally {
         setTweetsLoading(false);
       }
     };
-    
-    if (activeTab === 'posts') {
-      loadTweets();
+
+    const loadReplies = async () => {
+      setRepliesLoading(true);
+      try {
+        const userReplies = await fetchUserReplies(params.npub);
+        setReplies(updateAuthorInfo(userReplies));
+      } catch (error) {
+        console.error('Failed to load replies:', error);
+      } finally {
+        setRepliesLoading(false);
+      }
+    };
+
+    const loadMedia = async () => {
+      setMediaLoading(true);
+      try {
+        const userMedia = await fetchUserMedia(params.npub);
+        setMediaPosts(updateAuthorInfo(userMedia));
+      } catch (error) {
+        console.error('Failed to load media posts:', error);
+      } finally {
+        setMediaLoading(false);
+      }
+    };
+
+    const loadLikes = async () => {
+      setLikesLoading(true);
+      try {
+        const userLikes = await fetchUserLikes(params.npub);
+        setLikedPosts(userLikes); // いいねした投稿は他のユーザーの投稿なので author 情報は更新しない
+      } catch (error) {
+        console.error('Failed to load liked posts:', error);
+      } finally {
+        setLikesLoading(false);
+      }
+    };
+
+    switch (activeTab) {
+      case 'posts':
+        loadTweets();
+        break;
+      case 'replies':
+        loadReplies();
+        break;
+      case 'media':
+        loadMedia();
+        break;
+      case 'likes':
+        loadLikes();
+        break;
     }
   }, [profile, activeTab, params.npub]);
 
@@ -176,7 +235,28 @@ export default function ProfilePage({ params }: Props) {
   };
 
   const handleLike = async (tweetId: string) => {
-    const tweet = tweets.find(t => t.id === tweetId);
+    // 現在のタブに応じて適切なデータセットを取得
+    const getCurrentTweets = () => {
+      switch (activeTab) {
+        case 'posts': return tweets;
+        case 'replies': return replies;
+        case 'media': return mediaPosts;
+        case 'likes': return likedPosts;
+        default: return tweets;
+      }
+    };
+
+    const setCurrentTweets = (newTweets: Tweet[]) => {
+      switch (activeTab) {
+        case 'posts': setTweets(newTweets); break;
+        case 'replies': setReplies(newTweets); break;
+        case 'media': setMediaPosts(newTweets); break;
+        case 'likes': setLikedPosts(newTweets); break;
+      }
+    };
+
+    const currentTweets = getCurrentTweets();
+    const tweet = currentTweets.find(t => t.id === tweetId);
     if (!tweet) return;
 
     // 認証チェック
@@ -187,7 +267,7 @@ export default function ProfilePage({ params }: Props) {
 
     try {
       // 楽観的更新
-      setTweets(tweets.map(t => {
+      setCurrentTweets(currentTweets.map(t => {
         if (t.id === tweetId) {
           return {
             ...t,
@@ -205,7 +285,7 @@ export default function ProfilePage({ params }: Props) {
       }
     } catch (error) {
       // エラー時は元に戻す
-      setTweets(tweets.map(t => {
+      setCurrentTweets(currentTweets.map(t => {
         if (t.id === tweetId) {
           return {
             ...t,
@@ -219,12 +299,12 @@ export default function ProfilePage({ params }: Props) {
     }
   };
 
-  const handleLoadFollowingCount = async () => {
-    if (isLoadingFollowingCount || hasLoadedFollowingCount || !pubkey) return;
+  const loadFollowingCount = useCallback(async (targetPubkey: string) => {
+    if (isLoadingFollowingCount || hasLoadedFollowingCount) return;
 
     setIsLoadingFollowingCount(true);
     try {
-      const stats = await fetchProfileStats(pubkey);
+      const stats = await fetchProfileStats(targetPubkey);
       setFollowingCount(stats.followingCount);
       setHasLoadedFollowingCount(true);
     } catch (error) {
@@ -233,6 +313,11 @@ export default function ProfilePage({ params }: Props) {
     } finally {
       setIsLoadingFollowingCount(false);
     }
+  }, [isLoadingFollowingCount, hasLoadedFollowingCount]);
+
+  const handleLoadFollowingCount = async () => {
+    if (!pubkey) return;
+    await loadFollowingCount(pubkey);
   };
 
   const handleLoadFollowerCount = async () => {
@@ -252,7 +337,28 @@ export default function ProfilePage({ params }: Props) {
   };
 
   const handleRetweet = async (tweetId: string) => {
-    const tweet = tweets.find(t => t.id === tweetId);
+    // 現在のタブに応じて適切なデータセットを取得
+    const getCurrentTweets = () => {
+      switch (activeTab) {
+        case 'posts': return tweets;
+        case 'replies': return replies;
+        case 'media': return mediaPosts;
+        case 'likes': return likedPosts;
+        default: return tweets;
+      }
+    };
+
+    const setCurrentTweets = (newTweets: Tweet[]) => {
+      switch (activeTab) {
+        case 'posts': setTweets(newTweets); break;
+        case 'replies': setReplies(newTweets); break;
+        case 'media': setMediaPosts(newTweets); break;
+        case 'likes': setLikedPosts(newTweets); break;
+      }
+    };
+
+    const currentTweets = getCurrentTweets();
+    const tweet = currentTweets.find(t => t.id === tweetId);
     if (!tweet) return;
 
     // 認証チェック
@@ -263,7 +369,7 @@ export default function ProfilePage({ params }: Props) {
 
     try {
       // 楽観的更新
-      setTweets(tweets.map(t => {
+      setCurrentTweets(currentTweets.map(t => {
         if (t.id === tweetId) {
           return {
             ...t,
@@ -281,7 +387,7 @@ export default function ProfilePage({ params }: Props) {
       }
     } catch (error) {
       // エラー時は元に戻す
-      setTweets(tweets.map(t => {
+      setCurrentTweets(currentTweets.map(t => {
         if (t.id === tweetId) {
           return {
             ...t,
@@ -353,21 +459,33 @@ export default function ProfilePage({ params }: Props) {
               )}
 
               {activeTab === 'replies' && (
-                <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                  返信はまだありません
-                </div>
+                <TimelineList
+                  tweets={replies}
+                  isLoading={repliesLoading}
+                  onLike={handleLike}
+                  onRetweet={handleRetweet}
+                  emptyMessage="返信はまだありません"
+                />
               )}
 
               {activeTab === 'media' && (
-                <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                  メディアはまだありません
-                </div>
+                <TimelineList
+                  tweets={mediaPosts}
+                  isLoading={mediaLoading}
+                  onLike={handleLike}
+                  onRetweet={handleRetweet}
+                  emptyMessage="メディア付き投稿はまだありません"
+                />
               )}
 
               {activeTab === 'likes' && (
-                <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                  いいねした投稿はまだありません
-                </div>
+                <TimelineList
+                  tweets={likedPosts}
+                  isLoading={likesLoading}
+                  onLike={handleLike}
+                  onRetweet={handleRetweet}
+                  emptyMessage="いいねした投稿はまだありません"
+                />
               )}
             </div>
           </section>

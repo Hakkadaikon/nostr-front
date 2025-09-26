@@ -38,7 +38,21 @@ export function ReplyComposer({ replyTo, replyToUser, onClose, onSuccess }: Repl
       onSuccess?.();
     } catch (error) {
       console.error('Failed to publish reply:', error);
-      show('返信の送信に失敗しました');
+      let errorMessage = '返信の送信に失敗しました';
+
+      if (error instanceof Error) {
+        if (error.message.includes('No signing method available')) {
+          errorMessage = 'Nostr拡張機能または秘密鍵が必要です';
+        } else if (error.message.includes('Invalid secret key format')) {
+          errorMessage = '秘密鍵の形式が正しくありません';
+        } else if (error.message.includes('NIP-07 signing failed')) {
+          errorMessage = 'Nostr拡張機能での署名に失敗しました';
+        } else if (error.message.includes('No secret key provided')) {
+          errorMessage = '秘密鍵が設定されていません';
+        }
+      }
+
+      show(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

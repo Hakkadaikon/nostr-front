@@ -182,7 +182,7 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
         clearTimeout(timeoutId);
       }
     };
-  }, [statusId]);
+  }, [statusId, url]);
 
   // Fallback UI
   if (hasError) {

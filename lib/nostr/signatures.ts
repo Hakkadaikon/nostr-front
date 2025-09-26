@@ -32,21 +32,44 @@ function normalizeSecretKey(sk: string | Uint8Array): Uint8Array {
 export async function signEvent(event: Omit<NostrEvent, 'id' | 'sig'>, getSecretKey?: () => Promise<string | Uint8Array> | string | Uint8Array): Promise<NostrEvent> {
   // serialize sign requests to avoid multiple prompts
   queue = queue.then(async () => {
-    if (hasNip07()) {
-      const nostr = (globalThis as any).nostr;
-      const signed = await nostr.signEvent(event);
-      // some providers may not set id
-      signed.id = signed.id || getEventHash(signed);
-      return signed as NostrEvent;
+    // NIP-07が利用可能で、秘密鍵が設定されていない場合は拡張機能を使用
+    if (hasNip07() && !getSecretKey) {
+      try {
+        const nostr = (globalThis as any).nostr;
+        const signed = await nostr.signEvent(event);
+        // some providers may not set id
+        signed.id = signed.id || getEventHash(signed);
+        return signed as NostrEvent;
+      } catch (error) {
+        console.error('NIP-07 signing failed:', error);
+        throw new Error('NIP-07 signing failed. Please check your Nostr extension.');
+      }
     }
-    if (!getSecretKey) throw new Error('No NIP-07 and no secret key provided');
-    const skInput = typeof getSecretKey === 'function' ? await getSecretKey() : getSecretKey;
-    const skBytes = normalizeSecretKey(skInput as any);
-    const e: any = { ...event };
-    if (!e.pubkey) e.pubkey = getPublicKey(skBytes);
-    const signed = finalizeEvent(e, skBytes);
-    signed.id = (signed as any).id || getEventHash(signed as any);
-    return signed as NostrEvent;
+
+    // 秘密鍵による署名
+    if (!getSecretKey) {
+      throw new Error('No signing method available. Please install a Nostr extension or provide a secret key.');
+    }
+
+    try {
+      const skInput = typeof getSecretKey === 'function' ? await getSecretKey() : getSecretKey;
+      if (!skInput) {
+        throw new Error('No secret key provided');
+      }
+
+      const skBytes = normalizeSecretKey(skInput as any);
+      const e: any = { ...event };
+      if (!e.pubkey) e.pubkey = getPublicKey(skBytes);
+      const signed = finalizeEvent(e, skBytes);
+      signed.id = (signed as any).id || getEventHash(signed as any);
+      return signed as NostrEvent;
+    } catch (error) {
+      console.error('Secret key signing failed:', error);
+      if (error instanceof Error && error.message.includes('Unsupported secret key')) {
+        throw new Error('Invalid secret key format. Please check your nsec or hex private key.');
+      }
+      throw error;
+    }
   });
   return queue;
 }

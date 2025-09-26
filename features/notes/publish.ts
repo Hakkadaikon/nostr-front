@@ -15,15 +15,23 @@ function getWriteRelays(): string[] {
   }
 }
 
-function getSecretKey(): string {
+function getSecretKey(): string | Uint8Array {
   try {
     const { useAuthStore } = require('../../stores/auth.store');
     const secret = useAuthStore.getState().nsec as string | null;
     if (!secret) return '';
     if (secret.startsWith('nsec1')) {
-      try { return decode(secret).data as string; } catch { return ''; }
+      try {
+        const decoded = decode(secret);
+        if (decoded.type === 'nsec') {
+          return decoded.data as Uint8Array;
+        }
+        return '';
+      } catch {
+        return '';
+      }
     }
-    return secret;
+    return secret; // hex形式の場合は文字列のまま
   } catch {
     return '';
   }

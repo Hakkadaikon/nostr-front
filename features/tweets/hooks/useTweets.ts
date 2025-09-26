@@ -60,7 +60,23 @@ export function useTweets(): UseTweetsReturn {
       const response = await createTweet(request);
       return response.tweet;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'ツイートの投稿に失敗しました';
+      console.error('Failed to post tweet:', err);
+      let errorMessage = 'ツイートの投稿に失敗しました';
+
+      if (err instanceof Error) {
+        if (err.message.includes('No signing method available')) {
+          errorMessage = 'Nostr拡張機能または秘密鍵が必要です';
+        } else if (err.message.includes('Invalid secret key format')) {
+          errorMessage = '秘密鍵の形式が正しくありません';
+        } else if (err.message.includes('NIP-07 signing failed')) {
+          errorMessage = 'Nostr拡張機能での署名に失敗しました';
+        } else if (err.message.includes('No secret key provided')) {
+          errorMessage = '秘密鍵が設定されていません';
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
+      }
+
       setError(errorMessage);
       return null;
     } finally {

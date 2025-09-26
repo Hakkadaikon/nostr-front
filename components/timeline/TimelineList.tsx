@@ -13,6 +13,7 @@ interface TimelineListProps {
   error?: { message: string } | null;
   onLike: (tweetId: string) => void;
   onRetweet: (tweetId: string) => void;
+  emptyMessage?: string;
 }
 
 export function TimelineList({
@@ -21,6 +22,7 @@ export function TimelineList({
   error,
   onLike,
   onRetweet,
+  emptyMessage = 'まだツイートがありません',
 }: TimelineListProps) {
   const [zapModalOpen, setZapModalOpen] = useState(false);
   const [replyModalOpen, setReplyModalOpen] = useState(false);
@@ -66,7 +68,7 @@ export function TimelineList({
     return (
       <div className="p-8 text-center">
         <p className="text-gray-500 dark:text-gray-400">
-          まだツイートがありません
+          {emptyMessage}
         </p>
       </div>
     );
