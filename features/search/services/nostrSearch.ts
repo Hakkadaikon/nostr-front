@@ -87,7 +87,7 @@ async function getPostStats(eventId: string): Promise<{ likesCount: number; repo
     const timeout = setTimeout(() => {
       sub.close();
       resolve({ likesCount, repostsCount, repliesCount, zapsCount });
-    }, 2000);
+    }, 1000); // 1秒でタイムアウト（高速化）
 
     const sub = subscribe(readRelays, filters, (event: NostrEvent) => {
       switch (event.kind) {
@@ -255,7 +255,7 @@ export async function searchNostr(
       }
       
       resolve({ users: usersWithStats, tweets: tweetsWithStats });
-    }, 5000); // 5秒でタイムアウト
+    }, 3000); // 3秒でタイムアウト（高速化）
 
     let eventCount = 0;
     const receivedEventIds = new Set<string>();

@@ -231,7 +231,7 @@ export function ProfileHeader({
             <Button
               onClick={handleShare}
               variant="ghost"
-              className="gap-2 min-w-[120px] justify-center sm:justify-start flex-shrink-0"
+              className="gap-2 min-w-[100px] sm:min-w-[120px] justify-center sm:justify-start flex-shrink-0 px-3 sm:px-4"
             >
               <Share2 size={16} />
               {copiedLink ? 'コピーしました' : 'シェア'}

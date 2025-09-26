@@ -69,7 +69,9 @@ export async function publishNote(content: string, extra?: {
   } as any;
   let signed: NostrEvent;
   try {
-    signed = await signEvent(unsigned, getSecretKey);
+    const secretKey = getSecretKey();
+    // 秘密鍵が設定されていない場合はgetSecretKeyを渡さずNIP-07を使用
+    signed = await signEvent(unsigned, secretKey ? () => secretKey : undefined);
   } catch (e) {
     try { require('../../lib/utils/logger').recordSignError(e); } catch {}
     throw e;
@@ -89,7 +91,8 @@ export async function publishRepost(targetId: string, targetAuthor?: string) {
     created_at: Math.floor(Date.now() / 1000),
     tags,
   } as any;
-  const signed = await signEvent(unsigned, getSecretKey);
+  const secretKey = getSecretKey();
+  const signed = await signEvent(unsigned, secretKey ? () => secretKey : undefined);
   if (!verify(signed)) throw new Error('Invalid signature');
   const results = await publishClient(relays, signed);
   await record(results);
@@ -105,7 +108,8 @@ export async function publishQuote(targetId: string) {
     created_at: Math.floor(Date.now() / 1000),
     tags,
   } as any;
-  const signed = await signEvent(unsigned, getSecretKey);
+  const secretKey = getSecretKey();
+  const signed = await signEvent(unsigned, secretKey ? () => secretKey : undefined);
   if (!verify(signed)) throw new Error('Invalid signature');
   const results = await publishClient(relays, signed);
   await record(results);

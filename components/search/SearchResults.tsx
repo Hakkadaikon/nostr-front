@@ -24,8 +24,12 @@ export function SearchResults({
 }: SearchResultsProps) {
   if (isLoading) {
     return (
-      <div className="p-8 flex justify-center">
-        <Spinner />
+      <div className="p-8 flex flex-col items-center justify-center gap-4">
+        <Spinner size="large" />
+        <div className="text-sm text-gray-500 dark:text-gray-400 text-center">
+          <p>検索中...</p>
+          <p className="text-xs mt-1">Nostrネットワークからデータを取得しています</p>
+        </div>
       </div>
     );
   }

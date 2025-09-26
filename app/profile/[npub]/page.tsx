@@ -120,7 +120,7 @@ export default function ProfilePage({ params }: Props) {
     };
     
     loadProfile();
-  }, [params.npub, isOwnProfile, publicKey, pubkey]);
+  }, [params.npub, isOwnProfile, publicKey, pubkey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // タブに応じたデータを取得
   useEffect(() => {
