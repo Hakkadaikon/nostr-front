@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { Spinner } from '../ui/Spinner';
+import { fetchLinkPreview } from '../../lib/services/linkPreview';
 
 interface LinkPreviewData {
   url?: string;
@@ -16,7 +17,8 @@ interface LinkPreviewProps {
   url: string;
 }
 
-const cache = new Map<string, LinkPreviewData | null>();
+// ローカルキャッシュ（コンポーネント用）
+const localCache = new Map<string, LinkPreviewData | null>();
 
 function sanitizeUrl(url: string) {
   try {
@@ -29,8 +31,8 @@ function sanitizeUrl(url: string) {
 export function LinkPreview({ url }: LinkPreviewProps) {
   const normalizedUrl = useMemo(() => sanitizeUrl(url), [url]);
   const cacheKey = normalizedUrl ?? url;
-  const [data, setData] = useState<LinkPreviewData | null | undefined>(cache.get(cacheKey));
-  const [loading, setLoading] = useState(!cache.has(cacheKey));
+  const [data, setData] = useState<LinkPreviewData | null | undefined>(localCache.get(cacheKey));
+  const [loading, setLoading] = useState(!localCache.has(cacheKey));
 
   useEffect(() => {
     if (!normalizedUrl) {
@@ -39,28 +41,26 @@ export function LinkPreview({ url }: LinkPreviewProps) {
       return;
     }
 
-    if (cache.has(cacheKey)) {
-      setData(cache.get(cacheKey) ?? null);
+    if (localCache.has(cacheKey)) {
+      setData(localCache.get(cacheKey) ?? null);
       setLoading(false);
       return;
     }
 
-    const previewUrl = normalizedUrl as string;
     let cancelled = false;
 
     async function loadPreview() {
       try {
         setLoading(true);
-        const res = await fetch(`/api/link-preview?url=${encodeURIComponent(previewUrl)}`);
-        if (!res.ok) throw new Error('Failed to fetch preview');
-        const json = (await res.json()) as LinkPreviewData;
+        const previewData = await fetchLinkPreview(normalizedUrl as string);
         if (!cancelled) {
-          cache.set(cacheKey, json);
-          setData(json);
+          localCache.set(cacheKey, previewData);
+          setData(previewData);
         }
       } catch (error) {
+        console.error('Failed to load preview:', error);
         if (!cancelled) {
-          cache.set(cacheKey, null);
+          localCache.set(cacheKey, null);
           setData(null);
         }
       } finally {

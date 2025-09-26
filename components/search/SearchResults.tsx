@@ -49,7 +49,7 @@ export function SearchResults({
   }
 
   return (
-    <div className="w-full overflow-hidden">
+    <div className="w-full">
       {/* ユーザー検索結果 */}
       {searchType !== 'tweets' && results.users.length > 0 && (
         <div className="w-full">
@@ -58,7 +58,7 @@ export function SearchResults({
               ユーザー
             </h2>
           )}
-          <div className="divide-y divide-gray-200 dark:divide-gray-800 overflow-hidden">
+          <div className="divide-y divide-gray-200 dark:divide-gray-800">
             {results.users
               .filter((user, index, self) => 
                 // 公開鍵（user.id）でユニークにする
@@ -124,7 +124,7 @@ export function SearchResults({
               ツイート
             </h2>
           )}
-          <div className="divide-y divide-gray-200 dark:divide-gray-800 overflow-hidden">
+          <div className="divide-y divide-gray-200 dark:divide-gray-800">
             {results.tweets.map((tweet) => (
               <TimelineItem
                 key={tweet.id}

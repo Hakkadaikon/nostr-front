@@ -12,6 +12,10 @@ import { createRepost, deleteRepost } from '../../repost/services/repost';
 const profileCache = new Map<string, any>();
 const profileFetchingPromises = new Map<string, Promise<any>>();
 
+// キャッシュの有効期限（5分）
+const PROFILE_CACHE_TTL = 5 * 60 * 1000;
+const profileCacheTimestamps = new Map<string, number>();
+
 
 function decodeNoteIdentifier(identifier: string): { id: string; relays?: string[] } | null {
   try {
@@ -60,9 +64,16 @@ function extractQuoteReference(tags: string[][]): { id: string; relays?: string[
  * Nostrイベントからプロフィール情報を取得
  */
 async function fetchProfile(pubkey: string, relays: string[]): Promise<any> {
-  // キャッシュチェック
+  // キャッシュチェック（有効期限も確認）
   if (profileCache.has(pubkey)) {
-    return profileCache.get(pubkey);
+    const cachedTime = profileCacheTimestamps.get(pubkey) || 0;
+    if (Date.now() - cachedTime < PROFILE_CACHE_TTL) {
+      return profileCache.get(pubkey);
+    } else {
+      // 古いキャッシュを削除
+      profileCache.delete(pubkey);
+      profileCacheTimestamps.delete(pubkey);
+    }
   }
 
   // すでに取得中の場合は、そのPromiseを返す
@@ -76,9 +87,12 @@ async function fetchProfile(pubkey: string, relays: string[]): Promise<any> {
     let timeoutId: NodeJS.Timeout;
     let resolved = false;
 
+    let latestEvent: NostrEvent | null = null;
+    let latestTimestamp = 0;
+
     const sub = subscribeTo(
       relays,
-      [{ kinds: [KIND_METADATA], authors: [pubkey], limit: 1 }],
+      [{ kinds: [KIND_METADATA], authors: [pubkey], limit: 10 }], // 複数取得して最新を選択
       (event: NostrEvent) => {
         // すでに解決済みの場合は何もしない
         if (resolved) return;
@@ -86,8 +100,19 @@ async function fetchProfile(pubkey: string, relays: string[]): Promise<any> {
         // このイベントが正しいpubkeyのものかチェック
         if (event.pubkey !== pubkey) return;
 
+        // より新しいイベントかチェック
+        if (event.created_at > latestTimestamp) {
+          latestEvent = event;
+          latestTimestamp = event.created_at;
+        }
+      }
+    );
+
+    // タイマーで収集したイベントを処理
+    const processTimeout = setTimeout(() => {
+      if (!resolved && latestEvent) {
         try {
-          const content = JSON.parse(event.content);
+          const content = JSON.parse(latestEvent.content);
           profile = {
             id: pubkey,
             username: content.username || content.name || nip19.npubEncode(pubkey).slice(0, 12),
@@ -96,11 +121,11 @@ async function fetchProfile(pubkey: string, relays: string[]): Promise<any> {
             bio: content.about || '',
             followersCount: 0, // Nostrでは直接取得できないため
             followingCount: 0, // Nostrでは直接取得できないため
-            createdAt: new Date(event.created_at * 1000),
+            createdAt: new Date(latestEvent.created_at * 1000),
             npub: nip19.npubEncode(pubkey)
           };
           profileCache.set(pubkey, profile);
-          clearTimeout(timeoutId);
+          profileCacheTimestamps.set(pubkey, Date.now());
           sub.close();
           resolved = true;
           profileFetchingPromises.delete(pubkey);
@@ -109,28 +134,54 @@ async function fetchProfile(pubkey: string, relays: string[]): Promise<any> {
           console.error('Failed to parse profile for', pubkey, error);
         }
       }
-    );
+    }, 1000); // 1秒待って最新のイベントを使用
 
     // タイムアウト設定（1.5秒）
     timeoutId = setTimeout(() => {
       if (!resolved) {
         sub.close();
-        // デフォルトプロフィールを返す
-        const defaultProfile = {
-          id: pubkey,
-          username: nip19.npubEncode(pubkey).slice(0, 12),
-          name: 'Nostr User',
-          avatar: `https://robohash.org/${pubkey}`,
-          bio: '',
-          followersCount: 0,
-          followingCount: 0,
-          createdAt: new Date(),
-          npub: nip19.npubEncode(pubkey)
-        };
-        profileCache.set(pubkey, defaultProfile);
+        clearTimeout(processTimeout);
+
+        // 収集したイベントから最新のものを使用、なければデフォルト
+        if (latestEvent) {
+          try {
+            const content = JSON.parse(latestEvent.content);
+            profile = {
+              id: pubkey,
+              username: content.username || content.name || nip19.npubEncode(pubkey).slice(0, 12),
+              name: content.display_name || content.name || '',
+              avatar: content.picture || `https://robohash.org/${pubkey}`,
+              bio: content.about || '',
+              followersCount: 0,
+              followingCount: 0,
+              createdAt: new Date(latestEvent.created_at * 1000),
+              npub: nip19.npubEncode(pubkey)
+            };
+          } catch (error) {
+            console.error('Failed to parse profile for', pubkey, error);
+          }
+        }
+
+        // プロフィールがなければデフォルト
+        if (!profile) {
+          profile = {
+            id: pubkey,
+            username: nip19.npubEncode(pubkey).slice(0, 12),
+            name: 'Nostr User',
+            avatar: `https://robohash.org/${pubkey}`,
+            bio: '',
+            followersCount: 0,
+            followingCount: 0,
+            createdAt: new Date(),
+            npub: nip19.npubEncode(pubkey)
+          };
+        }
+
+        profileCache.set(pubkey, profile);
+        profileCacheTimestamps.set(pubkey, Date.now());
         resolved = true;
         profileFetchingPromises.delete(pubkey);
-        resolve(defaultProfile);
+        resolve(profile);
       }
     }, 1500);
   });

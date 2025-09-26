@@ -24,27 +24,50 @@ export async function fetchProfile(npubOrHex: string) {
   
   return new Promise<any>((resolve) => {
     let hasResolved = false;
-    const filters: Filter[] = [{ kinds: [0], authors: [authorHex], limit: 1 } as any];
-    
+    let latestEvent: any = null;
+    let latestTimestamp = 0;
+
+    const filters: Filter[] = [{ kinds: [0], authors: [authorHex], limit: 10 } as any]; // 複数取得
+
     const sub = subscribe(relays, filters, (e) => {
       if (!hasResolved) {
+        // より新しいイベントかチェック
+        if (!e.created_at || e.created_at > latestTimestamp) {
+          latestEvent = e;
+          latestTimestamp = e.created_at || 0;
+        }
+      }
+    });
+
+    // 1秒待って最新のイベントを処理
+    setTimeout(() => {
+      if (!hasResolved && latestEvent) {
         hasResolved = true;
-        try { 
-          const profile = JSON.parse(e.content);
-          resolve(profile); 
-        } catch { 
-          resolve({}); 
+        try {
+          const profile = JSON.parse(latestEvent.content);
+          resolve(profile);
+        } catch {
+          resolve({});
         }
         sub.close();
       }
-    });
-    
+    }, 1000);
+
     // タイムアウトを3秒に延長
-    setTimeout(() => { 
+    setTimeout(() => {
       if (!hasResolved) {
         hasResolved = true;
-        resolve({}); 
-        sub.close(); 
+        if (latestEvent) {
+          try {
+            const profile = JSON.parse(latestEvent.content);
+            resolve(profile);
+          } catch {
+            resolve({});
+          }
+        } else {
+          resolve({});
+        }
+        sub.close();
       }
     }, 3000);
   });
