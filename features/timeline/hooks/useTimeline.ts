@@ -135,6 +135,7 @@ export function useTimeline(params: TimelineParams) {
     const authStore = useAuthStore.getState();
     if (!authStore.publicKey && !authStore.npub) {
       console.warn('Cannot like: User is not authenticated');
+      alert('いいねするにはログインが必要です');
       return;
     }
 
@@ -145,12 +146,14 @@ export function useTimeline(params: TimelineParams) {
       if (tweet.isLiked) {
         await unlikeTweet(tweetId);
       } else {
+        // author.idはpubkeyなのでそのまま渡す
         await likeTweet(tweetId, tweet.author.id);
       }
     } catch (error) {
       // エラー時は元に戻す
       dispatch({ type: 'TOGGLE_LIKE', tweetId });
       console.error('Failed to toggle like:', error);
+      alert('いいね操作に失敗しました。もう一度お試しください。');
     }
   }, [state.tweets]);
 
@@ -163,6 +166,7 @@ export function useTimeline(params: TimelineParams) {
     const authStore = useAuthStore.getState();
     if (!authStore.publicKey && !authStore.npub) {
       console.warn('Cannot retweet: User is not authenticated');
+      alert('リツイートするにはログインが必要です');
       return;
     }
 
@@ -174,13 +178,14 @@ export function useTimeline(params: TimelineParams) {
         // TODO: リポストイベントのIDを保存する必要がある
         await undoRetweet(tweetId);
       } else {
-        // 作者のpubkeyを渡す
+        // 作者のpubkeyを渡す（author.idはpubkey）
         await retweet(tweetId, tweet.author.id);
       }
     } catch (error) {
       // エラー時は元に戻す
       dispatch({ type: 'TOGGLE_RETWEET', tweetId });
       console.error('Failed to toggle retweet:', error);
+      alert('リツイート操作に失敗しました。もう一度お試しください。');
     }
   }, [state.tweets]);
 

@@ -147,14 +147,6 @@ export default function HomePage() {
             </section>
           </main>
 
-          <aside className="hidden w-full min-w-0 space-y-4 lg:block lg:w-[320px]">
-            <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">おすすめ</h2>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                今後ここにトレンドやおすすめユーザーを配置できます。
-              </p>
-            </div>
-          </aside>
         </div>
       </div>
     </div>
