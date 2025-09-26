@@ -81,7 +81,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
     <article
       onClick={handleClick}
       className={clsx(
-        'border-b border-gray-200 dark:border-gray-800 p-4 hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition-all duration-200 cursor-pointer',
+        'relative border-b border-gray-200 dark:border-gray-800 p-4 hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition-all duration-200 cursor-pointer',
         !notification.isRead && 'bg-purple-50/30 dark:bg-purple-900/10'
       )}
     >
@@ -177,7 +177,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
               content={notification.postContent}
               author={notification.postAuthor}
               createdAt={notification.postCreatedAt}
-              media={notification.postMedia}
+              media={notification.type === 'repost' ? undefined : notification.postMedia}
             />
           )}
 
@@ -192,6 +192,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                     await toggleFollow();
                   } catch (error) {
                     console.error('Failed to toggle follow:', error);
+                    alert('フォロー操作に失敗しました。もう一度お試しください。');
                   }
                 }}
                 disabled={isFollowLoading}
@@ -212,13 +213,18 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                 )}
               </button>
             )}
-            
+
             {/* いいねボタン - いいね可能な通知タイプの場合のみ表示 */}
             {(notification.type === 'reply' || notification.type === 'mention' || notification.type === 'like') && notification.postId && (
               <button
                 onClick={async (e) => {
                   e.stopPropagation();
-                  await toggleLike();
+                  try {
+                    await toggleLike();
+                  } catch (error) {
+                    console.error('Failed to toggle like:', error);
+                    alert('いいね操作に失敗しました。もう一度お試しください。');
+                  }
                 }}
                 disabled={isLikeLoading}
                 className={clsx(

@@ -8,8 +8,9 @@ import { fetchFollowList } from '../../follow/services/follow';
 import { KIND_TEXT_NOTE, KIND_METADATA, KIND_REACTION } from '../../../lib/nostr/constants';
 import { createRepost, deleteRepost } from '../../repost/services/repost';
 
-// プロフィール情報のキャッシュ
+// プロフィール情報のキャッシュと取得中のPromiseを管理
 const profileCache = new Map<string, any>();
+const profileFetchingPromises = new Map<string, Promise<any>>();
 
 
 function decodeNoteIdentifier(identifier: string): { id: string; relays?: string[] } | null {
@@ -64,14 +65,27 @@ async function fetchProfile(pubkey: string, relays: string[]): Promise<any> {
     return profileCache.get(pubkey);
   }
 
-  return new Promise((resolve) => {
+  // すでに取得中の場合は、そのPromiseを返す
+  if (profileFetchingPromises.has(pubkey)) {
+    return profileFetchingPromises.get(pubkey)!;
+  }
+
+  // 新しいPromiseを作成して、取得中のマップに追加
+  const fetchPromise = new Promise<any>((resolve) => {
     let profile: any = null;
     let timeoutId: NodeJS.Timeout;
+    let resolved = false;
 
     const sub = subscribeTo(
       relays,
       [{ kinds: [KIND_METADATA], authors: [pubkey], limit: 1 }],
       (event: NostrEvent) => {
+        // すでに解決済みの場合は何もしない
+        if (resolved) return;
+
+        // このイベントが正しいpubkeyのものかチェック
+        if (event.pubkey !== pubkey) return;
+
         try {
           const content = JSON.parse(event.content);
           profile = {
@@ -82,36 +96,47 @@ async function fetchProfile(pubkey: string, relays: string[]): Promise<any> {
             bio: content.about || '',
             followersCount: 0, // Nostrでは直接取得できないため
             followingCount: 0, // Nostrでは直接取得できないため
-            createdAt: new Date(event.created_at * 1000)
+            createdAt: new Date(event.created_at * 1000),
+            npub: nip19.npubEncode(pubkey)
           };
           profileCache.set(pubkey, profile);
           clearTimeout(timeoutId);
           sub.close();
+          resolved = true;
+          profileFetchingPromises.delete(pubkey);
           resolve(profile);
         } catch (error) {
-          console.error('Failed to parse profile:', error);
+          console.error('Failed to parse profile for', pubkey, error);
         }
       }
     );
 
-    // タイムアウト設定（1秒に短縮）
+    // タイムアウト設定（1.5秒）
     timeoutId = setTimeout(() => {
-      sub.close();
-      // デフォルトプロフィールを返す
-      const defaultProfile = {
-        id: pubkey,
-        username: nip19.npubEncode(pubkey).slice(0, 12),
-        name: 'Nostr User',
-        avatar: `https://robohash.org/${pubkey}`,
-        bio: '',
-        followersCount: 0,
-        followingCount: 0,
-        createdAt: new Date()
-      };
-      profileCache.set(pubkey, defaultProfile);
-      resolve(defaultProfile);
+      if (!resolved) {
+        sub.close();
+        // デフォルトプロフィールを返す
+        const defaultProfile = {
+          id: pubkey,
+          username: nip19.npubEncode(pubkey).slice(0, 12),
+          name: 'Nostr User',
+          avatar: `https://robohash.org/${pubkey}`,
+          bio: '',
+          followersCount: 0,
+          followingCount: 0,
+          createdAt: new Date(),
+          npub: nip19.npubEncode(pubkey)
+        };
+        profileCache.set(pubkey, defaultProfile);
+        resolved = true;
+        profileFetchingPromises.delete(pubkey);
+        resolve(defaultProfile);
+      }
     }, 1500);
   });
+
+  profileFetchingPromises.set(pubkey, fetchPromise);
+  return fetchPromise;
 }
 
 /**
@@ -229,7 +254,7 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
       // フィルター設定
       const filters: any = {
         kinds: [KIND_TEXT_NOTE],
-        limit: Math.min(limit * 1.5, 30), // 過剰な取得を防ぐため上限を設定
+        limit: Math.min(limit * 2, 50), // プロフィール取得のために少し多めに取得
         until: until
       };
 
@@ -246,70 +271,57 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
           // 重複チェック
           if (!events.find(e => e.id === event.id)) {
             events.push(event);
-            const tweet = await nostrEventToTweet(event, relays);
-            tweets.push(tweet);
-          }
+            // プロフィール取得を非同期で行う
+            nostrEventToTweet(event, relays).then(tweet => {
+              tweets.push(tweet);
 
-          // 必要数に達したら完了
-          if (tweets.length >= limit) {
-            clearTimeout(timeoutId);
-            sub.close();
-            
-            // リアクション数をバッチで取得
-            const eventIds = tweets.map(t => t.id);
-            const reactionCounts = await fetchReactionCounts(eventIds, relays);
-            
-            // ツイートにリアクション数を設定
-            tweets.forEach(tweet => {
-              tweet.likesCount = reactionCounts.get(tweet.id) || 0;
-            });
-            
-            // 時系列でソート（新しい順）
-            tweets.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-            
-            const oldestEvent = events.reduce((oldest, event) => 
-              event.created_at < oldest.created_at ? event : oldest
-            );
-            
-            resolve({
-              tweets: tweets.slice(0, limit),
-              nextCursor: oldestEvent.created_at.toString(),
-              hasMore: true // Nostrは常に過去のイベントを取得可能
+              // 必要数に達したら完了
+              if (tweets.length >= limit) {
+                clearTimeout(timeoutId);
+                sub.close();
+                processAndResolve();
+              }
+            }).catch(error => {
+              console.error('[fetchTimeline] Failed to convert event to tweet:', error);
             });
           }
         }
       );
 
-      // タイムアウト設定（2秒に短縮）
-      timeoutId = setTimeout(async () => {
-        sub.close();
-        
+      // 結果を処理して返す関数
+      const processAndResolve = async () => {
         // リアクション数をバッチで取得
         if (tweets.length > 0) {
           const eventIds = tweets.map(t => t.id);
           const reactionCounts = await fetchReactionCounts(eventIds, relays);
-          
+
           // ツイートにリアクション数を設定
           tweets.forEach(tweet => {
             tweet.likesCount = reactionCounts.get(tweet.id) || 0;
           });
         }
-        
+
         // 時系列でソート（新しい順）
         tweets.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-        
-        const oldestEvent = events.length > 0 
-          ? events.reduce((oldest, event) => 
+
+        const oldestEvent = events.length > 0
+          ? events.reduce((oldest, event) =>
               event.created_at < oldest.created_at ? event : oldest
             )
           : null;
-        
+
         resolve({
           tweets: tweets.slice(0, limit),
           nextCursor: oldestEvent ? oldestEvent.created_at.toString() : undefined,
-          hasMore: tweets.length === limit
+          hasMore: tweets.length >= limit
         });
-      }, 3000);
+      };
+
+      // タイムアウト設定（4秒に延長してプロフィール取得の時間を確保）
+      timeoutId = setTimeout(async () => {
+        sub.close();
+        await processAndResolve();
+      }, 4000);
     });
   } catch (error) {
     console.error('Failed to fetch timeline:', error);
