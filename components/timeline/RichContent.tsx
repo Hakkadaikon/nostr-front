@@ -21,11 +21,13 @@ function renderText(text: string) {
 }
 
 function renderLink(url: string, key: string, seenUrls: Set<string>) {
-  if (seenUrls.has(url)) {
+  // 末尾に付与されがちな括弧や句読点を除去（Markdown の ![]() や文章中の括弧閉じ対策）
+  const cleaned = url.replace(/[)\]\}>,.;]+$/g, '');
+  if (seenUrls.has(cleaned)) {
     return null;
   }
-  seenUrls.add(url);
-  return <MediaEmbed key={key} url={url} />;
+  seenUrls.add(cleaned);
+  return <MediaEmbed key={key} url={cleaned} />;
 }
 
 
