@@ -16,10 +16,10 @@ export function middleware(request: NextRequest) {
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.youtube.com https://s.ytimg.com https://platform.twitter.com https://cdn.syndication.twimg.com https://syndication.twitter.com", // Note: unsafe-inline/eval は段階的に削除すべき
     "style-src 'self' 'unsafe-inline' https://platform.twitter.com",
-    "img-src 'self' data: https: blob: https://pbs.twimg.com https://abs.twimg.com https://platform.twitter.com https://syndication.twitter.com",
+    "img-src 'self' data: https: blob: https://nostrcheck.me https://cdn.nostrcheck.me https://pbs.twimg.com https://abs.twimg.com https://platform.twitter.com https://syndication.twitter.com",
     "font-src 'self'",
-    "connect-src 'self' wss://* https://*.nostr.build https://cdn.nostrcheck.me https://blossom.primal.net https://platform.twitter.com https://cdn.syndication.twimg.com https://syndication.twitter.com https://pbs.twimg.com",
-    "media-src 'self' https: https://pbs.twimg.com https://video.twimg.com",
+    "connect-src 'self' wss://* https://*.nostr.build https://nostrcheck.me https://cdn.nostrcheck.me https://blossom.primal.net https://platform.twitter.com https://cdn.syndication.twimg.com https://syndication.twitter.com https://pbs.twimg.com",
+    "media-src 'self' https: https://nostrcheck.me https://cdn.nostrcheck.me https://pbs.twimg.com https://video.twimg.com",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
