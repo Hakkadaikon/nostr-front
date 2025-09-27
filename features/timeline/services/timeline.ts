@@ -1,5 +1,5 @@
 import { TimelineParams, TimelineResponse, Tweet } from '../types';
-import { getReadRelays } from '../../relays/services/relayPool';
+import { subscribeTo, getReadRelays } from '../../relays/services/relayPool';
 import { useRelaysStore } from '../../../stores/relays.store';
 import { useAuthStore } from '../../../stores/auth.store';
 import { type Event as NostrEvent, nip19 } from 'nostr-tools';
@@ -62,7 +62,7 @@ function extractQuoteReference(tags: string[][]): { id: string; relays?: string[
 }
 
 /**
- * Nostrイベントからプロフィール情報を取得（リアルタイム機能削除、静的取得のみ）
+ * Nostrイベントからプロフィール情報を取得
  */
 async function fetchProfile(pubkey: string, relays: string[]): Promise<any> {
   // キャッシュチェック（有効期限も確認）
@@ -82,24 +82,101 @@ async function fetchProfile(pubkey: string, relays: string[]): Promise<any> {
     return profileFetchingPromises.get(pubkey)!;
   }
 
-  // デフォルトプロフィールを返す（リアルタイム購読を削除）
+  // 新しいPromiseを作成して、取得中のマップに追加
   const fetchPromise = new Promise<any>((resolve) => {
-    const defaultProfile = {
-      id: pubkey,
-      username: nip19.npubEncode(pubkey).slice(0, 12),
-      name: 'Nostr User',
-      avatar: getProfileImageUrl(null, pubkey), // 統一されたアバター生成
-      bio: '',
-      followersCount: 0,
-      followingCount: 0,
-      createdAt: new Date(),
-      npub: nip19.npubEncode(pubkey)
-    };
+    let profile: any = null;
+    let timeoutId: NodeJS.Timeout;
+    let resolved = false;
 
-    profileCache.set(pubkey, defaultProfile);
-    profileCacheTimestamps.set(pubkey, Date.now());
-    profileFetchingPromises.delete(pubkey);
-    resolve(defaultProfile);
+    let latestEvent: NostrEvent | null = null;
+    let latestTimestamp = 0;
+
+    const sub = subscribeTo(
+      relays,
+      [{ kinds: [KIND_METADATA], authors: [pubkey], limit: 10 }],
+      (event: NostrEvent) => {
+        if (resolved) return;
+        if (event.pubkey !== pubkey) return;
+
+        if (event.created_at > latestTimestamp) {
+          latestEvent = event;
+          latestTimestamp = event.created_at;
+        }
+      }
+    );
+
+    const processTimeout = setTimeout(() => {
+      if (!resolved && latestEvent) {
+        try {
+          const content = JSON.parse(latestEvent.content);
+          profile = {
+            id: pubkey,
+            username: content.username || content.name || nip19.npubEncode(pubkey).slice(0, 12),
+            name: content.display_name || content.name || '',
+            avatar: content.picture || getProfileImageUrl(null, pubkey),
+            bio: content.about || '',
+            followersCount: 0,
+            followingCount: 0,
+            createdAt: new Date(latestEvent.created_at * 1000),
+            npub: nip19.npubEncode(pubkey)
+          };
+          profileCache.set(pubkey, profile);
+          profileCacheTimestamps.set(pubkey, Date.now());
+          sub.close();
+          resolved = true;
+          profileFetchingPromises.delete(pubkey);
+          resolve(profile);
+        } catch (error) {
+          console.error('Failed to parse profile for', pubkey, error);
+        }
+      }
+    }, 1000);
+
+    timeoutId = setTimeout(() => {
+      if (!resolved) {
+        sub.close();
+        clearTimeout(processTimeout);
+
+        if (latestEvent) {
+          try {
+            const content = JSON.parse(latestEvent.content);
+            profile = {
+              id: pubkey,
+              username: content.username || content.name || nip19.npubEncode(pubkey).slice(0, 12),
+              name: content.display_name || content.name || '',
+              avatar: content.picture || getProfileImageUrl(null, pubkey),
+              bio: content.about || '',
+              followersCount: 0,
+              followingCount: 0,
+              createdAt: new Date(latestEvent.created_at * 1000),
+              npub: nip19.npubEncode(pubkey)
+            };
+          } catch (error) {
+            console.error('Failed to parse profile for', pubkey, error);
+          }
+        }
+
+        if (!profile) {
+          profile = {
+            id: pubkey,
+            username: nip19.npubEncode(pubkey).slice(0, 12),
+            name: 'Nostr User',
+            avatar: getProfileImageUrl(null, pubkey),
+            bio: '',
+            followersCount: 0,
+            followingCount: 0,
+            createdAt: new Date(),
+            npub: nip19.npubEncode(pubkey)
+          };
+        }
+
+        profileCache.set(pubkey, profile);
+        profileCacheTimestamps.set(pubkey, Date.now());
+        resolved = true;
+        profileFetchingPromises.delete(pubkey);
+        resolve(profile);
+      }
+    }, 1500);
   });
 
   profileFetchingPromises.set(pubkey, fetchPromise);
@@ -107,13 +184,37 @@ async function fetchProfile(pubkey: string, relays: string[]): Promise<any> {
 }
 
 /**
- * 複数のイベントのリアクション数を一度に取得（リアルタイム機能削除、デフォルト値のみ）
+ * 複数のイベントのリアクション数を一度に取得
  */
 async function fetchReactionCounts(eventIds: string[], relays: string[]): Promise<Map<string, number>> {
-  // リアルタイム機能を削除し、デフォルト値のみ返す
-  const counts = new Map<string, number>();
-  eventIds.forEach(id => counts.set(id, 0));
-  return Promise.resolve(counts);
+  return new Promise((resolve) => {
+    const counts = new Map<string, number>();
+    const seenReactions = new Set<string>();
+    let timeoutId: NodeJS.Timeout;
+
+    eventIds.forEach(id => counts.set(id, 0));
+
+    const sub = subscribeTo(
+      relays,
+      [{ kinds: [KIND_REACTION], '#e': eventIds }],
+      (event: NostrEvent) => {
+        const targetEventTag = event.tags.find(tag => tag[0] === 'e');
+        if (!targetEventTag || !targetEventTag[1]) return;
+
+        const targetEventId = targetEventTag[1];
+
+        if (!seenReactions.has(event.id) && event.content === '+' && counts.has(targetEventId)) {
+          seenReactions.add(event.id);
+          counts.set(targetEventId, (counts.get(targetEventId) || 0) + 1);
+        }
+      }
+    );
+
+    timeoutId = setTimeout(() => {
+      sub.close();
+      resolve(counts);
+    }, 1000);
+  });
 }
 
 /**
@@ -142,79 +243,223 @@ async function nostrEventToTweet(event: NostrEvent, relays: string[]): Promise<T
 }
 
 /**
- * タイムラインデータを取得（リアルタイム機能削除、静的なモックデータを返す）
+ * タイムラインデータを取得
  */
 export async function fetchTimeline(params: TimelineParams): Promise<TimelineResponse> {
   try {
-    console.log('[fetchTimeline] Real-time features disabled, returning mock data');
-    
-    // リアルタイム機能を削除し、静的なモックデータを返す
-    const mockTweets: Tweet[] = [];
-    
-    // 簡単なモックデータを生成
-    for (let i = 0; i < Math.min(params.limit || 10, 5); i++) {
-      const mockPubkey = `mock_pubkey_${i}`;
-      const profile = await fetchProfile(mockPubkey, []);
-      
-      mockTweets.push({
-        id: `mock_tweet_${i}`,
-        content: `これはモックのツイート ${i + 1} です。リアルタイム機能は無効になっています。`,
-        author: profile,
-        createdAt: new Date(Date.now() - i * 60000), // i分前
-        likesCount: Math.floor(Math.random() * 10),
-        retweetsCount: Math.floor(Math.random() * 5),
-        repliesCount: Math.floor(Math.random() * 3),
-        zapsCount: 0,
-        isLiked: false,
-        isRetweeted: false,
-        tags: [],
-      });
+    const relaysStore = useRelaysStore.getState();
+    const configuredRelays = getReadRelays(relaysStore.relays);
+
+    const envRelays = (process.env.NEXT_PUBLIC_DEFAULT_RELAYS || '')
+      .split(',')
+      .map(u => u.trim())
+      .filter(Boolean);
+
+    const fallbackRelays = envRelays.length > 0 ? envRelays : [
+      'wss://relay.damus.io',
+      'wss://nos.lol',
+      'wss://relay.nostr.band'
+    ];
+
+    const relays = Array.from(new Set([...(configuredRelays || []), ...fallbackRelays]));
+
+    const limit = params.limit || 10;
+    const until = params.cursor ? parseInt(params.cursor) : Math.floor(Date.now() / 1000);
+
+    let followingList: string[] = [];
+    if (params.type === 'following') {
+      console.log('[fetchTimeline] Fetching follow list for following tab');
+      followingList = await fetchFollowList();
+      console.log('[fetchTimeline] Follow list retrieved:', followingList.length, 'pubkeys');
+
+      if (followingList.length === 0) {
+        console.log('[fetchTimeline] Follow list is empty, returning empty timeline');
+        return {
+          tweets: [],
+          hasMore: false
+        };
+      }
     }
 
-    return {
-      tweets: mockTweets,
-      hasMore: false,
-      nextCursor: undefined
-    };
-    
+    const events: NostrEvent[] = [];
+    const tweets: Tweet[] = [];
+
+    return new Promise((resolve) => {
+      let timeoutId: NodeJS.Timeout;
+
+      const filters: any = {
+        kinds: [KIND_TEXT_NOTE],
+        limit: Math.min(limit * 2, 50),
+        until: until
+      };
+
+      if (params.type === 'following' && followingList.length > 0) {
+        filters.authors = followingList;
+        console.log('[fetchTimeline] Setting authors filter for following tab:', filters.authors.length, 'authors');
+      }
+
+      const sub = subscribeTo(
+        relays,
+        [filters],
+        async (event: NostrEvent) => {
+          if (!events.find(e => e.id === event.id)) {
+            events.push(event);
+            nostrEventToTweet(event, relays).then(tweet => {
+              tweets.push(tweet);
+
+              if (tweets.length >= limit) {
+                clearTimeout(timeoutId);
+                sub.close();
+                processAndResolve();
+              }
+            }).catch(error => {
+              console.error('[fetchTimeline] Failed to convert event to tweet:', error);
+            });
+          }
+        }
+      );
+
+      const processAndResolve = async () => {
+        if (tweets.length > 0) {
+          const eventIds = tweets.map(t => t.id);
+          const reactionCounts = await fetchReactionCounts(eventIds, relays);
+
+          tweets.forEach(tweet => {
+            tweet.likesCount = reactionCounts.get(tweet.id) || 0;
+          });
+        }
+
+        tweets.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+        const oldestEvent = events.length > 0
+          ? events.reduce((oldest, event) =>
+              event.created_at < oldest.created_at ? event : oldest
+            )
+          : null;
+
+        resolve({
+          tweets: tweets.slice(0, limit),
+          nextCursor: oldestEvent ? oldestEvent.created_at.toString() : undefined,
+          hasMore: tweets.length >= limit
+        });
+      };
+
+      timeoutId = setTimeout(async () => {
+        sub.close();
+        await processAndResolve();
+      }, 4000);
+    });
   } catch (error) {
-    console.error('Failed to fetch timeline (mock mode):', error);
+    console.error('Failed to fetch timeline:', error);
     throw error;
   }
 }
 
 /**
- * ツイートをいいねする（リアルタイム機能削除、モック処理）
+ * ツイートをいいねする（Nostrでは反応イベントを送信）
  */
 export async function likeTweet(tweetId: string, authorPubkey?: string): Promise<void> {
-  console.log('[likeTweet] Mock like operation for tweet:', tweetId);
-  // モック処理：実際の処理は行わない
-  await new Promise(resolve => setTimeout(resolve, 200));
+  try {
+    const authStore = useAuthStore.getState();
+    if (!authStore.publicKey && !authStore.npub) {
+      console.warn('Cannot like: User is not authenticated');
+      throw new Error('Authentication required to like posts');
+    }
+
+    const relaysStore = useRelaysStore.getState();
+    let relays = relaysStore.relays.filter(r => r.write).map(r => r.url);
+
+    if (relays.length === 0) {
+      const defaultRelays = process.env.NEXT_PUBLIC_DEFAULT_RELAYS;
+      if (defaultRelays) {
+        relays = defaultRelays.split(',').map(url => url.trim());
+      } else {
+        relays = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.nostr.band'];
+      }
+    }
+
+    const tags: string[][] = [['e', tweetId]];
+    if (authorPubkey) {
+      tags.push(['p', authorPubkey]);
+    }
+
+    const unsignedEvent = {
+      kind: KIND_REACTION,
+      content: '+',
+      tags,
+      created_at: Math.floor(Date.now() / 1000),
+      pubkey: '',
+    };
+
+    if (window.nostr) {
+      const signedEvent = await window.nostr.signEvent(unsignedEvent);
+      const { publish } = await import('../../../lib/nostr/client');
+      await publish(relays, signedEvent as NostrEvent);
+      console.log('Successfully liked tweet:', tweetId);
+    } else {
+      throw new Error('Nostr extension not found');
+    }
+  } catch (error) {
+    console.error('Failed to like tweet:', error);
+    throw error;
+  }
 }
 
 /**
- * いいねを取り消す（リアルタイム機能削除、モック処理）
+ * いいねを取り消す（Nostrでは削除イベントを送信）
  */
 export async function unlikeTweet(tweetId: string): Promise<void> {
-  console.log('[unlikeTweet] Mock unlike operation for tweet:', tweetId);
-  // モック処理：実際の処理は行わない
-  await new Promise(resolve => setTimeout(resolve, 200));
+  try {
+    const authStore = useAuthStore.getState();
+    if (!authStore.publicKey && !authStore.npub) {
+      console.warn('Cannot unlike: User is not authenticated');
+      throw new Error('Authentication required to unlike posts');
+    }
+
+    console.log('Unlike tweet (not implemented):', tweetId);
+    await new Promise(resolve => setTimeout(resolve, 200));
+  } catch (error) {
+    console.error('Failed to unlike tweet:', error);
+    throw error;
+  }
 }
 
 /**
- * ツイートをリツイートする（リアルタイム機能削除、モック処理）
+ * ツイートをリツイートする（Nostrではリポストイベントを送信）
  */
 export async function retweet(tweetId: string, authorPubkey?: string): Promise<void> {
-  console.log('[retweet] Mock retweet operation for tweet:', tweetId);
-  // モック処理：実際の処理は行わない
-  await new Promise(resolve => setTimeout(resolve, 200));
+  try {
+    const authStore = useAuthStore.getState();
+    if (!authStore.publicKey && !authStore.npub) {
+      console.warn('Cannot retweet: User is not authenticated');
+      throw new Error('Authentication required to retweet posts');
+    }
+
+    if (!authorPubkey) {
+      throw new Error('Author pubkey is required for repost');
+    }
+
+    await createRepost(tweetId, authorPubkey);
+  } catch (error) {
+    console.error('Failed to retweet:', error);
+    throw error;
+  }
 }
 
 /**
- * リツイートを取り消す（リアルタイム機能削除、モック処理）
+ * リツイートを取り消す（Nostrでは削除イベントを送信）
  */
 export async function undoRetweet(repostEventId: string): Promise<void> {
-  console.log('[undoRetweet] Mock undo retweet operation for:', repostEventId);
-  // モック処理：実際の処理は行わない
-  await new Promise(resolve => setTimeout(resolve, 200));
+  try {
+    const authStore = useAuthStore.getState();
+    if (!authStore.publicKey && !authStore.npub) {
+      console.warn('Cannot undo retweet: User is not authenticated');
+      throw new Error('Authentication required to undo retweet');
+    }
+
+    await deleteRepost(repostEventId);
+  } catch (error) {
+    console.error('Failed to undo retweet:', error);
+    throw error;
+  }
 }

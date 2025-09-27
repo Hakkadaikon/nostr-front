@@ -20,12 +20,22 @@ const defaultRelays = [
   { url: 'wss://relay.nostr.wine', read: false, write: false, nip50: true },
 ];
 
+const envRelayUrls = (process.env.NEXT_PUBLIC_DEFAULT_RELAYS || '')
+  .split(',')
+  .map(url => url.trim())
+  .filter((url): url is string => url.length > 0);
+
+const envRelays: Relay[] = envRelayUrls.map(url => ({
+  url,
+  read: true,
+  write: true,
+  nip50: true,
+}));
+
 export const useRelaysStore = create<State>()(
   persist(
     (set, get) => ({
-      relays: (process.env.NEXT_PUBLIC_DEFAULT_RELAYS?.split(',') || []).map(url => ({ url, read: true, write: true, nip50: false })).length > 0 
-        ? (process.env.NEXT_PUBLIC_DEFAULT_RELAYS?.split(',') || []).map(url => ({ url, read: true, write: true, nip50: false }))
-        : defaultRelays,
+      relays: envRelays.length > 0 ? envRelays : defaultRelays,
       add: (url) => set({ relays: [...get().relays, { url, read: true, write: true, nip50: false }] }),
       remove: (url) => set({ relays: get().relays.filter(r => r.url !== url) }),
       toggleRead: (url) => set({ relays: get().relays.map(r => (r.url === url ? { ...r, read: !r.read } : r)) }),
@@ -40,6 +50,18 @@ export const useRelaysStore = create<State>()(
     {
       name: 'nostr-relays-storage',
       storage: createJSONStorage(() => localStorage),
+      version: 1,
+      migrate: (persistedState: State | undefined, _version) => {
+        if (!persistedState) return persistedState;
+        const relays = (persistedState.relays || []).map((relay) => {
+          if (relay.nip50) return relay;
+          if (envRelayUrls.includes(relay.url)) {
+            return { ...relay, nip50: true };
+          }
+          return { ...relay, nip50: relay.nip50 ?? false };
+        });
+        return { ...persistedState, relays };
+      },
     }
   )
 );
