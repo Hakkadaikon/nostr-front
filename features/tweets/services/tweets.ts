@@ -3,6 +3,7 @@ import { Tweet } from '../../timeline/types';
 import { publishNote } from '../../notes/publish';
 import { useProfileStore } from '../../../stores/profile.store';
 import { useAuthStore } from '../../../stores/auth.store';
+import { getProfileImageUrl } from '../../../lib/utils/avatar';
 
 function buildAuthor(): Tweet['author'] {
   const profileState = useProfileStore.getState();

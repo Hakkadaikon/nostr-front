@@ -3,6 +3,7 @@ import { subscribeTo, getReadRelays } from '../relays/services/relayPool';
 import { useRelaysStore } from '../../stores/relays.store';
 import { KIND_TEXT_NOTE, KIND_REACTION, KIND_REPOST, KIND_ZAP_RECEIPT } from '../../lib/nostr/constants';
 import { Tweet } from '../timeline/types';
+import { getProfileImageUrl } from '../../lib/utils/avatar';
 
 /**
  * 投稿の詳細情報を取得
@@ -168,7 +169,7 @@ export async function fetchUserLikes(npub: string, limit: number = 20): Promise<
             id: postEvent.pubkey,
             username: postEvent.pubkey.slice(0, 12),
             name: 'Loading...',
-            avatar: `https://robohash.org/${postEvent.pubkey}`,
+            avatar: getProfileImageUrl(null, postEvent.pubkey), // 統一されたアバター生成
             bio: '',
             followersCount: 0,
             followingCount: 0,

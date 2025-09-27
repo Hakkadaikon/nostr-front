@@ -190,10 +190,15 @@ export function useTimeline(params: TimelineParams) {
   // 現在のユーザーの公開鍵（NIP-07などで取得）
   const authPubkey = useAuthStore(state => state.publicKey);
 
-  // 初回読み込み・パラメータ変更時、または公開鍵取得時のリセット
+  // 初回読み込み・パラメータ変更時の処理（リアルタイム機能削除）
   useEffect(() => {
     // フォロー中タブは公開鍵が必要（kind3でフォローリストを取得するため）
-    if (params.type === 'following' && !authPubkey) return;
+    if (params.type === 'following' && !authPubkey) {
+      console.log('[useTimeline] Following tab requires authentication, showing empty state');
+      return;
+    }
+    
+    console.log('[useTimeline] Loading timeline (real-time features disabled)');
     reset();
     loadMore();
   }, [params.type, authPubkey]); // eslint-disable-line react-hooks/exhaustive-deps

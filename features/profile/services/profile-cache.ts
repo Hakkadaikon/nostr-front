@@ -4,6 +4,7 @@ import { useRelaysStore } from '../../../stores/relays.store';
 import { KIND_METADATA } from '../../../lib/nostr/constants';
 import type { Event as NostrEvent } from 'nostr-tools';
 import type { NotificationUser } from '../../../types/notification';
+import { getProfileImageUrl } from '../../../lib/utils/avatar';
 
 // プロフィールキャッシュ (5分TTL)
 const PROFILE_TTL_MS = 5 * 60 * 1000;
@@ -54,7 +55,7 @@ async function fetchProfileFromNostr(pubkey: string): Promise<NotificationUser> 
     npub,
     name: npub.slice(0, 12) + '...',
     username: npub.slice(0, 8),
-    avatar: `https://robohash.org/${pubkey}`,
+    avatar: getProfileImageUrl(null, pubkey), // 統一されたアバター生成
   };
 
   try {
@@ -96,7 +97,7 @@ async function fetchProfileFromNostr(pubkey: string): Promise<NotificationUser> 
               npub,
               name: metadata.display_name || metadata.name || defaultProfile.name,
               username: metadata.username || metadata.name || defaultProfile.username,
-              avatar: metadata.picture || defaultProfile.avatar,
+              avatar: getProfileImageUrl(metadata.picture, pubkey), // 統一されたアバター処理
             });
           } catch (error) {
             console.error('Failed to parse profile metadata:', error);

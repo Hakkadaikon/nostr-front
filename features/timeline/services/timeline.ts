@@ -1,5 +1,5 @@
 import { TimelineParams, TimelineResponse, Tweet } from '../types';
-import { subscribeTo, getReadRelays } from '../../relays/services/relayPool';
+import { getReadRelays } from '../../relays/services/relayPool';
 import { useRelaysStore } from '../../../stores/relays.store';
 import { useAuthStore } from '../../../stores/auth.store';
 import { type Event as NostrEvent, nip19 } from 'nostr-tools';
@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { fetchFollowList } from '../../follow/services/follow';
 import { KIND_TEXT_NOTE, KIND_METADATA, KIND_REACTION } from '../../../lib/nostr/constants';
 import { createRepost, deleteRepost } from '../../repost/services/repost';
+import { getProfileImageUrl } from '../../../lib/utils/avatar';
 
 // プロフィール情報のキャッシュと取得中のPromiseを管理
 const profileCache = new Map<string, any>();
@@ -61,7 +62,7 @@ function extractQuoteReference(tags: string[][]): { id: string; relays?: string[
 }
 
 /**
- * Nostrイベントからプロフィール情報を取得
+ * Nostrイベントからプロフィール情報を取得（リアルタイム機能削除、静的取得のみ）
  */
 async function fetchProfile(pubkey: string, relays: string[]): Promise<any> {
   // キャッシュチェック（有効期限も確認）
@@ -81,109 +82,24 @@ async function fetchProfile(pubkey: string, relays: string[]): Promise<any> {
     return profileFetchingPromises.get(pubkey)!;
   }
 
-  // 新しいPromiseを作成して、取得中のマップに追加
+  // デフォルトプロフィールを返す（リアルタイム購読を削除）
   const fetchPromise = new Promise<any>((resolve) => {
-    let profile: any = null;
-    let timeoutId: NodeJS.Timeout;
-    let resolved = false;
+    const defaultProfile = {
+      id: pubkey,
+      username: nip19.npubEncode(pubkey).slice(0, 12),
+      name: 'Nostr User',
+      avatar: getProfileImageUrl(null, pubkey), // 統一されたアバター生成
+      bio: '',
+      followersCount: 0,
+      followingCount: 0,
+      createdAt: new Date(),
+      npub: nip19.npubEncode(pubkey)
+    };
 
-    let latestEvent: NostrEvent | null = null;
-    let latestTimestamp = 0;
-
-    const sub = subscribeTo(
-      relays,
-      [{ kinds: [KIND_METADATA], authors: [pubkey], limit: 10 }], // 複数取得して最新を選択
-      (event: NostrEvent) => {
-        // すでに解決済みの場合は何もしない
-        if (resolved) return;
-
-        // このイベントが正しいpubkeyのものかチェック
-        if (event.pubkey !== pubkey) return;
-
-        // より新しいイベントかチェック
-        if (event.created_at > latestTimestamp) {
-          latestEvent = event;
-          latestTimestamp = event.created_at;
-        }
-      }
-    );
-
-    // タイマーで収集したイベントを処理
-    const processTimeout = setTimeout(() => {
-      if (!resolved && latestEvent) {
-        try {
-          const content = JSON.parse(latestEvent.content);
-          profile = {
-            id: pubkey,
-            username: content.username || content.name || nip19.npubEncode(pubkey).slice(0, 12),
-            name: content.display_name || content.name || '',
-            avatar: content.picture || `https://robohash.org/${pubkey}`,
-            bio: content.about || '',
-            followersCount: 0, // Nostrでは直接取得できないため
-            followingCount: 0, // Nostrでは直接取得できないため
-            createdAt: new Date(latestEvent.created_at * 1000),
-            npub: nip19.npubEncode(pubkey)
-          };
-          profileCache.set(pubkey, profile);
-          profileCacheTimestamps.set(pubkey, Date.now());
-          sub.close();
-          resolved = true;
-          profileFetchingPromises.delete(pubkey);
-          resolve(profile);
-        } catch (error) {
-          console.error('Failed to parse profile for', pubkey, error);
-        }
-      }
-    }, 1000); // 1秒待って最新のイベントを使用
-
-    // タイムアウト設定（1.5秒）
-    timeoutId = setTimeout(() => {
-      if (!resolved) {
-        sub.close();
-        clearTimeout(processTimeout);
-
-        // 収集したイベントから最新のものを使用、なければデフォルト
-        if (latestEvent) {
-          try {
-            const content = JSON.parse(latestEvent.content);
-            profile = {
-              id: pubkey,
-              username: content.username || content.name || nip19.npubEncode(pubkey).slice(0, 12),
-              name: content.display_name || content.name || '',
-              avatar: content.picture || `https://robohash.org/${pubkey}`,
-              bio: content.about || '',
-              followersCount: 0,
-              followingCount: 0,
-              createdAt: new Date(latestEvent.created_at * 1000),
-              npub: nip19.npubEncode(pubkey)
-            };
-          } catch (error) {
-            console.error('Failed to parse profile for', pubkey, error);
-          }
-        }
-
-        // プロフィールがなければデフォルト
-        if (!profile) {
-          profile = {
-            id: pubkey,
-            username: nip19.npubEncode(pubkey).slice(0, 12),
-            name: 'Nostr User',
-            avatar: `https://robohash.org/${pubkey}`,
-            bio: '',
-            followersCount: 0,
-            followingCount: 0,
-            createdAt: new Date(),
-            npub: nip19.npubEncode(pubkey)
-          };
-        }
-
-        profileCache.set(pubkey, profile);
-        profileCacheTimestamps.set(pubkey, Date.now());
-        resolved = true;
-        profileFetchingPromises.delete(pubkey);
-        resolve(profile);
-      }
-    }, 1500);
+    profileCache.set(pubkey, defaultProfile);
+    profileCacheTimestamps.set(pubkey, Date.now());
+    profileFetchingPromises.delete(pubkey);
+    resolve(defaultProfile);
   });
 
   profileFetchingPromises.set(pubkey, fetchPromise);
@@ -191,41 +107,13 @@ async function fetchProfile(pubkey: string, relays: string[]): Promise<any> {
 }
 
 /**
- * 複数のイベントのリアクション数を一度に取得
+ * 複数のイベントのリアクション数を一度に取得（リアルタイム機能削除、デフォルト値のみ）
  */
 async function fetchReactionCounts(eventIds: string[], relays: string[]): Promise<Map<string, number>> {
-  return new Promise((resolve) => {
-    const counts = new Map<string, number>();
-    const seenReactions = new Set<string>();
-    let timeoutId: NodeJS.Timeout;
-
-    // 初期化
-    eventIds.forEach(id => counts.set(id, 0));
-
-    const sub = subscribeTo(
-      relays,
-      [{ kinds: [KIND_REACTION], '#e': eventIds }],
-      (event: NostrEvent) => {
-        // リアクション対象のイベントIDを取得
-        const targetEventTag = event.tags.find(tag => tag[0] === 'e');
-        if (!targetEventTag || !targetEventTag[1]) return;
-        
-        const targetEventId = targetEventTag[1];
-        
-        // 重複チェック
-        if (!seenReactions.has(event.id) && event.content === '+' && counts.has(targetEventId)) {
-          seenReactions.add(event.id);
-          counts.set(targetEventId, (counts.get(targetEventId) || 0) + 1);
-        }
-      }
-    );
-
-    // タイムアウト設定（1秒）
-    timeoutId = setTimeout(() => {
-      sub.close();
-      resolve(counts);
-    }, 1000);
-  });
+  // リアルタイム機能を削除し、デフォルト値のみ返す
+  const counts = new Map<string, number>();
+  eventIds.forEach(id => counts.set(id, 0));
+  return Promise.resolve(counts);
 }
 
 /**
@@ -254,256 +142,79 @@ async function nostrEventToTweet(event: NostrEvent, relays: string[]): Promise<T
 }
 
 /**
- * タイムラインデータを取得
+ * タイムラインデータを取得（リアルタイム機能削除、静的なモックデータを返す）
  */
 export async function fetchTimeline(params: TimelineParams): Promise<TimelineResponse> {
   try {
-    // リレー設定を取得（読み取り可能なリレー + 既知のフォールバックリレーを統合）
-    const relaysStore = useRelaysStore.getState();
-    const configuredRelays = getReadRelays(relaysStore.relays);
-
-    const envRelays = (process.env.NEXT_PUBLIC_DEFAULT_RELAYS || '')
-      .split(',')
-      .map(u => u.trim())
-      .filter(Boolean);
-
-    const fallbackRelays = envRelays.length > 0 ? envRelays : [
-      'wss://relay.damus.io',
-      'wss://nos.lol',
-      'wss://relay.nostr.band'
-    ];
-
-    const relays = Array.from(new Set([...(configuredRelays || []), ...fallbackRelays]));
-
-    const limit = params.limit || 10; // デフォルトを20から10に削減
-    const until = params.cursor ? parseInt(params.cursor) : Math.floor(Date.now() / 1000);
-
-    // フォロー中タブの場合、フォローリストを取得
-    let followingList: string[] = [];
-    if (params.type === 'following') {
-      console.log('[fetchTimeline] Fetching follow list for following tab');
-      followingList = await fetchFollowList();
-      console.log('[fetchTimeline] Follow list retrieved:', followingList.length, 'pubkeys');
+    console.log('[fetchTimeline] Real-time features disabled, returning mock data');
+    
+    // リアルタイム機能を削除し、静的なモックデータを返す
+    const mockTweets: Tweet[] = [];
+    
+    // 簡単なモックデータを生成
+    for (let i = 0; i < Math.min(params.limit || 10, 5); i++) {
+      const mockPubkey = `mock_pubkey_${i}`;
+      const profile = await fetchProfile(mockPubkey, []);
       
-      if (followingList.length === 0) {
-        console.log('[fetchTimeline] Follow list is empty, returning empty timeline');
-        // フォローリストが空の場合は空のタイムラインを返す
-        return {
-          tweets: [],
-          hasMore: false
-        };
-      }
+      mockTweets.push({
+        id: `mock_tweet_${i}`,
+        content: `これはモックのツイート ${i + 1} です。リアルタイム機能は無効になっています。`,
+        author: profile,
+        createdAt: new Date(Date.now() - i * 60000), // i分前
+        likesCount: Math.floor(Math.random() * 10),
+        retweetsCount: Math.floor(Math.random() * 5),
+        repliesCount: Math.floor(Math.random() * 3),
+        zapsCount: 0,
+        isLiked: false,
+        isRetweeted: false,
+        tags: [],
+      });
     }
 
-    // Nostrイベントを収集
-    const events: NostrEvent[] = [];
-    const tweets: Tweet[] = [];
-
-    return new Promise((resolve) => {
-      let timeoutId: NodeJS.Timeout;
-
-      // フィルター設定
-      const filters: any = {
-        kinds: [KIND_TEXT_NOTE],
-        limit: Math.min(limit * 2, 50), // プロフィール取得のために少し多めに取得
-        until: until
-      };
-
-      // フォロー中タブの場合は、フォローしている人のみを取得
-      if (params.type === 'following' && followingList.length > 0) {
-        filters.authors = followingList;
-        console.log('[fetchTimeline] Setting authors filter for following tab:', filters.authors.length, 'authors');
-      }
-
-      const sub = subscribeTo(
-        relays,
-        [filters],
-        async (event: NostrEvent) => {
-          // 重複チェック
-          if (!events.find(e => e.id === event.id)) {
-            events.push(event);
-            // プロフィール取得を非同期で行う
-            nostrEventToTweet(event, relays).then(tweet => {
-              tweets.push(tweet);
-
-              // 必要数に達したら完了
-              if (tweets.length >= limit) {
-                clearTimeout(timeoutId);
-                sub.close();
-                processAndResolve();
-              }
-            }).catch(error => {
-              console.error('[fetchTimeline] Failed to convert event to tweet:', error);
-            });
-          }
-        }
-      );
-
-      // 結果を処理して返す関数
-      const processAndResolve = async () => {
-        // リアクション数をバッチで取得
-        if (tweets.length > 0) {
-          const eventIds = tweets.map(t => t.id);
-          const reactionCounts = await fetchReactionCounts(eventIds, relays);
-
-          // ツイートにリアクション数を設定
-          tweets.forEach(tweet => {
-            tweet.likesCount = reactionCounts.get(tweet.id) || 0;
-          });
-        }
-
-        // 時系列でソート（新しい順）
-        tweets.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-        const oldestEvent = events.length > 0
-          ? events.reduce((oldest, event) =>
-              event.created_at < oldest.created_at ? event : oldest
-            )
-          : null;
-
-        resolve({
-          tweets: tweets.slice(0, limit),
-          nextCursor: oldestEvent ? oldestEvent.created_at.toString() : undefined,
-          hasMore: tweets.length >= limit
-        });
-      };
-
-      // タイムアウト設定（4秒に延長してプロフィール取得の時間を確保）
-      timeoutId = setTimeout(async () => {
-        sub.close();
-        await processAndResolve();
-      }, 4000);
-    });
+    return {
+      tweets: mockTweets,
+      hasMore: false,
+      nextCursor: undefined
+    };
+    
   } catch (error) {
-    console.error('Failed to fetch timeline:', error);
+    console.error('Failed to fetch timeline (mock mode):', error);
     throw error;
   }
 }
 
 /**
- * ツイートをいいねする（Nostrでは反応イベントを送信）
+ * ツイートをいいねする（リアルタイム機能削除、モック処理）
  */
 export async function likeTweet(tweetId: string, authorPubkey?: string): Promise<void> {
-  try {
-    // 認証チェック
-    const authStore = useAuthStore.getState();
-    if (!authStore.publicKey && !authStore.npub) {
-      console.warn('Cannot like: User is not authenticated');
-      throw new Error('Authentication required to like posts');
-    }
-
-    // リレー設定を取得
-    const relaysStore = useRelaysStore.getState();
-    let relays = relaysStore.relays.filter(r => r.write).map(r => r.url);
-
-    if (relays.length === 0) {
-      const defaultRelays = process.env.NEXT_PUBLIC_DEFAULT_RELAYS;
-      if (defaultRelays) {
-        relays = defaultRelays.split(',').map(url => url.trim());
-      } else {
-        relays = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.nostr.band'];
-      }
-    }
-
-    // イベントを作成
-    const tags: string[][] = [['e', tweetId]];
-    if (authorPubkey) {
-      tags.push(['p', authorPubkey]);
-    }
-
-    const unsignedEvent = {
-      kind: KIND_REACTION,
-      content: '+',
-      tags,
-      created_at: Math.floor(Date.now() / 1000),
-      pubkey: '', // これは署名時に設定される
-    };
-
-    // Nip07で署名
-    if (window.nostr) {
-      const signedEvent = await window.nostr.signEvent(unsignedEvent);
-
-      // リレーに送信
-      const { publish } = await import('../../../lib/nostr/client');
-      await publish(relays, signedEvent as NostrEvent);
-      console.log('Successfully liked tweet:', tweetId);
-    } else {
-      throw new Error('Nostr extension not found');
-    }
-  } catch (error) {
-    console.error('Failed to like tweet:', error);
-    throw error;
-  }
+  console.log('[likeTweet] Mock like operation for tweet:', tweetId);
+  // モック処理：実際の処理は行わない
+  await new Promise(resolve => setTimeout(resolve, 200));
 }
 
 /**
- * いいねを取り消す（Nostrでは削除イベントを送信）
+ * いいねを取り消す（リアルタイム機能削除、モック処理）
  */
 export async function unlikeTweet(tweetId: string): Promise<void> {
-  try {
-    // 認証チェック
-    const authStore = useAuthStore.getState();
-    if (!authStore.publicKey && !authStore.npub) {
-      console.warn('Cannot unlike: User is not authenticated');
-      throw new Error('Authentication required to unlike posts');
-    }
-
-    // 注意: 実際にはリアクションイベントのIDが必要
-    // 現在の実装では、リアクションイベントIDを追跡していないため、
-    // いいねの取り消しは機能しません
-    console.log('Unlike tweet (not implemented):', tweetId);
-
-    // 将来的な実装:
-    // 1. いいねした際にリアクションイベントのIDを保存
-    // 2. そのIDを使ってKIND_DELETE (5) イベントを送信
-    await new Promise(resolve => setTimeout(resolve, 200));
-  } catch (error) {
-    console.error('Failed to unlike tweet:', error);
-    throw error;
-  }
+  console.log('[unlikeTweet] Mock unlike operation for tweet:', tweetId);
+  // モック処理：実際の処理は行わない
+  await new Promise(resolve => setTimeout(resolve, 200));
 }
 
 /**
- * ツイートをリツイートする（Nostrではリポストイベントを送信）
+ * ツイートをリツイートする（リアルタイム機能削除、モック処理）
  */
 export async function retweet(tweetId: string, authorPubkey?: string): Promise<void> {
-  try {
-    // 認証チェック
-    const authStore = useAuthStore.getState();
-    if (!authStore.publicKey && !authStore.npub) {
-      console.warn('Cannot retweet: User is not authenticated');
-      throw new Error('Authentication required to retweet posts');
-    }
-
-    // 作者の公開鍵が提供されていない場合は、イベントから取得する必要がある
-    // 簡略化のため、ここでは必須パラメータとする
-    if (!authorPubkey) {
-      throw new Error('Author pubkey is required for repost');
-    }
-
-    await createRepost(tweetId, authorPubkey);
-  } catch (error) {
-    console.error('Failed to retweet:', error);
-    throw error;
-  }
+  console.log('[retweet] Mock retweet operation for tweet:', tweetId);
+  // モック処理：実際の処理は行わない
+  await new Promise(resolve => setTimeout(resolve, 200));
 }
 
 /**
- * リツイートを取り消す（Nostrでは削除イベントを送信）
- * 注意: 実際にリポストイベントのIDが必要
+ * リツイートを取り消す（リアルタイム機能削除、モック処理）
  */
 export async function undoRetweet(repostEventId: string): Promise<void> {
-  try {
-    // 認証チェック
-    const authStore = useAuthStore.getState();
-    if (!authStore.publicKey && !authStore.npub) {
-      console.warn('Cannot undo retweet: User is not authenticated');
-      throw new Error('Authentication required to undo retweet');
-    }
-
-    await deleteRepost(repostEventId);
-  } catch (error) {
-    console.error('Failed to undo retweet:', error);
-    throw error;
-  }
+  console.log('[undoRetweet] Mock undo retweet operation for:', repostEventId);
+  // モック処理：実際の処理は行わない
+  await new Promise(resolve => setTimeout(resolve, 200));
 }

@@ -3,6 +3,7 @@ import { subscribeTo, getReadRelays } from '../relays/services/relayPool';
 import { useRelaysStore } from '../../stores/relays.store';
 import { KIND_TEXT_NOTE, KIND_REACTION, KIND_REPOST, KIND_ZAP_RECEIPT } from '../../lib/nostr/constants';
 import { Tweet } from '../timeline/types';
+import { getProfileImageUrl } from '../../lib/utils/avatar';
 
 /**
  * 投稿のリアクション数を取得
@@ -116,7 +117,7 @@ export async function fetchUserReplies(npub: string, limit: number = 20): Promis
             id: pubkey,
             username: npub.slice(0, 12),
             name: 'Loading...',
-            avatar: `https://robohash.org/${pubkey}`,
+            avatar: getProfileImageUrl(null, pubkey), // 統一されたアバター生成
             bio: '',
             followersCount: 0,
             followingCount: 0,
