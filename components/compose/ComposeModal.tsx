@@ -100,8 +100,6 @@ export default function ComposeModal() {
         await removeDraft(DRAFT_KEY);
         show('投稿が完了しました');
         closeModal();
-        // タイムラインを更新するイベントをディスパッチ
-        window.dispatchEvent(new CustomEvent('note-published'));
       }
     } catch (e: any) {
       show(`投稿に失敗しました: ${e?.message || e}`);

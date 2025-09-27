@@ -46,7 +46,7 @@ export default function RelayManager() {
                 </label>
                 <label className="flex items-center gap-1 cursor-pointer text-purple-600 dark:text-purple-400">
                   <input type="checkbox" checked={r.nip50 || false} onChange={() => toggleNip50(r.url)} className="cursor-pointer" /> 
-                  <span>NIP-50</span>
+                  <span>Search</span>
                 </label>
                 <Button
                   onClick={() => remove(r.url)}
@@ -61,7 +61,7 @@ export default function RelayManager() {
         </ul>
         <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
           <p className="text-sm text-blue-800 dark:text-blue-200">
-            <strong>ヒント:</strong> NIP-50にチェックを入れたリレーは検索機能で使用されます。複数のリレーを選択できます。
+            <strong>ヒント:</strong> Searchにチェックを入れたリレーは検索機能で使用されます。複数のリレーを選択できます。
           </p>
         </div>
       </div>

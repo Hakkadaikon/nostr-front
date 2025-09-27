@@ -105,31 +105,3 @@ export function clearSensitiveString(sensitiveStr: string): void {
     sensitiveStr = '';
   }
 }
-
-/**
- * 自動ログアウト機能のためのセッション管理
- */
-let sessionTimer: NodeJS.Timeout | null = null;
-const SESSION_TIMEOUT = 30 * 60 * 1000; // 30分
-
-export function startSessionTimer(onTimeout: () => void): void {
-  if (sessionTimer) {
-    clearTimeout(sessionTimer);
-  }
-  
-  sessionTimer = setTimeout(() => {
-    secureLog.info('[SessionTimer] Session expired, logging out for security');
-    onTimeout();
-  }, SESSION_TIMEOUT);
-}
-
-export function resetSessionTimer(onTimeout: () => void): void {
-  startSessionTimer(onTimeout);
-}
-
-export function clearSessionTimer(): void {
-  if (sessionTimer) {
-    clearTimeout(sessionTimer);
-    sessionTimer = null;
-  }
-}

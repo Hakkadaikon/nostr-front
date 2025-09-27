@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { nip19, getPublicKey } from 'nostr-tools';
-import { saveEncryptedNsec, loadEncryptedNsec, removeEncryptedNsec, clearSensitiveString, startSessionTimer, clearSessionTimer } from '../lib/crypto/keyStorage';
+import { saveEncryptedNsec, loadEncryptedNsec, removeEncryptedNsec, clearSensitiveString } from '../lib/crypto/keyStorage';
 import { secureLog, securityLog } from '../lib/utils/secureLogger';
 
 export type AuthState = {
@@ -12,7 +12,6 @@ export type AuthState = {
   publicKey: string | null; // hex public key
   pubkey?: string | null; // alias for publicKey (for compatibility)
   saveNsecEnabled: boolean; // ユーザーが暗号化保存を有効にしたか
-  sessionActive: boolean; // セッション管理用
 };
 
 type Actions = {
@@ -23,8 +22,6 @@ type Actions = {
   logout: () => void;
   enableNsecSaving: (enabled: boolean) => void;
   restoreFromStorage: () => Promise<boolean>;
-  startSession: () => void;
-  endSession: () => void;
 };
 
 export const useAuthStore = create<AuthState & Actions>()(
@@ -37,18 +34,16 @@ export const useAuthStore = create<AuthState & Actions>()(
       publicKey: null,
       pubkey: null,
       saveNsecEnabled: true, // デフォルトで暗号化保存を有効に
-      sessionActive: false,
       
       setHasNip07: (v) => set({ hasNip07: v }),
       
       lock: () => {
         const state = get();
-        // セッション終了とメモリクリア
-        clearSessionTimer();
+        // メモリクリア（セッション管理は削除）
         if (state.nsec) {
           clearSensitiveString(state.nsec);
         }
-        set({ locked: true, nsec: null, sessionActive: false });
+        set({ locked: true, nsec: null });
       },
       
       unlock: () => set({ locked: false }),
@@ -65,14 +60,13 @@ export const useAuthStore = create<AuthState & Actions>()(
           if (type === 'npub') {
             const pubkey = data as string;
             
-            // 状態を更新
+            // 状態を更新（sessionActiveは削除）
             set({ 
               npub, 
               nsec, // メモリ内でのみ保持
               publicKey: pubkey, 
               pubkey, 
-              locked: false,
-              sessionActive: true
+              locked: false
             });
             
             // 暗号化保存が有効な場合、秘密鍵を暗号化して保存
@@ -86,11 +80,8 @@ export const useAuthStore = create<AuthState & Actions>()(
               }
             }
             
-            // セッションタイマーを開始
-            get().startSession();
-            
             securityLog('User login', { npub: npub.substring(0, 10) + '...' });
-            secureLog.info('[loginWithNsec] Logged in successfully with encrypted storage');
+            secureLog.info('[loginWithNsec] Logged in successfully with persistent encrypted storage');
           } else {
             throw new Error('Invalid npub format');
           }
@@ -104,8 +95,7 @@ export const useAuthStore = create<AuthState & Actions>()(
             nsec: null, 
             publicKey: null, 
             pubkey: null, 
-            locked: true,
-            sessionActive: false
+            locked: true
           });
           throw error;
         }
@@ -113,9 +103,6 @@ export const useAuthStore = create<AuthState & Actions>()(
       
       logout: () => {
         const state = get();
-        
-        // セッション終了
-        get().endSession();
         
         // 機密データをメモリからクリア
         if (state.nsec) {
@@ -132,8 +119,7 @@ export const useAuthStore = create<AuthState & Actions>()(
           nsec: null, 
           publicKey: null, 
           pubkey: null, 
-          locked: true,
-          sessionActive: false
+          locked: true
         });
         
         securityLog('User logout', { voluntary: true });
@@ -172,12 +158,8 @@ export const useAuthStore = create<AuthState & Actions>()(
               if (decryptedNsec) {
                 set({ 
                   nsec: decryptedNsec,
-                  locked: false,
-                  sessionActive: true
+                  locked: false
                 });
-                
-                // セッション開始
-                get().startSession();
                 
                 secureLog.info('[restoreFromStorage] Restored encrypted credentials');
                 return true;
@@ -202,23 +184,6 @@ export const useAuthStore = create<AuthState & Actions>()(
           secureLog.error('[restoreFromStorage] Failed:', errorMessage);
           return false;
         }
-      },
-      
-      startSession: () => {
-        startSessionTimer(() => {
-          const state = get();
-          if (state.sessionActive) {
-            securityLog('Session timeout', { reason: 'inactivity' });
-            secureLog.info('[Session] Auto-logout due to inactivity');
-            get().logout();
-          }
-        });
-        set({ sessionActive: true });
-      },
-      
-      endSession: () => {
-        clearSessionTimer();
-        set({ sessionActive: false });
       },
     }),
     {

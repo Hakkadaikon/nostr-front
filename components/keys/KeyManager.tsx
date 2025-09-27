@@ -14,7 +14,7 @@ export default function KeyManager() {
   const [showNsec, setShowNsec] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
 
-  const { npub, nsec, locked, saveNsecEnabled, sessionActive } = useAuthStore();
+  const { npub, nsec, locked, saveNsecEnabled } = useAuthStore();
   const loginWithNsec = useAuthStore(s => s.loginWithNsec);
   const lock = useAuthStore(s => s.lock);
   const unlock = useAuthStore(s => s.unlock);
@@ -68,27 +68,17 @@ export default function KeyManager() {
             onChange={(e) => enableNsecSaving(e.target.checked)}
             className="w-4 h-4 text-purple-600 bg-white border-gray-300 rounded focus:ring-purple-500 dark:bg-gray-800 dark:border-gray-600"
           />
-          <span className="text-sm">秘密鍵を暗号化して保存</span>
+          <span className="text-sm">秘密鍵を暗号化して永続保存</span>
         </label>
         <div className="text-xs text-blue-600 dark:text-blue-400">
           🔒 AES-256暗号化
         </div>
         {!saveNsecEnabled && (
           <span className="text-xs text-red-600 dark:text-red-400">
-            ⚠️ オフにするとセッション終了時に秘密鍵が失われます
+            ⚠️ オフにするとブラウザを閉じたときに秘密鍵が失われます
           </span>
         )}
       </div>
-
-      {/* セッション状態表示 */}
-      {sessionActive && (
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-          <span className="text-xs text-green-700 dark:text-green-400">
-            セッション有効（30分間の非アクティブでタイムアウト）
-          </span>
-        </div>
-      )}
 
       <div className="flex gap-2">
         <Button onClick={async () => {
@@ -98,7 +88,7 @@ export default function KeyManager() {
         {locked ? (
           <Button onClick={unlock}>Unlock</Button>
         ) : (
-          <Button onClick={lock}>Lock Session</Button>
+          <Button onClick={lock}>Lock</Button>
         )}
         <Button onClick={logout} variant="danger">Logout</Button>
       </div>

@@ -12,7 +12,6 @@ type TimelineAction =
   | { type: 'FETCH_ERROR'; error: Error }
   | { type: 'TOGGLE_LIKE'; tweetId: string }
   | { type: 'TOGGLE_RETWEET'; tweetId: string }
-  | { type: 'ADD_TWEET'; tweet: Tweet }
   | { type: 'RESET' };
 
 // Reducer
@@ -70,12 +69,6 @@ function timelineReducer(state: TimelineState, action: TimelineAction): Timeline
           }
           return tweet;
         }),
-      };
-    
-    case 'ADD_TWEET':
-      return {
-        ...state,
-        tweets: [action.tweet, ...state.tweets],
       };
     
     case 'RESET':
@@ -194,11 +187,6 @@ export function useTimeline(params: TimelineParams) {
     dispatch({ type: 'RESET' });
   }, []);
 
-  // ツイートを追加（投稿後の更新用）
-  const addTweet = useCallback((tweet: Tweet) => {
-    dispatch({ type: 'ADD_TWEET', tweet });
-  }, []);
-
   // 現在のユーザーの公開鍵（NIP-07などで取得）
   const authPubkey = useAuthStore(state => state.publicKey);
 
@@ -219,6 +207,5 @@ export function useTimeline(params: TimelineParams) {
     toggleLike,
     toggleRetweet,
     reset,
-    addTweet,
   };
 }
