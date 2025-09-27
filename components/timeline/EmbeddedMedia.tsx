@@ -1,7 +1,5 @@
 "use client";
 
-import Image from 'next/image';
-
 interface EmbeddedMediaProps {
   url: string;
   alt?: string;
@@ -16,13 +14,13 @@ export function EmbeddedImage({ url, alt }: EmbeddedMediaProps) {
       className="mt-3 block overflow-hidden rounded-2xl border border-gray-200 bg-black/5 dark:border-gray-700 dark:bg-gray-900/40"
     >
       <div className="relative h-64 w-full">
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src={url}
           alt={alt || 'Embedded media'}
-          fill
-          className="object-contain bg-black/80"
-          sizes="(max-width: 768px) 100vw, 640px"
-          unoptimized
+          loading="lazy"
+          className="absolute inset-0 w-full h-full object-contain bg-black/80"
+          referrerPolicy="no-referrer"
         />
       </div>
     </a>
