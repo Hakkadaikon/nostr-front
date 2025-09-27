@@ -15,12 +15,19 @@ import { useReaction } from '../../features/reactions/hooks/useReaction';
 import { SafeImage } from '../ui/SafeImage';
 import { EmbeddedPost } from './EmbeddedPost';
 import { RichContent } from '../timeline/RichContent';
+import { ensureLiveProfileTracking } from '../../features/notifications/services/live-profile-updater';
 
 interface NotificationItemProps {
   notification: Notification;
 }
 
 export function NotificationItem({ notification }: NotificationItemProps) {
+  // ライブで最新プロフィールを追跡（アイコン変更即時反映）
+  ensureLiveProfileTracking(notification.user.pubkey);
+  if (notification.postAuthor?.id) {
+    // postAuthor の pubkey が id に入っているケースを想定
+    ensureLiveProfileTracking((notification.postAuthor as any).pubkey || notification.postAuthor.id!);
+  }
   const [showReply, setShowReply] = useState(false);
   const markAsRead = useNotificationStore(s => s.markAsRead);
   const { publicKey: currentUserPubkey } = useAuthStore();

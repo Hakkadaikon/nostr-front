@@ -11,6 +11,7 @@ interface NotificationStore {
   markAllAsRead: () => void;
   clearNotifications: () => void;
   getFilteredNotifications: () => Notification[];
+  updateUserProfile: (pubkey: string, data: { name?: string; username?: string; avatar?: string }) => void;
 }
 
 // 通知の有効期限（7日間）
@@ -99,6 +100,27 @@ export const useNotificationStore = create<NotificationStore>()(
         // createdAt の新しい順（降順）で並び替え
         return filtered.sort((a, b) => toTimestamp(b.createdAt as unknown) - toTimestamp(a.createdAt as unknown));
       },
+
+      // プロフィール部分更新（最新 metadata を受けた時に使用）
+      updateUserProfile: (pubkey, data) => set((state) => {
+        let changed = false;
+        const notifications = state.notifications.map(n => {
+          if (n.user.pubkey === pubkey) {
+            const updated = { ...n, user: { ...n.user, ...data } };
+            changed = true;
+            return updated;
+          }
+          // embedded post の author にも反映
+          if ((n.postAuthor as any)?.pubkey === pubkey || n.postAuthor?.id === pubkey) {
+            const updated = { ...n, postAuthor: { ...n.postAuthor, ...data } };
+            changed = true;
+            return updated;
+          }
+          return n;
+        });
+        if (!changed) return state;
+        return { ...state, notifications };
+      }),
     }),
     {
       name: 'notification-storage',
