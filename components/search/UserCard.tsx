@@ -14,7 +14,7 @@ interface UserCardProps {
 
 export function UserCard({ user, onFollow }: UserCardProps) {
   return (
-    <div className="p-4 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
+    <div className="p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
       <div className="flex items-start gap-3">
         {/* アバター */}
         <Link href={`/profile/${user.npub || user.id}` as any} className="flex-shrink-0">
@@ -40,12 +40,12 @@ export function UserCard({ user, onFollow }: UserCardProps) {
                 className="hover:underline"
               >
                 <h3 className="font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
-                  <span className="truncate max-w-[200px]">{user.name}</span>
+                  <span className="truncate">{user.name}</span>
                   {isActivityPubUser(user) && (
                     <ActivityPubBadge size="small" />
                   )}
                 </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[200px]">
+                <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                   @{user.username}
                 </p>
               </Link>
