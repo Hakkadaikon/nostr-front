@@ -56,7 +56,7 @@ export default function ComposeBox() {
       </div>
       <div className="text-right">
         <Button variant="primary" disabled={!text.trim() || loading} onClick={onPost}>
-          {loading ? 'Posting...' : 'Post'}
+          {loading ? '投稿中...' : '投稿する'}
         </Button>
       </div>
     </div>
