@@ -147,19 +147,19 @@ export function NotificationItem({ notification }: NotificationItemProps) {
             </div>
           )}
 
-          {/* Zap情報 - 新しいレイアウト */}
+          {/* Zap情報 - シンプル表示（再構築） */}
           {notification.type === 'zap' && (
-            <div className="mt-3">
+            <div className="mt-3 space-y-3">
               {/* 金額と送信者 */}
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2">
                 <Zap className="w-5 h-5 text-yellow-500" fill="currentColor" />
-                <span className="font-bold text-2xl text-yellow-600 dark:text-yellow-400">
-                  {(notification.amount ?? 0).toLocaleString()}
+                <span className="font-bold text-xl text-yellow-600 dark:text-yellow-400">
+                  {(notification.amount ?? 0).toLocaleString()} sats
                 </span>
-                <span className="text-lg text-gray-600 dark:text-gray-400">sats by</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">from</span>
                 <Link
                   href={`/profile/${notification.user.npub}` as any}
-                  className="font-semibold text-lg text-purple-600 dark:text-purple-400 hover:underline"
+                  className="font-semibold text-purple-600 dark:text-purple-400 hover:underline"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {notification.user.name || notification.user.username}
@@ -168,70 +168,30 @@ export function NotificationItem({ notification }: NotificationItemProps) {
 
               {/* Zapメッセージ（あれば） */}
               {notification.content && (
-                <div className="mb-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                  <div className="text-sm text-gray-700 dark:text-gray-300">
-                    <RichContent content={notification.content} />
-                  </div>
+                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-sm text-gray-700 dark:text-gray-300">
+                  <RichContent content={notification.content} />
                 </div>
               )}
 
-              {/* Zapされた自分のポスト */}
-              {notification.postContent && notification.postId && notification.postAuthor && (
-                <div className="bg-gray-50 dark:bg-gray-900/30 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
-                  <div className="flex gap-3">
-                    {/* 自分のアバター */}
-                    <Link
-                      href={`/profile/${notification.postAuthor.npub}` as any}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <SafeImage
-                        src={notification.postAuthor.avatar || ''}
-                        alt={notification.postAuthor.name || ''}
-                        width={40}
-                        height={40}
-                        className="w-10 h-10 rounded-full object-cover"
-                        fallbackSrc=""
-                        onError={() => {}}
-                      />
-                      {(!notification.postAuthor.avatar || notification.postAuthor.avatar === '') && (
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
-                      )}
-                    </Link>
-
-                    {/* 自分の名前とポスト内容 */}
-                    <div className="flex-1 min-w-0">
-                      <Link
-                        href={`/profile/${notification.postAuthor.npub}` as any}
-                        className="font-semibold text-gray-900 dark:text-white hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {notification.postAuthor.name || notification.postAuthor.username}
-                      </Link>
-                      <div className="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                        <RichContent content={notification.postContent} />
-                      </div>
-                      {/* メディアがあれば表示 */}
-                      {notification.postMedia && notification.postMedia.length > 0 && (
-                        <div className="mt-2 grid grid-cols-2 gap-2">
-                          {notification.postMedia.map((media, index) => (
-                            <div key={index} className="relative rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700">
-                              {media.type === 'image' && (
-                                <SafeImage
-                                  src={media.url}
-                                  alt={media.altText || ''}
-                                  width={200}
-                                  height={150}
-                                  className="w-full h-32 object-cover"
-                                  fallbackSrc=""
-                                  onError={() => {}}
-                                />
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+              {/* Zap対象の投稿（EmbeddedPostを利用し一元化） */}
+              {notification.postId && (
+                <div>
+                  <div className="text-xs font-medium mb-1 text-gray-500 dark:text-gray-400 tracking-wide">
+                    Zap対象の投稿
                   </div>
+                  <EmbeddedPost
+                    postId={notification.postId}
+                    content={notification.postContent}
+                    author={notification.postAuthor}
+                    createdAt={notification.postCreatedAt}
+                    media={notification.postMedia}
+                  />
+                </div>
+              )}
+
+              {!notification.postId && (
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  関連する投稿が特定できませんでした（Zap Receipt: {notification.id.split('-')[0].slice(0, 12)}...）
                 </div>
               )}
             </div>
