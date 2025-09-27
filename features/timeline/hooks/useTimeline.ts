@@ -198,6 +198,22 @@ export function useTimeline(params: TimelineParams) {
     loadMore();
   }, [params.type, authPubkey]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 外部からのタイムライン更新要求（例: 新規投稿後）
+  useEffect(() => {
+    const handler = () => {
+      reset();
+      loadMore();
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('timeline:refresh', handler);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('timeline:refresh', handler);
+      }
+    };
+  }, [reset, loadMore]);
+
   return {
     tweets: state.tweets,
     isLoading: state.isLoading,

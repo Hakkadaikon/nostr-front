@@ -39,6 +39,9 @@ export default function ComposeBox() {
         setText('');
         await removeDraft(DRAFT_KEY);
         show(`Posted to ${r.results.length - failed.length}/${r.results.length} relays`);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('timeline:refresh'));
+        }
       } else {
         show(`Failed to post. Failed relays: ${failed.join(', ')}`);
       }
