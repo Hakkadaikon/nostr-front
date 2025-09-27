@@ -2,7 +2,6 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '../../../stores/auth.store';
-import { nip19 } from 'nostr-tools';
 
 export function useAuth() {
   const router = useRouter();

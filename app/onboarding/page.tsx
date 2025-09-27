@@ -7,6 +7,7 @@ import { useAuthStore } from '../../stores/auth.store';
 import { generatePrivateKey } from '../../features/keys/generate';
 import { importKey } from '../../features/keys/import';
 import { Key, Download, Wallet } from 'lucide-react';
+import { nip19 } from 'nostr-tools';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -14,7 +15,9 @@ export default function OnboardingPage() {
   const [importInput, setImportInput] = useState('');
   const [generatedKeys, setGeneratedKeys] = useState<{ npub: string; nsec: string } | null>(null);
   const [showNsec, setShowNsec] = useState(false);
+  const hasNip07 = useAuthStore(s => s.hasNip07);
   const loginWithNsec = useAuthStore(s => s.loginWithNsec);
+  const unlock = useAuthStore(s => s.unlock);
 
   const handleGenerate = () => {
     const keys = generatePrivateKey();
@@ -40,16 +43,27 @@ export default function OnboardingPage() {
   };
 
   const handleNip07 = async () => {
-    if (window.nostr) {
-      try {
-        const pubkey = await window.nostr.getPublicKey();
-        // NIP-07の場合はnsecなしでログイン（拡張機能が署名を処理）
-        alert('NIP-07拡張機能を使用する機能は現在開発中です。');
-      } catch (error) {
-        alert('NIP-07拡張機能へのアクセスに失敗しました。');
-      }
-    } else {
+    if (!(window as any).nostr) {
       alert('NIP-07対応の拡張機能（Alby、nos2x等）がインストールされていません。');
+      return;
+    }
+
+    try {
+      const pubkey: string = await (window as any).nostr.getPublicKey();
+      if (pubkey) {
+        const npub = nip19.npubEncode(pubkey);
+        unlock();
+        useAuthStore.setState({
+          npub,
+          publicKey: pubkey,
+          pubkey,
+          locked: false,
+        });
+        router.push('/');
+      }
+    } catch (error) {
+      console.error('Failed to use NIP-07 extension:', error);
+      alert('NIP-07拡張機能へのアクセスに失敗しました。ブラウザの許可設定を確認してください。');
     }
   };
 
@@ -238,7 +252,8 @@ export default function OnboardingPage() {
 
         <button
           onClick={handleNip07}
-          className="group relative p-6 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl hover:border-gray-400 dark:hover:border-gray-600 transition-all text-left"
+          className="group relative p-6 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl hover:border-gray-400 dark:hover:border-gray-600 transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={!hasNip07}
         >
           <div className="flex items-start gap-4">
             <div className="p-3 bg-blue-100 dark:bg-blue-900/50 rounded-xl">
@@ -247,10 +262,14 @@ export default function OnboardingPage() {
             <div className="flex-1">
               <h3 className="text-xl font-semibold mb-2">NIP-07 拡張機能を使用</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Alby、nos2x等のブラウザ拡張機能で接続します。
+                Alby、nos2x等のブラウザ拡張機能で鍵を管理します。
               </p>
-              <div className="mt-2 text-xs text-gray-500 dark:text-gray-500">
-                ※ 開発中
+              <div className="mt-2 text-xs">
+                {hasNip07 ? (
+                  <span className="text-blue-600 dark:text-blue-300">拡張機能を検出しました。クリックして接続します。</span>
+                ) : (
+                  <span className="text-gray-500 dark:text-gray-500">対応拡張機能が見つかりません。インストール後に再読み込みしてください。</span>
+                )}
               </div>
             </div>
           </div>
