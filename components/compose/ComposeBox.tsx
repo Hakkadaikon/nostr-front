@@ -54,7 +54,10 @@ export default function ComposeBox() {
         <Avatar src={current?.picture} />
         <Textarea value={text} onChange={e => setText(e.target.value)} placeholder="いまどうしてる？" rows={3} />
       </div>
-      <div className="text-right">
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          {text.length} 文字
+        </span>
         <Button variant="primary" disabled={!text.trim() || loading} onClick={onPost}>
           {loading ? '投稿中...' : '投稿する'}
         </Button>
