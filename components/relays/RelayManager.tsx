@@ -33,27 +33,29 @@ export default function RelayManager() {
         
         <div className="space-y-3">
           {relays.map(r => (
-            <div key={r.url} className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-xl border border-gray-200 dark:border-gray-700 p-4 gap-3 bg-gray-50 dark:bg-gray-900/30">
-              <div className="truncate text-sm sm:text-base font-mono bg-white dark:bg-gray-800 px-3 py-2 rounded-lg">
+            <div key={r.url} className="flex flex-col rounded-xl border border-gray-200 dark:border-gray-700 p-4 gap-3 bg-gray-50 dark:bg-gray-900/30">
+              <div className="text-sm sm:text-base font-mono bg-white dark:bg-gray-800 px-3 py-2 rounded-lg break-all">
                 {r.url}
               </div>
-              <div className="flex items-center gap-4 text-sm flex-wrap">
-                <label className="flex items-center gap-2 cursor-pointer hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
-                  <input type="checkbox" checked={r.read} onChange={() => toggleRead(r.url)} className="cursor-pointer w-4 h-4 rounded" /> 
-                  <span className="font-medium">Read</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
-                  <input type="checkbox" checked={r.write} onChange={() => toggleWrite(r.url)} className="cursor-pointer w-4 h-4 rounded" /> 
-                  <span className="font-medium">Write</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer text-purple-600 dark:text-purple-400">
-                  <input type="checkbox" checked={r.nip50 || false} onChange={() => toggleNip50(r.url)} className="cursor-pointer w-4 h-4 rounded" /> 
-                  <span className="font-medium">Search</span>
-                </label>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3 sm:gap-4 text-sm flex-wrap">
+                  <label className="flex items-center gap-2 cursor-pointer hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                    <input type="checkbox" checked={r.read} onChange={() => toggleRead(r.url)} className="cursor-pointer w-4 h-4 rounded" />
+                    <span className="font-medium whitespace-nowrap">Read</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                    <input type="checkbox" checked={r.write} onChange={() => toggleWrite(r.url)} className="cursor-pointer w-4 h-4 rounded" />
+                    <span className="font-medium whitespace-nowrap">Write</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-purple-600 dark:text-purple-400">
+                    <input type="checkbox" checked={r.nip50 || false} onChange={() => toggleNip50(r.url)} className="cursor-pointer w-4 h-4 rounded" />
+                    <span className="font-medium whitespace-nowrap">Search</span>
+                  </label>
+                </div>
                 <Button
                   onClick={() => remove(r.url)}
                   variant="danger"
-                  className="whitespace-nowrap text-xs px-3 py-1.5 ml-2"
+                  className="whitespace-nowrap text-xs px-4 py-2 w-full sm:w-auto"
                 >
                   削除
                 </Button>
