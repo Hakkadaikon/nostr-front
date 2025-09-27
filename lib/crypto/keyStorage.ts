@@ -33,7 +33,8 @@ function generateDevicePassword(): string {
     hash = hash & hash; // 32bit整数に変換
   }
   
-  return `device_${Math.abs(hash)}_${Date.now()}`;
+  // Stable device password (removed Date.now() which caused mismatch on reload)
+  return `device_${Math.abs(hash)}`;
 }
 
 /**
