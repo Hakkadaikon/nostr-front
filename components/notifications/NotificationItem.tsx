@@ -141,7 +141,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
           </div>
 
           {/* 返信内容 / メンション内容 / Zap情報 */}
-          {notification.content && (
+          {(notification.type === 'zap' || notification.content) && (
             <div className="mt-2 text-gray-900 dark:text-white">
               {notification.type === 'zap' ? (
                 <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg p-3 mt-2">
@@ -149,30 +149,34 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                     <span className="text-3xl">⚡</span>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-2xl text-yellow-600 dark:text-yellow-400">
-                          {notification.amount?.toLocaleString() || '0'} sats
-                        </span>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          from
-                        </span>
-                        <Link
-                          href={`/profile/${notification.user.npub}` as any}
-                          className="font-semibold text-purple-600 dark:text-purple-400 hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {notification.user.name || notification.user.username}
-                        </Link>
-                      </div>
-                      {notification.content && (
-                        <div className="mt-2 text-sm text-gray-700 dark:text-gray-300">
-                          <RichContent content={notification.content} />
-                        </div>
-                      )}
+                      <span className="font-bold text-2xl text-yellow-600 dark:text-yellow-400">
+                        {(notification.amount ?? 0).toLocaleString()} sats
+                      </span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        from
+                      </span>
+                      <Link
+                        href={`/profile/${notification.user.npub}` as any}
+                        className="font-semibold text-purple-600 dark:text-purple-400 hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {notification.user.name || notification.user.username}
+                      </Link>
                     </div>
+                    {notification.content ? (
+                      <div className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                        <RichContent content={notification.content} />
+                      </div>
+                    ) : (
+                      <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 italic">
+                        Zapメッセージはありません
+                      </div>
+                    )}
+                  </div>
                   </div>
                 </div>
               ) : (
-                <RichContent content={notification.content} />
+                notification.content && <RichContent content={notification.content} />
               )}
             </div>
           )}

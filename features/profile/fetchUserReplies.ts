@@ -124,6 +124,7 @@ export async function fetchUserReplies(npub: string, limit: number = 20): Promis
             createdAt: new Date()
           };
 
+          const parentId = event.tags.find(tag => tag[0] === 'e')?.[1];
           const reply: Tweet = {
             id: event.id,
             content: event.content,
@@ -134,7 +135,8 @@ export async function fetchUserReplies(npub: string, limit: number = 20): Promis
             repliesCount: 0,
             zapsCount: 0,
             isLiked: false,
-            isRetweeted: false
+            isRetweeted: false,
+            parentId
           };
 
           replies.push(reply);

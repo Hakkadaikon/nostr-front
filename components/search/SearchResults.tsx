@@ -34,16 +34,17 @@ export function SearchResults({
     return null;
   }
 
-  const hasResults = 
-    (searchType !== 'tweets' && results.users.length > 0) || 
-    (searchType !== 'users' && results.tweets.length > 0);
+  const hasResults = searchType === 'users'
+    ? results.users.length > 0
+    : results.tweets.length > 0;
 
   if (!hasResults) {
+    const emptyMessage = searchType === 'users'
+      ? '一致するユーザーが見つかりませんでした'
+      : '一致する投稿が見つかりませんでした';
     return (
       <div className="p-8 text-center">
-        <p className="text-gray-500 dark:text-gray-400">
-          検索結果が見つかりませんでした
-        </p>
+        <p className="text-gray-500 dark:text-gray-400">{emptyMessage}</p>
       </div>
     );
   }
@@ -51,13 +52,8 @@ export function SearchResults({
   return (
     <div className="w-full">
       {/* ユーザー検索結果 */}
-      {searchType !== 'tweets' && results.users.length > 0 && (
+      {searchType === 'users' && results.users.length > 0 && (
         <div className="w-full">
-          {searchType === 'all' && (
-            <h2 className="px-4 sm:px-6 py-3 text-base sm:text-lg font-semibold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900/50">
-              ユーザー
-            </h2>
-          )}
           <div className="divide-y divide-gray-200 dark:divide-gray-800">
             {results.users
               .filter((user, index, self) => 
@@ -117,13 +113,8 @@ export function SearchResults({
       )}
 
       {/* ツイート検索結果 */}
-      {searchType !== 'users' && results.tweets.length > 0 && (
+      {searchType === 'tweets' && results.tweets.length > 0 && (
         <div className="w-full">
-          {searchType === 'all' && (
-            <h2 className="px-4 sm:px-6 py-3 text-base sm:text-lg font-semibold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900/50">
-              ツイート
-            </h2>
-          )}
           <div className="divide-y divide-gray-200 dark:divide-gray-800">
             {results.tweets.map((tweet) => (
               <TimelineItem

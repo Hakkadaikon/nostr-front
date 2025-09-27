@@ -6,7 +6,7 @@ import { Tweet, User } from '../../timeline/types';
 /**
  * NIP-50対応の検索フィルタを作成
  */
-export function createNip50Filter(query: string, type: 'all' | 'users' | 'tweets'): Filter[] {
+export function createNip50Filter(query: string, type: 'users' | 'tweets'): Filter[] {
   const baseFilter: Filter = {
     search: query,
     limit: 50,
@@ -27,15 +27,11 @@ export function createNip50Filter(query: string, type: 'all' | 'users' | 'tweets
         kinds: [1],
       }];
     
-    case 'all':
     default:
-      // プロフィールとテキストノートの両方を検索
-      return [
-        {
-          ...baseFilter,
-          kinds: [0, 1],
-        }
-      ];
+      return [{
+        ...baseFilter,
+        kinds: [0, 1],
+      }];
   }
 }
 
@@ -174,7 +170,7 @@ export function eventToTweet(event: NostrEvent, author?: User, stats?: { likesCo
  */
 export async function searchNostr(
   query: string,
-  type: 'all' | 'users' | 'tweets' = 'all'
+  type: 'users' | 'tweets' = 'users'
 ): Promise<{ users: User[], tweets: Tweet[] }> {
   const relayStore = useRelaysStore.getState();
   const searchRelays = relayStore.getSearchRelays();

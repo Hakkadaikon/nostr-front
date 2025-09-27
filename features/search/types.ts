@@ -1,7 +1,7 @@
 import { Tweet, User } from '../timeline/types';
 
 // 検索タイプ
-export type SearchType = 'all' | 'users' | 'tweets';
+export type SearchType = 'users' | 'tweets';
 
 // 検索パラメータ
 export interface SearchParams {
@@ -34,4 +34,3 @@ export interface SearchState {
   error: SearchError | null;
   searchType: SearchType;
 }
-

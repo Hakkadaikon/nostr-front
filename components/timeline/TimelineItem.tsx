@@ -136,6 +136,12 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
             )}
           </div>
 
+          {/* 返信元 */}
+          {tweet.parentId && (
+            <div className="mb-2">
+              <EmbeddedNote reference={{ id: tweet.parentId }} />
+            </div>
+          )}
           {/* コンテンツ */}
           <div className="mt-2">
             <RichContent content={tweet.content} tags={tweet.tags} suppressNoteIds={tweet.quote ? [tweet.quote.id] : undefined} />

@@ -19,7 +19,7 @@ interface UseSearchReturn {
 /**
  * 検索機能のカスタムフック
  */
-export function useSearch(initialQuery: string = '', initialType: SearchType = 'all'): UseSearchReturn {
+export function useSearch(initialQuery: string = '', initialType: SearchType = 'users'): UseSearchReturn {
   const [query, setQuery] = useState(initialQuery);
   const [searchType, setSearchType] = useState<SearchType>(initialType);
   const [results, setResults] = useState<SearchResult | null>(null);
@@ -38,11 +38,11 @@ export function useSearch(initialQuery: string = '', initialType: SearchType = '
     setError(null);
 
     try {
-      const params: SearchParams = {
-        query: query,
-        type: searchType,
-        limit: 20,
-      };
+    const params: SearchParams = {
+      query: query,
+      type: searchType,
+      limit: 20,
+    };
 
       const searchResults = await searchContent(params);
       setResults(searchResults);

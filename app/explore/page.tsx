@@ -9,7 +9,7 @@ import { SearchResults } from '../../components/search/SearchResults';
 import { likeTweet, unlikeTweet, retweet, undoRetweet } from '../../features/timeline/services/timeline';
 import { useAuthStore } from '../../stores/auth.store';
 
-const ALLOWED_TYPES: SearchType[] = ['all', 'users', 'tweets'];
+const ALLOWED_TYPES: SearchType[] = ['users', 'tweets'];
 
 export default function ExplorePage() {
   return (
@@ -35,7 +35,7 @@ function ExplorePageInner() {
     error,
     search,
     clearResults,
-  } = useSearch();
+  } = useSearch('', 'users');
 
   const [pendingSync, setPendingSync] = useState<{ q: string; type: SearchType } | null>(null);
 
@@ -46,10 +46,10 @@ function ExplorePageInner() {
     }
 
     const qParam = searchParams.get('q') ?? '';
-    const typeParamRaw = searchParams.get('type') ?? 'all';
+    const typeParamRaw = searchParams.get('type') ?? 'users';
     const typeParam = ALLOWED_TYPES.includes(typeParamRaw as SearchType)
       ? (typeParamRaw as SearchType)
-      : 'all';
+      : 'users';
 
     setPendingSync({ q: qParam, type: typeParam });
     setQuery(qParam);
@@ -73,9 +73,9 @@ function ExplorePageInner() {
     const trimmed = nextQuery.trim();
     if (trimmed) {
       params.set('q', trimmed);
-      if (nextType !== 'all') {
-        params.set('type', nextType);
-      }
+    }
+    if (nextType !== 'users') {
+      params.set('type', nextType);
     }
     skipSyncRef.current = true;
     const queryString = params.toString();
@@ -93,15 +93,15 @@ function ExplorePageInner() {
     if (query.trim()) {
       replaceUrl(query, type);
     } else {
-      replaceUrl('', 'all');
+      replaceUrl('', type);
     }
   }, [setSearchType, replaceUrl, query]);
 
   const handleClear = useCallback(() => {
     setQuery('');
-    setSearchType('all');
+    setSearchType('users');
     clearResults();
-    replaceUrl('', 'all');
+    replaceUrl('', 'users');
   }, [setQuery, setSearchType, clearResults, replaceUrl]);
 
   const { publicKey } = useAuthStore();
@@ -171,37 +171,29 @@ function ExplorePageInner() {
 
           {/* 検索タイプタブ */}
           {query && (
-            <div className="flex border-t border-gray-200 dark:border-gray-800 overflow-x-auto">
-              <button
-                onClick={() => handleSearchTypeChange('all')}
-                className={`flex-1 min-w-[100px] px-4 py-3 text-sm sm:text-base text-center font-medium transition-all duration-200 whitespace-nowrap ${
-                  searchType === 'all'
-                    ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-600'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/50'
-                }`}
-              >
-                すべて
-              </button>
-              <button
-                onClick={() => handleSearchTypeChange('users')}
-                className={`flex-1 min-w-[100px] px-4 py-3 text-sm sm:text-base text-center font-medium transition-all duration-200 whitespace-nowrap ${
-                  searchType === 'users'
-                    ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-600'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/50'
-                }`}
-              >
-                ユーザー
-              </button>
-              <button
-                onClick={() => handleSearchTypeChange('tweets')}
-                className={`flex-1 min-w-[100px] px-4 py-3 text-sm sm:text-base text-center font-medium transition-all duration-200 whitespace-nowrap ${
-                  searchType === 'tweets'
-                    ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-600'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/50'
-                }`}
-              >
-                投稿
-              </button>
+            <div className="border-t border-gray-200 dark:border-gray-800">
+              <div className="grid grid-cols-2 gap-1 sm:flex sm:overflow-x-auto">
+                <button
+                  onClick={() => handleSearchTypeChange('users')}
+                  className={`w-full sm:flex-1 px-4 py-3 text-sm sm:text-base text-center font-medium transition-all duration-200 whitespace-nowrap ${
+                    searchType === 'users'
+                      ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-600 sm:border-b-2'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/50'
+                  }`}
+                >
+                  ユーザー
+                </button>
+                <button
+                  onClick={() => handleSearchTypeChange('tweets')}
+                  className={`w-full sm:flex-1 px-4 py-3 text-sm sm:text-base text-center font-medium transition-all duration-200 whitespace-nowrap ${
+                    searchType === 'tweets'
+                      ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-600 sm:border-b-2'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/50'
+                  }`}
+                >
+                  投稿
+                </button>
+              </div>
             </div>
           )}
         </header>
