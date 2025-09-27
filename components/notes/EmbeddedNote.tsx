@@ -85,6 +85,10 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
     );
   }
 
+  if (!note) {
+    return null;
+  }
+
   return (
     <div className={className}>
       <NoteCard id={note.id} content={note.content} />

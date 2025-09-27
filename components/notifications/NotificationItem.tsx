@@ -181,7 +181,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                   </div>
                   <EmbeddedPost
                     postId={notification.postId}
-                    content={notification.postContent}
+                    content={notification.postContent || ''}
                     author={notification.postAuthor}
                     createdAt={notification.postCreatedAt}
                     media={notification.postMedia}
@@ -207,7 +207,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
             return (
               <EmbeddedPost
                 postId={notification.postId}
-                content={notification.postContent}
+                content={notification.postContent || ''}
                 author={notification.postAuthor}
                 createdAt={notification.postCreatedAt}
                 media={shouldExcludeMedia ? undefined : notification.postMedia}
