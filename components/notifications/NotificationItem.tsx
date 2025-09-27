@@ -133,7 +133,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
             {timeAgo}
           </div>
 
-          {/* 返信内容 or メンション内容 or Zapメッセージ */}
+          {/* 返信内容 / メンション内容 / Zap情報 */}
           {notification.content && (
             <div className="mt-2 text-gray-900 dark:text-white">
               {notification.type === 'zap' ? (
