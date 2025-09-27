@@ -13,7 +13,7 @@ export function getWriteRelays(relays: RelayInfo[]) {
   return relays.filter(r => r.write).map(r => r.url);
 }
 
-export function subscribeTo(relays: string[], filters: Filter[], onEvent: (e: NostrEvent) => void): Subscription {
+export function subscribeTo(relays: string[], filters: Filter[], onEvent: (e: NostrEvent) => void, onEose?: () => void): Subscription {
   const p = getPool();
   console.log('subscribeTo: Creating subscription', { relays, filters });
 
@@ -24,6 +24,7 @@ export function subscribeTo(relays: string[], filters: Filter[], onEvent: (e: No
     },
     oneose: () => {
       console.log('subscribeTo: End of stored events');
+      if (onEose) onEose();
     }
   });
 

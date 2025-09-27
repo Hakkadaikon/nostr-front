@@ -57,6 +57,14 @@ export async function fetchNote(eventId: string, relays?: string[], timeoutMs = 
         console.log('fetchNote: Successfully fetched event', { eventId, event });
         sub.close();
         resolve(event);
+      },
+      () => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timer);
+        console.log('fetchNote: EOSE without event', { eventId });
+        sub.close();
+        resolve(null);
       }
     );
   });
