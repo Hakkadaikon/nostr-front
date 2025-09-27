@@ -16,8 +16,9 @@ export function useAuth() {
 
     // 保存された認証情報の復元を試みる
     authStore.restoreFromStorage().then((restored) => {
+      const nip07Available = typeof (window as any).nostr !== 'undefined';
       // 認証情報がなく、オンボーディングページにいない場合はリダイレクト
-      if (!restored && pathname !== '/onboarding') {
+      if (!restored && !nip07Available && pathname !== '/onboarding') {
         router.push('/onboarding');
       }
     });
