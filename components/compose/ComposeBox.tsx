@@ -39,6 +39,8 @@ export default function ComposeBox() {
         setText('');
         await removeDraft(DRAFT_KEY);
         show(`Posted to ${r.results.length - failed.length}/${r.results.length} relays`);
+        // タイムラインを更新するイベントをディスパッチ
+        window.dispatchEvent(new CustomEvent('note-published'));
       } else {
         show(`Failed to post. Failed relays: ${failed.join(', ')}`);
       }
