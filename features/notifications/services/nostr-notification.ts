@@ -244,49 +244,96 @@ export class NostrNotificationService {
     if (!this.userPubkey) return;
 
     try {
-      // Zap receiptイベント (kind 9735) の処理
-      // descriptionタグから元のZap requestを取得
-      const descriptionTag = event.tags.find(tag => tag[0] === 'description');
-      if (!descriptionTag || !descriptionTag[1]) return;
+      // NIP-57 Zap Receipt の基本検証
+      // 必須: description(tag)、bolt11(tag) が一般的
+      const descriptionTag = event.tags.find(t => t[0] === 'description');
+      if (!descriptionTag || !descriptionTag[1]) return; // 不正フォーマット
 
-      let zapRequest: any;
+      // description には元の Zap Request (kind 9734) のイベント JSON が入っている想定
+      let zapRequestEvent: any;
       try {
-        zapRequest = JSON.parse(descriptionTag[1]);
-      } catch (error) {
-        console.error('Failed to parse zap request:', error);
+        zapRequestEvent = JSON.parse(descriptionTag[1]);
+      } catch (e) {
+        console.warn('[zap] invalid description JSON');
         return;
       }
 
-      // Zap requestから受信者を確認
-      const recipientTag = zapRequest.tags?.find((tag: string[]) => 
-        tag[0] === 'p' && tag[1] === this.userPubkey
-      );
-      if (!recipientTag) return;
-
-      // 金額を取得 (millisatoshis)
-      const amountTag = zapRequest.tags?.find((tag: string[]) => tag[0] === 'amount');
-      let amountSats = 1000; // デフォルト値
-      
-      if (amountTag && amountTag[1]) {
-        const amountMilliSats = parseInt(amountTag[1]);
-        amountSats = Math.floor(amountMilliSats / 1000); // millisatsからsatsに変換
+      if (zapRequestEvent.kind !== 9734) {
+        // 期待する kind ではない（他クライアントの拡張など）
+        return;
       }
 
-      // bolt11タグから実際の支払い金額を確認（より正確）
-      const bolt11Tag = event.tags.find(tag => tag[0] === 'bolt11');
+      const requestTags: string[][] = Array.isArray(zapRequestEvent.tags) ? zapRequestEvent.tags : [];
+
+      // 受信者判定: zap request 内の p タグに自分の pubkey が含まれているか
+      const recipientTag = requestTags.find(t => t[0] === 'p' && t[1] === this.userPubkey);
+      if (!recipientTag) return; // 自分宛てでない
+
+      // 対象ノート取得 (eタグ) - あれば通知に関連付け
+      const noteTag = requestTags.find(t => t[0] === 'e' && t[1]);
+      const targetNoteId = noteTag ? noteTag[1] : undefined;
+
+      // 金額推定
+      // 優先: zap receipt の bolt11 インボイスから抽出（簡易: 金額表記を正規表現で拾う）
+      let amountSats: number | null = null;
+      const bolt11Tag = event.tags.find(t => t[0] === 'bolt11');
       if (bolt11Tag && bolt11Tag[1]) {
-        // Lightning invoiceから金額を抽出する場合はここで処理
-        // 現在は簡略化のためzap requestの金額を使用
+        const invoice = bolt11Tag[1];
+        // lnbc<amount><multiplier>... 形式を単純抽出（m=0.001 BTC, u=1e-6 BTC, n=1e-9 BTC, p=1e-12 BTC）
+        // sats 換算するため、金額部をパース（厳密な BOLT11 解析ライブラリ未導入のため簡易実装）
+        const m = invoice.match(/lnbc(\d+)([munp]?)/i);
+        if (m) {
+          const raw = parseInt(m[1]);
+          const unit = m[2];
+          // BTC -> sats 変換: 1 BTC = 100_000_000 sats
+          const unitMultiplier: Record<string, number> = {
+            '': 100_000_000, // no unit means BTC
+            m: 100_000,      // milli-BTC
+            u: 100,          // micro-BTC
+            n: 0.1,          // nano-BTC
+            p: 0.0001,       // pico-BTC
+          };
+          const btcToSats = unitMultiplier[unit] ?? 100_000_000;
+          const sats = raw * btcToSats;
+          if (sats > 0) amountSats = Math.floor(sats);
+        }
       }
 
-      // Zapメッセージを取得
-      const zapMessage = zapRequest.content || '';
+      // フォールバック: zap request 内の amount (msats) タグ
+      if (amountSats == null) {
+        const amountTag = requestTags.find(t => t[0] === 'amount' && t[1]);
+        if (amountTag) {
+          const msats = parseInt(amountTag[1]);
+          if (!isNaN(msats) && msats > 0) amountSats = Math.floor(msats / 1000);
+        }
+      }
+
+      // さらにフォールバック: 不明な場合は 0 扱い
+      if (amountSats == null) amountSats = 0;
+
+      // メッセージ: zap request の content
+      const zapMessage: string | undefined = typeof zapRequestEvent.content === 'string' ? zapRequestEvent.content : undefined;
+
+      // 関連ノートのメタデータ
+      let postData = null;
+      if (targetNoteId) {
+        try {
+          postData = await fetchPostData(targetNoteId);
+        } catch (e) {
+          // 失敗しても無視
+        }
+      }
 
       await this.createNotification({
         type: 'zap',
         event,
         amount: amountSats,
         content: zapMessage,
+        postId: postData?.id,
+        postContent: postData?.content,
+        postAuthor: postData?.author,
+        postCreatedAt: postData?.createdAt,
+        postMedia: postData?.media,
       });
     } catch (error) {
       console.error('Error processing zap event:', error);
