@@ -272,8 +272,15 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
       followingList = await fetchFollowList();
       console.log('[fetchTimeline] Follow list retrieved:', followingList.length, 'pubkeys');
 
+      // 自分自身の投稿もFollowingタイムラインに含める（一般的なクライアント挙動）
+      const selfPubkey = useAuthStore.getState().publicKey;
+      if (selfPubkey && !followingList.includes(selfPubkey)) {
+        followingList.push(selfPubkey);
+        console.log('[fetchTimeline] Added self pubkey to follow list');
+      }
+
       if (followingList.length === 0) {
-        console.log('[fetchTimeline] Follow list is empty, returning empty timeline');
+        console.log('[fetchTimeline] Follow list is empty (even after adding self), returning empty timeline');
         return {
           tweets: [],
           hasMore: false
