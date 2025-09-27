@@ -462,12 +462,14 @@ export default function ProfilePage({ params }: Props) {
       />
 
       <main className="mx-auto mt-4 sm:mt-6 md:mt-8 lg:mt-10 w-full max-w-6xl px-3 sm:px-4 lg:px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
-          <div className="lg:col-span-4 xl:col-span-3">
+        <div className="space-y-4 sm:space-y-6">
+          {/* プロフィール情報セクション */}
+          <div>
             <ProfileSidebar profile={profile} />
           </div>
 
-          <section className="lg:col-span-8 xl:col-span-9 space-y-4">
+          {/* タブとコンテンツセクション */}
+          <section className="space-y-4">
             <div className="sticky top-14 sm:top-16 z-10 -mx-3 sm:-mx-4 lg:mx-0 bg-gray-100/95 backdrop-blur-sm dark:bg-black/95">
               <ProfileTabs
                 activeTab={activeTab}

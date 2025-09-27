@@ -1,6 +1,6 @@
 import { Event as NostrEvent } from 'nostr-tools';
 import { useNotificationStore } from '../../../stores/notification.store';
-import { Notification, NotificationType } from '../../../types/notification';
+import { Notification, NotificationType, NotificationUser } from '../../../types/notification';
 import { fetchProfileForNotification } from '../../profile/services/profile-cache';
 import { fetchPostData } from './post-cache';
 
@@ -308,6 +308,14 @@ export class NostrNotificationService {
         }
       }
 
+      if (amountSats == null) {
+        const receiptAmountTag = event.tags.find(t => t[0] === 'amount' && t[1]);
+        if (receiptAmountTag) {
+          const msats = parseInt(receiptAmountTag[1]);
+          if (!isNaN(msats) && msats > 0) amountSats = Math.floor(msats / 1000);
+        }
+      }
+
       // さらにフォールバック: 不明な場合は 0 扱い
       if (amountSats == null) amountSats = 0;
 
@@ -324,6 +332,16 @@ export class NostrNotificationService {
         }
       }
 
+      const zapperPubkey: string | undefined = typeof zapRequestEvent.pubkey === 'string' ? zapRequestEvent.pubkey : undefined;
+      let zapperProfile: NotificationUser | undefined;
+      if (zapperPubkey) {
+        try {
+          zapperProfile = await fetchProfileForNotification(zapperPubkey);
+        } catch (profileError) {
+          console.warn('[zap] failed to fetch zapper profile', profileError);
+        }
+      }
+
       await this.createNotification({
         type: 'zap',
         event,
@@ -334,6 +352,7 @@ export class NostrNotificationService {
         postAuthor: postData?.author,
         postCreatedAt: postData?.createdAt,
         postMedia: postData?.media,
+        userOverride: zapperProfile,
       });
     } catch (error) {
       console.error('Error processing zap event:', error);
@@ -350,6 +369,7 @@ export class NostrNotificationService {
     postCreatedAt,
     postMedia,
     amount,
+    userOverride,
   }: {
     type: NotificationType;
     event: NostrEvent;
@@ -371,9 +391,10 @@ export class NostrNotificationService {
       altText?: string;
     }>;
     amount?: number;
+    userOverride?: NotificationUser;
   }) {
     // プロフィール情報を取得
-    const user = await fetchProfileForNotification(event.pubkey);
+    const user = userOverride ?? await fetchProfileForNotification(event.pubkey);
     
     const notification: Notification = {
       id: `${event.id}-${type}`,
