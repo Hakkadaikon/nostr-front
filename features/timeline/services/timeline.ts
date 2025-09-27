@@ -315,9 +315,13 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
               tweets.push(tweet);
 
               if (tweets.length >= limit) {
+                // すぐ閉じると後から到着する同時刻付近のイベントを取り逃すことがあるので、
+                // 200ms の猶予を置いてから終了（フォロー数が多い場合の取りこぼし軽減）
                 clearTimeout(timeoutId);
-                sub.close();
-                processAndResolve();
+                setTimeout(() => {
+                  sub.close();
+                  processAndResolve();
+                }, 200);
               }
             }).catch(error => {
               console.error('[fetchTimeline] Failed to convert event to tweet:', error);
@@ -354,7 +358,7 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
       timeoutId = setTimeout(async () => {
         sub.close();
         await processAndResolve();
-      }, 4000);
+      }, 5000); // フォロータイムラインでイベントが少ない問題緩和: 4s -> 5s
     });
   } catch (error) {
     console.error('Failed to fetch timeline:', error);

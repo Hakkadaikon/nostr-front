@@ -60,7 +60,7 @@ export async function fetchFollowList(pubkey?: string): Promise<string[]> {
         }
       );
 
-      // タイムアウト設定（2秒）で購読を終了し、最新イベントからpタグを抽出
+      // タイムアウト設定（3.5秒）で購読を終了し、最新イベントからpタグを抽出（リレー遅延対策）
       timeoutId = setTimeout(() => {
         sub.close();
         if (latestEvent) {
@@ -68,10 +68,10 @@ export async function fetchFollowList(pubkey?: string): Promise<string[]> {
           followList = tags.filter(tag => tag[0] === 'p' && tag[1]).map(tag => tag[1]);
           console.log('[fetchFollowList] Selected follow list from kind', latestEvent.kind, 'size:', followList.length);
         } else {
-          console.log('Follow list fetch timeout, no events received');
+          console.log('Follow list fetch timeout (3.5s), no events received');
         }
         resolve(followList);
-      }, 2000);
+      }, 3500);
     });
   } catch (error) {
     console.error('Failed to fetch follow list:', error);
