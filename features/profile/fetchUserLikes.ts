@@ -175,7 +175,7 @@ export async function fetchUserLikes(npub: string, limit: number = 20): Promise<
 
           const profileSub = subscribeTo(
             relays,
-            [{ kinds: [KIND_METADATA], authors: authorPubkeys, limit: 1 }],
+            [{ kinds: [KIND_METADATA], authors: authorPubkeys, limit: 10 }],
             (event: NostrEvent) => {
               try {
                 const content = JSON.parse(event.content || '{}');
