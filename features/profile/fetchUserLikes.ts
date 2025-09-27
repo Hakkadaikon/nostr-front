@@ -1,7 +1,7 @@
 import { type Event as NostrEvent, nip19 } from 'nostr-tools';
 import { subscribeTo, getReadRelays } from '../relays/services/relayPool';
 import { useRelaysStore } from '../../stores/relays.store';
-import { KIND_TEXT_NOTE, KIND_REACTION, KIND_REPOST, KIND_ZAP_RECEIPT } from '../../lib/nostr/constants';
+import { KIND_TEXT_NOTE, KIND_REACTION, KIND_REPOST, KIND_ZAP_RECEIPT, KIND_METADATA } from '../../lib/nostr/constants';
 import { Tweet } from '../timeline/types';
 import { getProfileImageUrl } from '../../lib/utils/avatar';
 
@@ -162,19 +162,58 @@ export async function fetchUserLikes(npub: string, limit: number = 20): Promise<
         const postDetails = await fetchPostDetails(targetPostIds, relays);
         const reactionCounts = await fetchPostReactions(targetPostIds, relays);
 
+        // 著者ごとのプロフィールメタデータ取得用にpubkeyを収集
+        const authorPubkeys = Array.from(new Set(Array.from(postDetails.values()).map(ev => ev.pubkey)));
+        const authorProfiles = new Map<string, any>();
+
+        // プロフィールメタデータ取得
+        await new Promise<void>((profileResolve) => {
+          if (authorPubkeys.length === 0) {
+            profileResolve();
+            return;
+          }
+
+          const profileSub = subscribeTo(
+            relays,
+            [{ kinds: [KIND_METADATA], authors: authorPubkeys, limit: 1 }],
+            (event: NostrEvent) => {
+              try {
+                const content = JSON.parse(event.content || '{}');
+                authorProfiles.set(event.pubkey, {
+                  name: content.display_name || content.name || '',
+                  username: content.username || content.name || event.pubkey.slice(0, 12),
+                  avatar: getProfileImageUrl(content.picture, event.pubkey),
+                  bio: content.about || ''
+                });
+              } catch {
+                // ignore parse errors
+              }
+            }
+          );
+
+          // 1秒でタイムアウト
+          setTimeout(() => {
+            profileSub.close();
+            profileResolve();
+          }, 1000);
+        });
+
         const likedPosts: Tweet[] = [];
 
         for (const [postId, postEvent] of postDetails) {
+          const profile = authorProfiles.get(postEvent.pubkey);
           const author = {
             id: postEvent.pubkey,
-            username: postEvent.pubkey.slice(0, 12),
-            name: 'Loading...',
-            avatar: getProfileImageUrl(null, postEvent.pubkey), // 統一されたアバター生成
-            bio: '',
+            username: profile?.username || postEvent.pubkey.slice(0, 12),
+            name: profile?.name || profile?.username || postEvent.pubkey.slice(0, 12),
+            avatar: profile?.avatar || getProfileImageUrl(null, postEvent.pubkey),
+            bio: profile?.bio || '',
             followersCount: 0,
             followingCount: 0,
             createdAt: new Date()
           };
+
+            (author as any).pubkey = postEvent.pubkey;
 
           const counts = reactionCounts.get(postId) || { likes: 0, reposts: 0, zaps: 0 };
 
@@ -187,14 +226,13 @@ export async function fetchUserLikes(npub: string, limit: number = 20): Promise<
             retweetsCount: counts.reposts,
             repliesCount: 0,
             zapsCount: counts.zaps,
-            isLiked: true, // このユーザーがいいねした投稿なので常にtrue
+            isLiked: true,
             isRetweeted: false
           };
 
           likedPosts.push(tweet);
         }
 
-        // 時系列でソート（新しい順）
         likedPosts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
         resolve(likedPosts);
       };
