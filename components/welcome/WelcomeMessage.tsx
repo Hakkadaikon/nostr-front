@@ -31,22 +31,22 @@ export default function WelcomeMessage() {
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="max-w-md mx-auto p-6 m-4 bg-white dark:bg-gray-900 rounded-2xl shadow-xl">
-        <h2 className="text-2xl font-bold mb-4 text-purple-600 dark:text-purple-400">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+      <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-4 sm:p-6 my-auto">
+        <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 text-purple-600 dark:text-purple-400">
           🎉 ようこそ Nostr へ！
         </h2>
 
-        <div className="space-y-4 text-sm">
+        <div className="space-y-3 sm:space-y-4 text-xs sm:text-sm">
           <p className="text-gray-700 dark:text-gray-300">
             アカウントが自動的に作成されました。以下の重要な情報をお読みください：
           </p>
 
-          <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-            <p className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+          <div className="p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+            <p className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2 text-sm sm:text-base">
               ⚠️ 重要：秘密鍵のバックアップ
             </p>
-            <ul className="space-y-1 text-yellow-700 dark:text-yellow-300">
+            <ul className="space-y-1 text-yellow-700 dark:text-yellow-300 text-xs sm:text-sm">
               <li>• あなたの秘密鍵（nsec）は自動的に生成されました</li>
               <li>• この鍵があなたの唯一のログイン方法です</li>
               <li>• パスワードリセットはできません</li>
@@ -54,7 +54,7 @@ export default function WelcomeMessage() {
             </ul>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button
               onClick={handleCopyNsec}
               variant="primary"
