@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useTimeline } from '../features/timeline/hooks/useTimeline';
 import { TimelineList } from '../components/timeline/TimelineList';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
@@ -22,7 +23,10 @@ const TAB_ITEMS = [
 type HomeTab = (typeof TAB_ITEMS)[number]['id'];
 
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState<HomeTab>('global');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const initialTab = (searchParams.get('tab') as HomeTab) || 'global';
+  const [activeTab, setActiveTab] = useState<HomeTab>(initialTab);
 
   const { npub, publicKey } = useAuthStore((state) => ({
     npub: state.npub,
@@ -84,7 +88,12 @@ export default function HomePage() {
                 <button
                   key={id}
                   type="button"
-                  onClick={() => setActiveTab(id)}
+                  onClick={() => {
+                    setActiveTab(id);
+                    const sp = new URLSearchParams(Array.from(searchParams.entries()));
+                    sp.set('tab', id);
+                    router.replace(`/?${sp.toString()}`);
+                  }}
                   className={`flex-1 min-w-[140px] rounded-full border px-4 py-2 text-sm font-medium transition-all sm:text-base ${
                     isActive
                       ? 'border-transparent bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-lg shadow-purple-500/30'
