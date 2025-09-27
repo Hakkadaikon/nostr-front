@@ -5,8 +5,8 @@ import type { Event as NostrEvent } from 'nostr-tools';
 /**
  * 画像アップロードサービス (NIP-96 + NIP-98 対応)
  *
- * デフォルトでは nostrcheck.me にアップロードし、失敗時にフォールバックを試みる。
- * アップロードには NIP-98 署名が必須のため、NIP-07 拡張または秘密鍵ログインが必要。
+ * デフォルトでは nostrcheck.me にアップロードする。アップロードには NIP-98 署名が必須のため、
+ * NIP-07 対応拡張または秘密鍵ログインが必要。
  */
 
 export interface UploadResult {
@@ -15,10 +15,7 @@ export interface UploadResult {
 }
 
 const DEFAULT_NIP96_ENDPOINT =
-  process.env.NEXT_PUBLIC_NIP96_UPLOAD_URL || 'https://nostrcheck.me/api/v1/media';
-
-const NOSTR_BUILD_ENDPOINT =
-  process.env.NEXT_PUBLIC_NOSTR_BUILD_UPLOAD_URL || 'https://nostr.build/api/v2/upload/files';
+  process.env.NEXT_PUBLIC_NIP96_UPLOAD_URL || 'https://nostrcheck.me/api/v2/media';
 
 function bufferToHex(buffer: ArrayBuffer): string {
   return Array.from(new Uint8Array(buffer))
@@ -36,19 +33,22 @@ function encodeBase64(str: string): string {
   return btoa(unescape(encodeURIComponent(str)));
 }
 
-async function sha256HexFromFile(file: File): Promise<string | undefined> {
+async function sha256HexFromString(value: string): Promise<string> {
   try {
-    if (typeof crypto === 'undefined' || !crypto.subtle) {
-      return undefined;
+    if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto?.subtle) {
+      const data = new TextEncoder().encode(value);
+      const digest = await globalThis.crypto.subtle.digest('SHA-256', data);
+      return bufferToHex(digest);
     }
-
-    const buffer = await file.arrayBuffer();
-    const digest = await crypto.subtle.digest('SHA-256', buffer);
-    return bufferToHex(digest);
   } catch (error) {
-    console.warn('[upload] Failed to calculate payload hash:', error);
-    return undefined;
+    console.warn('[upload] Failed to hash payload with Web Crypto:', error);
   }
+
+  if (typeof window === 'undefined') {
+    const { createHash } = await import('crypto');
+    return createHash('sha256').update(value, 'utf8').digest('hex');
+  }
+  throw new Error('この環境ではSHA-256が利用できません');
 }
 
 function getErrorMessage(error: unknown): string {
@@ -64,23 +64,23 @@ function getErrorMessage(error: unknown): string {
 async function createNip98AuthorizationHeader(
   url: string,
   method: string,
-  payloadHash?: string,
+  payloadData: Record<string, unknown>,
 ): Promise<string> {
   const { nsec, publicKey } = useAuthStore.getState();
+  const payloadJson = JSON.stringify(payloadData ?? {});
+  const payloadHash = await sha256HexFromString(payloadJson);
+
   const event: Omit<NostrEvent, 'id' | 'sig'> = {
     kind: 27235,
     created_at: Math.floor(Date.now() / 1000),
     tags: [
       ['u', url],
       ['method', method.toUpperCase()],
+      ['payload', payloadHash],
     ],
     content: '',
     pubkey: publicKey ?? '',
   };
-
-  if (payloadHash) {
-    event.tags.push(['payload', payloadHash]);
-  }
 
   const signed = await signEvent(event, nsec ? () => nsec : undefined);
   const encoded = encodeBase64(JSON.stringify(signed));
@@ -107,8 +107,7 @@ async function uploadViaNip96({
     formData.append(key, value);
   }
 
-  const payloadHash = await sha256HexFromFile(file);
-  const authorization = await createNip98AuthorizationHeader(url, 'POST', payloadHash);
+  const authorization = await createNip98AuthorizationHeader(url, 'POST', extraFields);
 
   const response = await fetch(url, {
     method: 'POST',
@@ -150,86 +149,11 @@ async function uploadViaNip96({
   throw new Error('予期しないレスポンス形式です');
 }
 
-async function uploadToNostrCheck(file: File): Promise<UploadResult> {
-  return uploadViaNip96({
-    file,
-    url: DEFAULT_NIP96_ENDPOINT,
-    fieldName: 'mediafile',
-    extraFields: {
-      uploadtype: 'media',
-      size: file.size.toString(),
-      content_type: file.type || 'application/octet-stream',
-    },
-  });
-}
-
-async function uploadToNostrBuild(file: File): Promise<UploadResult> {
-  return uploadViaNip96({
-    file,
-    url: NOSTR_BUILD_ENDPOINT,
-    fieldName: 'file',
-    extraFields: {
-      size: file.size.toString(),
-      content_type: file.type || 'application/octet-stream',
-    },
-  });
-}
-
-async function uploadToImgur(file: File): Promise<UploadResult> {
-  const formData = new FormData();
-  formData.append('image', file);
-
-  const response = await fetch('https://api.imgur.com/3/image', {
-    method: 'POST',
-    headers: {
-      Authorization: 'Client-ID a0113a6e320c92e',
-    },
-    body: formData,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Imgur upload failed: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  if (data.success && data.data && data.data.link) {
-    return { url: data.data.link };
-  }
-
-  throw new Error('Imgur APIレスポンスエラー');
-}
-
-async function uploadWithFallbacks(file: File): Promise<string> {
-  const attempts: Array<() => Promise<UploadResult>> = [
-    () => uploadToNostrCheck(file),
-    () => uploadToNostrBuild(file),
-    () => uploadToImgur(file),
-  ];
-
-  const errors: string[] = [];
-
-  for (const attempt of attempts) {
-    try {
-      const result = await attempt();
-      if (result.url) {
-        return result.url;
-      }
-      if (result.error) {
-        errors.push(result.error);
-      }
-    } catch (error) {
-      errors.push(getErrorMessage(error));
-    }
-  }
-
-  throw new Error(errors.join('\\n'));
-}
-
 export async function uploadMultipleImages(files: File[]): Promise<string[]> {
   const results = await Promise.all(
     files.map(async (file) => {
       try {
-        const url = await uploadWithFallbacks(file);
+        const { url } = await uploadViaNip96({ file, url: DEFAULT_NIP96_ENDPOINT });
         return { url };
       } catch (error) {
         return { error: `ファイル ${file.name}: ${getErrorMessage(error)}` };
@@ -241,11 +165,11 @@ export async function uploadMultipleImages(files: File[]): Promise<string[]> {
   const errors = results.filter((r) => r.error).map((r) => r.error!);
 
   if (errors.length > 0 && urls.length === 0) {
-    throw new Error(errors.join('\\n'));
+    throw new Error(errors.join('\n'));
   }
 
   if (errors.length > 0) {
-    console.warn('[upload] Some files failed to upload:', errors);
+    console.warn('[upload] 一部のファイルでアップロードに失敗しました:', errors);
   }
 
   return urls;

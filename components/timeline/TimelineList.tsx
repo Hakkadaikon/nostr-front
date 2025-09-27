@@ -61,7 +61,7 @@ export function TimelineList({
   };
   if (error) {
     return (
-      <div className="p-8 text-center">
+      <div className="p-6 sm:p-8 text-center">
         <p className="text-red-500">エラーが発生しました: {error.message}</p>
       </div>
     );
@@ -69,7 +69,7 @@ export function TimelineList({
 
   if (isLoading && tweets.length === 0) {
     return (
-      <div className="p-8 flex justify-center">
+      <div className="p-6 sm:p-8 flex justify-center">
         <Spinner />
       </div>
     );
@@ -77,7 +77,7 @@ export function TimelineList({
 
   if (localTweets.length === 0) {
     return (
-      <div className="p-8 text-center">
+      <div className="p-6 sm:p-8 text-center">
         <p className="text-gray-500 dark:text-gray-400">
           {emptyMessage}
         </p>
@@ -100,7 +100,7 @@ export function TimelineList({
           />
         ))}
         {isLoading && (
-          <div className="p-4 flex justify-center">
+          <div className="p-3 sm:p-4 flex justify-center">
             <Spinner />
           </div>
         )}
