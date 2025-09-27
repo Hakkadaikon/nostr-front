@@ -33,7 +33,7 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
 
     console.log('EmbeddedNote: Fetching note', { id: reference.id, relays });
 
-    fetchNote(reference.id, relays).then(event => {
+    fetchNote(reference.id, relays, 3000).then(event => {
       if (!active) return;
       console.log('EmbeddedNote: Fetched event', event);
       setNote(event);
