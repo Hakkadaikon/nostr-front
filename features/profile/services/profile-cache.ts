@@ -5,8 +5,10 @@ import { KIND_METADATA } from '../../../lib/nostr/constants';
 import type { Event as NostrEvent } from 'nostr-tools';
 import type { NotificationUser } from '../../../types/notification';
 
-// プロフィールキャッシュ
-const profileCache = new Map<string, NotificationUser>();
+// プロフィールキャッシュ (5分TTL)
+const PROFILE_TTL_MS = 5 * 60 * 1000;
+interface CachedProfile { profile: NotificationUser; fetchedAt: number; }
+const profileCache = new Map<string, CachedProfile>();
 const pendingRequests = new Map<string, Promise<NotificationUser>>();
 
 /**
@@ -15,7 +17,12 @@ const pendingRequests = new Map<string, Promise<NotificationUser>>();
 export async function fetchProfileForNotification(pubkey: string): Promise<NotificationUser> {
   // キャッシュチェック
   if (profileCache.has(pubkey)) {
-    return profileCache.get(pubkey)!;
+    const cached = profileCache.get(pubkey)!;
+    if (Date.now() - cached.fetchedAt < PROFILE_TTL_MS) {
+      return cached.profile;
+    } else {
+      profileCache.delete(pubkey); // TTL切れ
+    }
   }
 
   // 既にリクエスト中の場合は待機
@@ -29,7 +36,7 @@ export async function fetchProfileForNotification(pubkey: string): Promise<Notif
 
   try {
     const profile = await promise;
-    profileCache.set(pubkey, profile);
+    profileCache.set(pubkey, { profile, fetchedAt: Date.now() });
     return profile;
   } finally {
     pendingRequests.delete(pubkey);
@@ -108,5 +115,8 @@ async function fetchProfileFromNostr(pubkey: string): Promise<NotificationUser> 
  */
 export function clearProfileCache() {
   profileCache.clear();
+  if (typeof window !== 'undefined') {
+    console.log('Profile cache cleared');
+  }
   pendingRequests.clear();
 }
