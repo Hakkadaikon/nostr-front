@@ -170,14 +170,9 @@ export const useAuthStore = create<AuthState & Actions>()(
             }
           }
           
-          // 保存された認証情報がない場合は新しい鍵を自動生成
-          secureLog.info('[restoreFromStorage] No saved credentials, generating new keys');
-          const { generatePrivateKey } = await import('../features/keys/generate');
-          const { npub, nsec } = generatePrivateKey();
-          
-          await get().loginWithNsec(npub, nsec);
-          secureLog.info('[restoreFromStorage] Generated new keys with encryption');
-          return true;
+          // 保存された認証情報がない場合は未認証状態を維持
+          secureLog.info('[restoreFromStorage] No saved credentials, user needs to explicitly login');
+          return false;
           
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';

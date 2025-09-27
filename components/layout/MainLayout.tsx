@@ -7,7 +7,6 @@ import { MobileNav } from './MobileNav';
 import { MobileHeader } from './MobileHeader';
 import { ThemeProvider } from '../providers/ThemeProvider';
 import Nip07LoginPrompt from '../auth/Nip07LoginPrompt';
-import WelcomeMessage from '../welcome/WelcomeMessage';
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import { useLoadNip65Relays } from '../../features/relays/hooks/useLoadNip65Relays';
 interface MainLayoutProps {
@@ -57,7 +56,6 @@ export function MainLayout({ children }: MainLayoutProps) {
       
       {/* グローバルモーダル */}
       <ComposeModal />
-      <WelcomeMessage />
     </ThemeProvider>
   );
 }
