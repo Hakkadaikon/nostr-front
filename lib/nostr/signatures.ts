@@ -1,4 +1,5 @@
 import { finalizeEvent, getEventHash, validateEvent, verifyEvent, getPublicKey, nip19, type Event as NostrEvent } from 'nostr-tools';
+import { secureLog } from '../utils/secureLogger';
 
 let queue: Promise<any> = Promise.resolve();
 
@@ -42,7 +43,7 @@ export async function signEvent(event: Omit<NostrEvent, 'id' | 'sig'>, getSecret
       (typeof secretKeyValue === 'string' || secretKeyValue instanceof Uint8Array);
 
     // セキュリティ配慮: 機密情報を含まないログ出力
-    console.log('[signEvent] Authentication check', {
+    secureLog.debug('[signEvent] Authentication check', {
       hasSecretKeyProvider: !!getSecretKey,
       hasValidSecretKey,
       hasNip07: hasNip07()
@@ -51,22 +52,22 @@ export async function signEvent(event: Omit<NostrEvent, 'id' | 'sig'>, getSecret
     // NIP-07が利用可能で、有効な秘密鍵がない場合は拡張機能を使用
     if (hasNip07() && !hasValidSecretKey) {
       try {
-        console.log('[signEvent] Attempting to sign with NIP-07 extension...');
+        secureLog.debug('[signEvent] Attempting to sign with NIP-07 extension...');
         const nostr = (globalThis as any).nostr;
         const signed = await nostr.signEvent(event);
         // some providers may not set id
         signed.id = signed.id || getEventHash(signed);
-        console.log('[signEvent] Successfully signed with NIP-07');
+        secureLog.info('[signEvent] Successfully signed with NIP-07');
         return signed as NostrEvent;
       } catch (error) {
-        console.error('[signEvent] NIP-07 signing failed:', error);
+        secureLog.error('[signEvent] NIP-07 signing failed:', error);
         throw new Error('NIP-07 signing failed. Please check your Nostr extension.');
       }
     }
 
     // 秘密鍵による署名
     if (!hasValidSecretKey) {
-      console.warn('[signEvent] No valid secret key provided');
+      secureLog.warn('[signEvent] No valid secret key provided');
       if (!hasNip07()) {
         throw new Error('No signing method available. Please install a Nostr extension or provide a secret key.');
       }
@@ -76,22 +77,22 @@ export async function signEvent(event: Omit<NostrEvent, 'id' | 'sig'>, getSecret
     try {
       const skInput = secretKeyValue!; // すでに取得済みなので使用
 
-      console.log('[signEvent] Attempting private key signing...');
+      secureLog.debug('[signEvent] Attempting private key signing...');
       const skBytes = normalizeSecretKey(skInput as any);
-      console.log('[signEvent] Private key normalized successfully');
+      secureLog.debug('[signEvent] Private key normalized successfully');
 
       const e: any = { ...event };
       if (!e.pubkey) {
         e.pubkey = getPublicKey(skBytes);
-        console.log('[signEvent] Generated pubkey:', e.pubkey);
+        secureLog.debug('[signEvent] Generated pubkey for event');
       }
 
       const signed = finalizeEvent(e, skBytes);
       signed.id = (signed as any).id || getEventHash(signed as any);
-      console.log('[signEvent] Successfully signed with private key, event ID:', signed.id);
+      secureLog.info('[signEvent] Successfully signed with private key, event ID:', signed.id);
       return signed as NostrEvent;
     } catch (error) {
-      console.error('[signEvent] Private key signing failed:', error);
+      secureLog.error('[signEvent] Private key signing failed:', error);
       if (error instanceof Error) {
         if (error.message.includes('Unsupported secret key')) {
           throw new Error('Invalid secret key format. Please check your nsec or hex private key.');

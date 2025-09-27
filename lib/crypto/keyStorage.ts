@@ -5,6 +5,7 @@
 
 import { encrypt, decrypt } from './encrypt';
 import { generateSalt } from './kdf';
+import { secureLog } from '../utils/secureLogger';
 
 const STORAGE_KEY_PREFIX = 'encrypted_nsec_';
 const STORAGE_SALT_PREFIX = 'nsec_salt_';
@@ -50,9 +51,10 @@ export async function saveEncryptedNsec(userId: string, nsec: string): Promise<v
     localStorage.setItem(STORAGE_KEY_PREFIX + userId, encryptedNsec);
     localStorage.setItem(STORAGE_SALT_PREFIX + userId, salt);
     
-    console.log('[saveEncryptedNsec] Private key encrypted and saved');
+    secureLog.info('[saveEncryptedNsec] Private key encrypted and saved');
   } catch (error) {
-    console.error('[saveEncryptedNsec] Failed to encrypt and save private key:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    secureLog.error('[saveEncryptedNsec] Failed to encrypt and save private key:', errorMessage);
     throw new Error('Failed to save private key securely');
   }
 }
@@ -72,10 +74,11 @@ export async function loadEncryptedNsec(userId: string): Promise<string | null> 
     const devicePassword = generateDevicePassword();
     const decryptedNsec = await decrypt(encryptedData, devicePassword + salt);
     
-    console.log('[loadEncryptedNsec] Private key decrypted successfully');
+    secureLog.debug('[loadEncryptedNsec] Private key decrypted successfully');
     return decryptedNsec;
   } catch (error) {
-    console.error('[loadEncryptedNsec] Failed to decrypt private key:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    secureLog.error('[loadEncryptedNsec] Failed to decrypt private key:', errorMessage);
     // 復号化に失敗した場合は保存されたデータを削除
     removeEncryptedNsec(userId);
     return null;
@@ -88,7 +91,7 @@ export async function loadEncryptedNsec(userId: string): Promise<string | null> 
 export function removeEncryptedNsec(userId: string): void {
   localStorage.removeItem(STORAGE_KEY_PREFIX + userId);
   localStorage.removeItem(STORAGE_SALT_PREFIX + userId);
-  console.log('[removeEncryptedNsec] Encrypted private key removed from storage');
+  secureLog.info('[removeEncryptedNsec] Encrypted private key removed from storage');
 }
 
 /**
@@ -115,7 +118,7 @@ export function startSessionTimer(onTimeout: () => void): void {
   }
   
   sessionTimer = setTimeout(() => {
-    console.log('[SessionTimer] Session expired, logging out for security');
+    secureLog.info('[SessionTimer] Session expired, logging out for security');
     onTimeout();
   }, SESSION_TIMEOUT);
 }

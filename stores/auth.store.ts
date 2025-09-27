@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { nip19, getPublicKey } from 'nostr-tools';
 import { saveEncryptedNsec, loadEncryptedNsec, removeEncryptedNsec, clearSensitiveString, startSessionTimer, clearSessionTimer } from '../lib/crypto/keyStorage';
+import { secureLog, securityLog } from '../lib/utils/secureLogger';
 
 export type AuthState = {
   hasNip07: boolean;
@@ -79,21 +80,24 @@ export const useAuthStore = create<AuthState & Actions>()(
             if (state.saveNsecEnabled) {
               try {
                 await saveEncryptedNsec(pubkey, nsec);
-                console.log('[loginWithNsec] Private key encrypted and stored');
+                secureLog.info('[loginWithNsec] Private key encrypted and stored');
               } catch (error) {
-                console.warn('[loginWithNsec] Failed to encrypt and store private key:', error);
+                secureLog.warn('[loginWithNsec] Failed to encrypt and store private key:', error);
               }
             }
             
             // セッションタイマーを開始
             get().startSession();
             
-            console.log('[loginWithNsec] Logged in successfully with encrypted storage');
+            securityLog('User login', { npub: npub.substring(0, 10) + '...' });
+            secureLog.info('[loginWithNsec] Logged in successfully with encrypted storage');
           } else {
             throw new Error('Invalid npub format');
           }
         } catch (error) {
-          console.error('Failed to login:', error);
+          secureLog.error('Failed to login:', error);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          securityLog('Login failed', { error: errorMessage });
           // エラー時は認証状態をクリア
           set({ 
             npub: null, 
@@ -132,7 +136,8 @@ export const useAuthStore = create<AuthState & Actions>()(
           sessionActive: false
         });
         
-        console.log('[logout] Logged out and cleared sensitive data');
+        securityLog('User logout', { voluntary: true });
+        secureLog.info('[logout] Logged out and cleared sensitive data');
       },
       
       enableNsecSaving: async (enabled) => {
@@ -143,14 +148,15 @@ export const useAuthStore = create<AuthState & Actions>()(
           // 暗号化保存を有効にした場合、現在の秘密鍵を保存
           try {
             await saveEncryptedNsec(state.publicKey, state.nsec);
-            console.log('[enableNsecSaving] Private key encrypted and stored');
+            secureLog.info('[enableNsecSaving] Private key encrypted and stored');
           } catch (error) {
-            console.error('[enableNsecSaving] Failed to encrypt and store:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            secureLog.error('[enableNsecSaving] Failed to encrypt and store:', errorMessage);
           }
         } else if (!enabled && state.publicKey) {
           // 暗号化保存を無効にした場合、保存されたデータを削除
           removeEncryptedNsec(state.publicKey);
-          console.log('[enableNsecSaving] Encrypted storage disabled and data removed');
+          secureLog.info('[enableNsecSaving] Encrypted storage disabled and data removed');
         }
       },
       
@@ -173,25 +179,27 @@ export const useAuthStore = create<AuthState & Actions>()(
                 // セッション開始
                 get().startSession();
                 
-                console.log('[restoreFromStorage] Restored encrypted credentials');
+                secureLog.info('[restoreFromStorage] Restored encrypted credentials');
                 return true;
               }
             } catch (error) {
-              console.warn('[restoreFromStorage] Failed to restore encrypted credentials:', error);
+              const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+              secureLog.warn('[restoreFromStorage] Failed to restore encrypted credentials:', errorMessage);
             }
           }
           
           // 保存された認証情報がない場合は新しい鍵を自動生成
-          console.log('[restoreFromStorage] No saved credentials, generating new keys');
+          secureLog.info('[restoreFromStorage] No saved credentials, generating new keys');
           const { generatePrivateKey } = await import('../features/keys/generate');
           const { npub, nsec } = generatePrivateKey();
           
           await get().loginWithNsec(npub, nsec);
-          console.log('[restoreFromStorage] Generated new keys with encryption');
+          secureLog.info('[restoreFromStorage] Generated new keys with encryption');
           return true;
           
         } catch (error) {
-          console.error('[restoreFromStorage] Failed:', error);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          secureLog.error('[restoreFromStorage] Failed:', errorMessage);
           return false;
         }
       },
@@ -200,7 +208,8 @@ export const useAuthStore = create<AuthState & Actions>()(
         startSessionTimer(() => {
           const state = get();
           if (state.sessionActive) {
-            console.log('[Session] Auto-logout due to inactivity');
+            securityLog('Session timeout', { reason: 'inactivity' });
+            secureLog.info('[Session] Auto-logout due to inactivity');
             get().logout();
           }
         });

@@ -53,10 +53,10 @@ function getSecretKey(): string | Uint8Array {
     }
 
     // hex形式の秘密鍵の場合（通常はnsec形式のはず）
-    console.log('[getSecretKey] Using hex secret key (unusual case)');
+    secureLog.debug('[getSecretKey] Using hex secret key (unusual case)');
     return secret;
   } catch (e) {
-    console.error('[getSecretKey] Error:', e);
+    secureLog.error('[getSecretKey] Error:', e);
     return '';
   }
 }
@@ -76,9 +76,10 @@ export async function publishNote(content: string, extra?: {
   rootRelay?: string;
   replyRelay?: string;
 }) {
-  console.log('[publishNote] Starting note publication');
+  const startTime = performance.now();
+  secureLog.info('[publishNote] Starting note publication');
   const relays = getWriteRelays();
-  console.log('[publishNote] Write relays:', relays);
+  secureLog.debug('[publishNote] Write relays:', relays);
 
   const tags = buildReplyTags({
     rootId: extra?.rootId,
@@ -102,7 +103,7 @@ export async function publishNote(content: string, extra?: {
   try {
     // 秘密鍵を取得して関数として渡す
     const secretKey = getSecretKey();
-    console.log('[publishNote] Authentication method available:', !!secretKey);
+    secureLog.info('[publishNote] Authentication method available:', !!secretKey);
 
     // 秘密鍵がない場合はNIP-07を試す（signEvent内で自動的に処理される）
     signed = await signEvent(unsigned, secretKey ? () => secretKey : undefined);
@@ -140,7 +141,7 @@ export async function publishRepost(targetId: string, targetAuthor?: string) {
   } as any;
   // 秘密鍵を取得して関数として渡す
   const secretKey = getSecretKey();
-  console.log('[publishRepost] Authentication method available:', !!secretKey);
+  secureLog.info('[publishRepost] Authentication method available:', !!secretKey);
   // 秘密鍵がない場合はNIP-07を試す（signEvent内で自動的に処理される）
   const signed = await signEvent(unsigned, secretKey ? () => secretKey : undefined);
   if (!verify(signed)) throw new Error('Invalid signature');
@@ -161,7 +162,7 @@ export async function publishQuote(targetId: string) {
   } as any;
   // 秘密鍵を取得して関数として渡す
   const secretKey = getSecretKey();
-  console.log('[publishQuote] Authentication method available:', !!secretKey);
+  secureLog.info('[publishQuote] Authentication method available:', !!secretKey);
   // 秘密鍵がない場合はNIP-07を試す（signEvent内で自動的に処理される）
   const signed = await signEvent(unsigned, secretKey ? () => secretKey : undefined);
   if (!verify(signed)) throw new Error('Invalid signature');

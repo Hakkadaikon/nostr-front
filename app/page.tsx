@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTimeline } from '../features/timeline/hooks/useTimeline';
 import { TimelineList } from '../components/timeline/TimelineList';
-import { TweetComposer } from '../components/tweets/TweetComposer';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useAuthStore } from '../stores/auth.store';
 
@@ -39,7 +38,6 @@ export default function HomePage() {
     loadMore,
     toggleLike,
     toggleRetweet,
-    addTweet,
     reset,
   } = useTimeline({
     type: activeTab === 'global' ? 'home' : 'following',
@@ -105,17 +103,6 @@ export default function HomePage() {
 
         <div className="flex flex-1 flex-col gap-6 lg:flex-row">
           <main className="min-w-0 flex-1 space-y-6 overflow-hidden">
-            {isAuthenticated ? (
-              <section className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950">
-                <TweetComposer onTweetCreated={addTweet} />
-              </section>
-            ) : (
-              <section className="rounded-3xl border border-dashed border-gray-300 bg-white p-6 text-center shadow-sm dark:border-gray-700 dark:bg-gray-950">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  ログインするとポストやフォロー中のタイムラインを閲覧できます。
-                </p>
-              </section>
-            )}
 
             <section className="rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-950 overflow-hidden">
               {shouldBlockFollowingTimeline ? (
