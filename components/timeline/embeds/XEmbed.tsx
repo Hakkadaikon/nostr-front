@@ -23,6 +23,66 @@ declare global {
   }
 }
 
+// グローバルで widgets.js のロード状態を共有して競合を避ける
+let twitterScriptPromise: Promise<void> | null = null;
+function ensureTwitterWidgets(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve();
+  if (window.twttr?.widgets) return Promise.resolve();
+  if (twitterScriptPromise) return twitterScriptPromise;
+
+  twitterScriptPromise = new Promise<void>((resolve, reject) => {
+    const existingScript = document.querySelector('script[src="https://platform.twitter.com/widgets.js"]') as HTMLScriptElement | null;
+    const timeout = setTimeout(() => {
+      console.error('[XEmbed] Twitter script load timeout (shared)');
+      reject(new Error('Twitter script load timeout'));
+    }, 20000);
+
+    const onReady = () => {
+      clearTimeout(timeout);
+      // すでに widgets が存在するかポーリングで確認
+      let retry = 0;
+      const check = () => {
+        if (window.twttr?.widgets) {
+          resolve();
+        } else if (retry < 15) {
+          retry++;
+          setTimeout(check, 150);
+        } else {
+          reject(new Error('Twitter widgets not available'));
+        }
+      };
+      check();
+    };
+
+    if (existingScript) {
+      if (window.twttr?.widgets) {
+        clearTimeout(timeout);
+        resolve();
+      } else {
+        existingScript.addEventListener('load', onReady, { once: true });
+        existingScript.addEventListener('error', () => {
+          clearTimeout(timeout);
+          reject(new Error('Failed to load Twitter script (existing)'));
+        }, { once: true });
+      }
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://platform.twitter.com/widgets.js';
+    script.async = true;
+    script.charset = 'utf-8';
+    script.onload = onReady;
+    script.onerror = () => {
+      clearTimeout(timeout);
+      reject(new Error('Failed to load Twitter script (new)'));
+    };
+    document.head.appendChild(script);
+  });
+
+  return twitterScriptPromise;
+}
+
 export function XEmbed({ statusId, url }: XEmbedProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,75 +101,10 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
         setIsLoading(true);
         setHasError(false);
 
-        // Load Twitter widget script if not already loaded
+        // Load Twitter widget script if not already loaded (shared promise to avoid duplicate loads)
         if (!window.twttr?.widgets) {
-          console.log('[XEmbed] Twitter widgets not found, loading script...');
-          await new Promise<void>((resolve, reject) => {
-            // タイムアウト設定（20秒に延長）
-            const timeout = setTimeout(() => {
-              console.error('[XEmbed] Twitter script load timeout');
-              reject(new Error('Twitter script load timeout'));
-            }, 20000);
-
-            const existingScript = document.querySelector('script[src="https://platform.twitter.com/widgets.js"]');
-
-            if (existingScript) {
-              console.log('[XEmbed] Script element exists, checking if loaded...');
-              // Script already exists, wait for it to load
-              if (window.twttr?.widgets) {
-                console.log('[XEmbed] Twitter widgets already available');
-                clearTimeout(timeout);
-                resolve();
-              } else {
-                console.log('[XEmbed] Waiting for existing script to load...');
-                const handleLoad = () => {
-                  console.log('[XEmbed] Existing script loaded');
-                  clearTimeout(timeout);
-                  resolve();
-                };
-                const handleError = () => {
-                  console.error('[XEmbed] Failed to load existing Twitter script');
-                  clearTimeout(timeout);
-                  reject(new Error('Failed to load Twitter script'));
-                };
-                existingScript.addEventListener('load', handleLoad);
-                existingScript.addEventListener('error', handleError);
-              }
-              return;
-            }
-
-            console.log('[XEmbed] Creating new script element...');
-            const script = document.createElement('script');
-            script.src = 'https://platform.twitter.com/widgets.js';
-            script.async = true;
-            script.charset = 'utf-8';
-            script.onload = () => {
-              console.log('[XEmbed] Script loaded, checking for widgets...');
-              clearTimeout(timeout);
-              // widgets.jsがロードされても即座にtwttr.widgetsが利用可能にならない場合があるため、少し待つ
-              let retryCount = 0;
-              const checkWidgets = () => {
-                if (window.twttr?.widgets) {
-                  console.log('[XEmbed] Twitter widgets now available');
-                  resolve();
-                } else if (retryCount < 10) {
-                  retryCount++;
-                  console.log('[XEmbed] Waiting for widgets...', retryCount);
-                  setTimeout(checkWidgets, 200);
-                } else {
-                  console.error('[XEmbed] Twitter widgets not available after retries');
-                  reject(new Error('Twitter widgets not available'));
-                }
-              };
-              checkWidgets();
-            };
-            script.onerror = (error) => {
-              console.error('[XEmbed] Script load error:', error);
-              clearTimeout(timeout);
-              reject(new Error('Failed to load Twitter script'));
-            };
-            document.head.appendChild(script);
-          });
+          console.log('[XEmbed] Ensuring twitter widgets script (shared)...');
+          await ensureTwitterWidgets();
         }
 
         // Clear container
