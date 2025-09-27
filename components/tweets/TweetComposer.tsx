@@ -44,6 +44,13 @@ export function TweetComposer({
     if (publicKey && !currentProfile) {
       fetchProfile(publicKey).then((profile) => {
         if (profile) {
+          // hex pubkey の場合は npub を生成
+          try {
+            if (!profile.npub && publicKey.startsWith('npub1') === false) {
+              const { nip19 } = require('nostr-tools');
+              profile.npub = nip19.npubEncode(publicKey);
+            }
+          } catch {}
           setCurrent(profile);
         }
       });
