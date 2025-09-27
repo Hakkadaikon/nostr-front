@@ -21,18 +21,22 @@ function getSecretKey(): string | Uint8Array {
     const state = useAuthStore.getState();
 
     // デバッグログ追加
-    console.log('Auth state:', {
+    console.log('[getSecretKey] Auth state check', {
       hasNsec: !!state.nsec,
-      hasSecretKey: !!state.secretKey,
-      nsec: state.nsec ? 'Set (hidden)' : 'Not set',
-      secretKey: state.secretKey ? 'Set (hidden)' : 'Not set'
+      hasPublicKey: !!state.publicKey,
+      hasPubkey: !!state.pubkey,
+      nsecType: state.nsec ? typeof state.nsec : 'undefined',
+      nsecLength: state.nsec ? state.nsec.length : 0,
+      nsecPrefix: state.nsec ? state.nsec.substring(0, 6) : 'N/A',
+      locked: state.locked
     });
 
-    // nsecまたはsecretKeyから秘密鍵を取得
-    const secret = state.nsec || state.secretKey;
+    // nsecから秘密鍵を取得（secretKeyプロパティは存在しない）
+    const secret = state.nsec;
 
     if (!secret) {
-      console.log('No secret key found in auth store');
+      console.log('[getSecretKey] No secret key found in auth store');
+      console.log('[getSecretKey] Note: nsec is not persisted on page reload for security');
       return '';
     }
 
@@ -40,20 +44,22 @@ function getSecretKey(): string | Uint8Array {
       try {
         const decoded = decode(secret);
         if (decoded.type === 'nsec') {
-          console.log('Successfully decoded nsec');
+          console.log('[getSecretKey] Successfully decoded nsec');
           return decoded.data as Uint8Array;
         }
+        console.error('[getSecretKey] Decoded data is not nsec type:', decoded.type);
         return '';
       } catch (e) {
-        console.error('Failed to decode nsec:', e);
+        console.error('[getSecretKey] Failed to decode nsec:', e);
         return '';
       }
     }
 
-    console.log('Using hex secret key');
-    return secret; // hex形式の場合は文字列のまま
+    // hex形式の秘密鍵の場合（通常はnsec形式のはず）
+    console.log('[getSecretKey] Using hex secret key (unusual case)');
+    return secret;
   } catch (e) {
-    console.error('Error in getSecretKey:', e);
+    console.error('[getSecretKey] Error:', e);
     return '';
   }
 }
@@ -73,7 +79,10 @@ export async function publishNote(content: string, extra?: {
   rootRelay?: string;
   replyRelay?: string;
 }) {
+  console.log('[publishNote] Starting note publication');
   const relays = getWriteRelays();
+  console.log('[publishNote] Write relays:', relays);
+
   const tags = buildReplyTags({
     rootId: extra?.rootId,
     replyToId: extra?.replyToId,
@@ -82,29 +91,48 @@ export async function publishNote(content: string, extra?: {
     rootRelay: extra?.rootRelay,
     replyRelay: extra?.replyRelay,
   });
+
   const unsigned: Omit<NostrEvent, 'id' | 'sig'> = {
     kind: KINDS.NOTE,
     content,
     created_at: Math.floor(Date.now() / 1000),
     tags,
   } as any;
+
+  console.log('[publishNote] Unsigned event created:', { kind: unsigned.kind, contentLength: content.length });
+
   let signed: NostrEvent;
   try {
     // 秘密鍵を取得して関数として渡す
     const secretKey = getSecretKey();
+    console.log('[publishNote] Secret key obtained:', secretKey ? 'Yes' : 'No');
+
     // 秘密鍵がない場合はNIP-07を試す（signEvent内で自動的に処理される）
     signed = await signEvent(unsigned, secretKey ? () => secretKey : undefined);
+    console.log('[publishNote] Event signed successfully');
   } catch (e) {
+    console.error('[publishNote] Failed to sign event:', e);
     try { require('../../lib/utils/logger').recordSignError(e); } catch {}
     throw e;
   }
-  if (!verify(signed)) throw new Error('Invalid signature');
+
+  if (!verify(signed)) {
+    console.error('[publishNote] Invalid signature');
+    throw new Error('Invalid signature');
+  }
+
+  console.log('[publishNote] Signature verified, publishing to relays...');
   const results = await publishClient(relays, signed);
+
+  const successCount = results.filter(r => r.ok).length;
+  console.log(`[publishNote] Published to ${successCount}/${results.length} relays`);
+
   await record(results);
   return { ok: results.some(r => r.ok), results, event: signed };
 }
 
 export async function publishRepost(targetId: string, targetAuthor?: string) {
+  console.log('[publishRepost] Starting repost publication');
   const relays = getWriteRelays();
   const tags = buildRepostTags(targetId, targetAuthor, relays);
   const unsigned: Omit<NostrEvent, 'id' | 'sig'> = {
@@ -115,6 +143,7 @@ export async function publishRepost(targetId: string, targetAuthor?: string) {
   } as any;
   // 秘密鍵を取得して関数として渡す
   const secretKey = getSecretKey();
+  console.log('[publishRepost] Secret key obtained:', secretKey ? 'Yes' : 'No');
   // 秘密鍵がない場合はNIP-07を試す（signEvent内で自動的に処理される）
   const signed = await signEvent(unsigned, secretKey ? () => secretKey : undefined);
   if (!verify(signed)) throw new Error('Invalid signature');
@@ -124,6 +153,7 @@ export async function publishRepost(targetId: string, targetAuthor?: string) {
 }
 
 export async function publishQuote(targetId: string) {
+  console.log('[publishQuote] Starting quote publication');
   const relays = getWriteRelays();
   const { content, tags } = buildQuote(targetId, relays);
   const unsigned: Omit<NostrEvent, 'id' | 'sig'> = {
@@ -134,6 +164,7 @@ export async function publishQuote(targetId: string) {
   } as any;
   // 秘密鍵を取得して関数として渡す
   const secretKey = getSecretKey();
+  console.log('[publishQuote] Secret key obtained:', secretKey ? 'Yes' : 'No');
   // 秘密鍵がない場合はNIP-07を試す（signEvent内で自動的に処理される）
   const signed = await signEvent(unsigned, secretKey ? () => secretKey : undefined);
   if (!verify(signed)) throw new Error('Invalid signature');

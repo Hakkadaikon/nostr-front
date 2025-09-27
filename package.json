@@ -12,8 +12,10 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@types/crypto-js": "^4.2.2",
     "@types/qrcode": "^1.5.5",
     "clsx": "2.1.1",
+    "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
     "i18next": "23.10.1",
     "localforage": "1.10.0",

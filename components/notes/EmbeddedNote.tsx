@@ -31,9 +31,17 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
     setIsLoading(true);
     setNote(null);
 
+    console.log('EmbeddedNote: Fetching note', { id: reference.id, relays });
+
     fetchNote(reference.id, relays).then(event => {
       if (!active) return;
+      console.log('EmbeddedNote: Fetched event', event);
       setNote(event);
+      setIsLoading(false);
+    }).catch(error => {
+      console.error('EmbeddedNote: Error fetching note', error);
+      if (!active) return;
+      setNote(null);
       setIsLoading(false);
     });
 

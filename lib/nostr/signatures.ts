@@ -32,54 +32,75 @@ function normalizeSecretKey(sk: string | Uint8Array): Uint8Array {
 export async function signEvent(event: Omit<NostrEvent, 'id' | 'sig'>, getSecretKey?: () => Promise<string | Uint8Array> | string | Uint8Array): Promise<NostrEvent> {
   // serialize sign requests to avoid multiple prompts
   queue = queue.then(async () => {
-    // 秘密鍵が明示的に空文字列の場合はNIP-07を試す
-    const hasSecretKey = getSecretKey && (typeof getSecretKey === 'function'
-      ? (await getSecretKey()) !== ''
-      : getSecretKey !== '');
+    // 秘密鍵を取得して確認
+    let secretKeyValue: string | Uint8Array | undefined;
+    if (getSecretKey) {
+      secretKeyValue = typeof getSecretKey === 'function' ? await getSecretKey() : getSecretKey;
+    }
 
-    // NIP-07が利用可能で、秘密鍵が設定されていない場合は拡張機能を使用
-    if (hasNip07() && !hasSecretKey) {
+    const hasValidSecretKey = secretKeyValue && secretKeyValue !== '' &&
+      (typeof secretKeyValue === 'string' || secretKeyValue instanceof Uint8Array);
+
+    console.log('[signEvent] Secret key check', {
+      hasSecretKey: !!getSecretKey,
+      hasValidSecretKey,
+      type: secretKeyValue ? typeof secretKeyValue : 'none',
+      length: secretKeyValue ? (typeof secretKeyValue === 'string' ? secretKeyValue.length : secretKeyValue.byteLength) : 0,
+      hasNip07: hasNip07()
+    });
+
+    // NIP-07が利用可能で、有効な秘密鍵がない場合は拡張機能を使用
+    if (hasNip07() && !hasValidSecretKey) {
       try {
-        console.log('Attempting to sign with NIP-07 extension...');
+        console.log('[signEvent] Attempting to sign with NIP-07 extension...');
         const nostr = (globalThis as any).nostr;
         const signed = await nostr.signEvent(event);
         // some providers may not set id
         signed.id = signed.id || getEventHash(signed);
-        console.log('Successfully signed with NIP-07');
+        console.log('[signEvent] Successfully signed with NIP-07');
         return signed as NostrEvent;
       } catch (error) {
-        console.error('NIP-07 signing failed:', error);
+        console.error('[signEvent] NIP-07 signing failed:', error);
         throw new Error('NIP-07 signing failed. Please check your Nostr extension.');
       }
     }
 
     // 秘密鍵による署名
-    if (!getSecretKey) {
-      throw new Error('No signing method available. Please install a Nostr extension or provide a secret key.');
+    if (!hasValidSecretKey) {
+      console.warn('[signEvent] No valid secret key provided');
+      if (!hasNip07()) {
+        throw new Error('No signing method available. Please install a Nostr extension or provide a secret key.');
+      }
+      throw new Error('No valid secret key provided. Please log in again with your nsec.');
     }
 
     try {
-      const skInput = typeof getSecretKey === 'function' ? await getSecretKey() : getSecretKey;
-      if (!skInput || skInput === '') {
-        // 秘密鍵がなくNIP-07も使えない場合
-        if (!hasNip07()) {
-          throw new Error('No secret key provided and no Nostr extension found');
-        }
-        throw new Error('No secret key provided');
+      const skInput = secretKeyValue!; // すでに取得済みなので使用
+
+      console.log('[signEvent] Attempting to sign with secret key...');
+      const skBytes = normalizeSecretKey(skInput as any);
+      console.log('[signEvent] Secret key normalized, bytes length:', skBytes.byteLength);
+
+      const e: any = { ...event };
+      if (!e.pubkey) {
+        e.pubkey = getPublicKey(skBytes);
+        console.log('[signEvent] Generated pubkey:', e.pubkey);
       }
 
-      console.log('Attempting to sign with secret key...');
-      const skBytes = normalizeSecretKey(skInput as any);
-      const e: any = { ...event };
-      if (!e.pubkey) e.pubkey = getPublicKey(skBytes);
       const signed = finalizeEvent(e, skBytes);
       signed.id = (signed as any).id || getEventHash(signed as any);
-      console.log('Successfully signed with secret key');
+      console.log('[signEvent] Successfully signed with secret key, event ID:', signed.id);
       return signed as NostrEvent;
     } catch (error) {
-      console.error('Secret key signing failed:', error);
-      if (error instanceof Error && error.message.includes('Unsupported secret key')) {
-        throw new Error('Invalid secret key format. Please check your nsec or hex private key.');
+      console.error('[signEvent] Secret key signing failed:', error);
+      if (error instanceof Error) {
+        if (error.message.includes('Unsupported secret key')) {
+          throw new Error('Invalid secret key format. Please check your nsec or hex private key.');
+        }
+        if (error.message.includes('bad scalar size')) {
+          throw new Error('秘密鍵の形式が正しくありません。nsec1で始まる秘密鍵を使用してください。');
+        }
+        throw new Error(`署名エラー: ${error.message}`);
       }
       throw error;
     }

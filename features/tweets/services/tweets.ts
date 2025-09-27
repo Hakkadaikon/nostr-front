@@ -35,18 +35,34 @@ export async function createTweet(request: CreateTweetRequest): Promise<CreateTw
     throw new Error('ツイートは280文字以内で入力してください');
   }
 
+  // 画像をnostr.buildにアップロード
+  let imageUrls: string[] = [];
   if (request.media && request.media.length > 0) {
-    throw new Error('現在、画像や動画のアップロードには対応していません');
+    const { uploadMultipleImages } = await import('../../media/upload');
+    try {
+      imageUrls = await uploadMultipleImages(request.media);
+    } catch (uploadError) {
+      console.error('Failed to upload images:', uploadError);
+      throw new Error('画像のアップロードに失敗しました');
+    }
+  }
+
+  // 画像URLを含めたコンテンツを作成
+  let finalContent = content;
+  if (imageUrls.length > 0) {
+    // コンテンツの末尾に画像URLを追加
+    const imageText = imageUrls.map(url => `\n${url}`).join('');
+    finalContent = content + imageText;
   }
 
   // リプライの場合はNIP-10に従ってタグを追加
-  const extra = request.parentId ? { 
+  const extra = request.parentId ? {
     replyToId: request.parentId,
     replyAuthor: request.parentAuthor,
     rootId: request.rootId,
     rootAuthor: request.rootAuthor,
   } : undefined;
-  const publishResult = await publishNote(content, extra);
+  const publishResult = await publishNote(finalContent, extra);
 
   if (!publishResult.ok || !publishResult.event) {
     throw new Error('ノートの投稿に失敗しました');

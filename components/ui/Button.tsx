@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import { ButtonHTMLAttributes } from 'react';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success' | 'link';
-type ButtonSize = 'small' | 'medium' | 'large';
+type ButtonSize = 'sm' | 'small' | 'medium' | 'large';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -13,6 +13,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const BASE_CLASSES = 'inline-flex items-center justify-center font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
+  sm: 'px-2 py-1 text-xs rounded-md',
   small: 'px-3 py-1.5 text-sm rounded-lg',
   medium: 'px-4 py-2 text-sm rounded-xl',
   large: 'px-6 py-3 text-base rounded-2xl',

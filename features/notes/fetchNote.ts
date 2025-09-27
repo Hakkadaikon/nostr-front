@@ -27,9 +27,12 @@ function buildRelayList(preferred: string[] = []) {
   return Array.from(combined);
 }
 
-export async function fetchNote(eventId: string, relays?: string[], timeoutMs = 2000): Promise<NostrEvent | null> {
+export async function fetchNote(eventId: string, relays?: string[], timeoutMs = 5000): Promise<NostrEvent | null> {
   const relayList = buildRelayList(relays);
+  console.log('fetchNote: Fetching event', { eventId, relayList, timeoutMs });
+
   if (relayList.length === 0) {
+    console.warn('fetchNote: No relays available');
     return null;
   }
 
@@ -38,6 +41,7 @@ export async function fetchNote(eventId: string, relays?: string[], timeoutMs = 
     const timer = setTimeout(() => {
       if (!resolved) {
         resolved = true;
+        console.warn('fetchNote: Timeout reached for event', eventId);
         sub.close();
         resolve(null);
       }
@@ -50,6 +54,7 @@ export async function fetchNote(eventId: string, relays?: string[], timeoutMs = 
         if (resolved) return;
         resolved = true;
         clearTimeout(timer);
+        console.log('fetchNote: Successfully fetched event', { eventId, event });
         sub.close();
         resolve(event);
       }
