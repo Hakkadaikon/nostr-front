@@ -132,10 +132,20 @@ async function uploadViaNip96({
   if (contentType.includes('application/json')) {
     const data = await response.json();
     const urlFromJson =
-      data?.url || data?.data?.url || data?.result?.url || data?.nip94_event?.url;
+      data?.url || data?.data?.url || data?.result?.url;
 
     if (urlFromJson) {
       return { url: urlFromJson };
+    }
+
+    const nip94Url = Array.isArray(data?.nip94_event?.tags)
+      ? (data.nip94_event.tags.find((tag: unknown) =>
+          Array.isArray(tag) && tag.length >= 2 && tag[0] === 'url' && typeof tag[1] === 'string'
+        ) as string[] | undefined)?.[1]
+      : undefined;
+
+    if (nip94Url) {
+      return { url: nip94Url };
     }
 
     throw new Error('APIレスポンスに画像URLが含まれていません');

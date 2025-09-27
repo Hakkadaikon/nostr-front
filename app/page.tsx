@@ -125,7 +125,7 @@ export default function HomePage() {
                     onLike={toggleLike}
                     onRetweet={toggleRetweet}
                   />
-                  <div ref={sentinelRef} className="h-10 w-full" />
+                  <div ref={sentinelRef} className="h-10" />
                   {!hasMore && tweets.length > 0 && (
                     <div className="px-4 pb-6 text-center text-sm text-gray-400 dark:text-gray-600">
                       すべてのポストを表示しました
