@@ -33,22 +33,36 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
 
     console.log('EmbeddedNote: Fetching note', { id: reference.id, relays });
 
-    fetchNote(reference.id, relays, 3000).then(event => {
-      if (!active) return;
-      console.log('EmbeddedNote: Fetched event', event);
-      setNote(event);
-      setIsLoading(false);
-    }).catch(error => {
-      console.error('EmbeddedNote: Error fetching note', error);
-      if (!active) return;
-      setNote(null);
-      setIsLoading(false);
-    });
+    // Safety timeout: in rare cases fetchNote may hang (relay never sends EOSE)
+    const safetyTimeout = setTimeout(() => {
+      if (active && isLoading) {
+        console.warn('EmbeddedNote: Safety timeout reached, showing error fallback');
+        setIsLoading(false);
+      }
+    }, 5000); // safety window slightly longer than fetchNote timeout
+
+    fetchNote(reference.id, relays, 3000)
+      .then(event => {
+        if (!active) return;
+        console.log('EmbeddedNote: Fetched event', event);
+        setNote(event);
+        setIsLoading(false);
+      })
+      .catch(error => {
+        console.error('EmbeddedNote: Error fetching note', error);
+        if (!active) return;
+        setNote(null);
+        setIsLoading(false);
+      })
+      .finally(() => {
+        clearTimeout(safetyTimeout);
+      });
 
     return () => {
       active = false;
+      clearTimeout(safetyTimeout);
     };
-  }, [reference.id, relayKey, relays]);
+  }, [reference.id, relayKey, relays, isLoading]);
 
   if (isLoading) {
     return (
@@ -61,7 +75,7 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
     );
   }
 
-  if (!note) {
+  if (!note && !isLoading) {
     return (
       <div className={className}>
         <div className="rounded-xl border border-gray-200 bg-white/60 px-3 py-2 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-300">
