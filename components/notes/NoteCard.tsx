@@ -13,10 +13,10 @@ function renderContent(text: string) {
 
 export default function NoteCard({ content, id }: { id: string; content: string }) {
   return (
-    <article className="rounded border p-3">
-      <p className="whitespace-pre-wrap break-words">{renderContent(content)}</p>
-      <div className="mt-2 text-xs text-gray-500 flex gap-3">
-        <button className="underline" onClick={() => publishRepost(id)}>Repost</button>
+    <article className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-white/80 to-gray-50/80 dark:from-gray-900/80 dark:to-gray-800/80 backdrop-blur-sm p-4 shadow-sm hover:shadow-md transition-shadow">
+      <p className="whitespace-pre-wrap break-words text-gray-800 dark:text-gray-200">{renderContent(content)}</p>
+      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400 flex gap-3">
+        <button className="underline hover:text-purple-600 dark:hover:text-purple-400 transition-colors" onClick={() => publishRepost(id)}>Repost</button>
         {/* Reply / Quote could open composer; omitted here for brevity */}
       </div>
     </article>
