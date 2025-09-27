@@ -48,31 +48,29 @@ export function NotificationSettings() {
 
   return (
     <div className="space-y-4">
-      <div className="space-y-3">
-        {notificationItems.map((item) => (
-          <div
-            key={item.key}
-            className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-900"
-          >
-            <div className="space-y-0.5">
-              <label
-                htmlFor={`notification-${item.key}`}
-                className="text-sm font-medium text-gray-900 dark:text-gray-100"
-              >
-                {item.label}
-              </label>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {item.description}
-              </p>
-            </div>
-            <Switch
-              id={`notification-${item.key}`}
-              checked={settings[item.key]}
-              onCheckedChange={(checked: boolean) => updateSetting(item.key, checked)}
-            />
+      {notificationItems.map((item) => (
+        <div
+          key={item.key}
+          className="flex items-center justify-between p-5 rounded-xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
+        >
+          <div className="space-y-1">
+            <label
+              htmlFor={`notification-${item.key}`}
+              className="text-sm font-medium text-gray-900 dark:text-gray-100 cursor-pointer"
+            >
+              {item.label}
+            </label>
+            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+              {item.description}
+            </p>
           </div>
-        ))}
-      </div>
+          <Switch
+            id={`notification-${item.key}`}
+            checked={settings[item.key]}
+            onCheckedChange={(checked: boolean) => updateSetting(item.key, checked)}
+          />
+        </div>
+      ))}
     </div>
   );
 }

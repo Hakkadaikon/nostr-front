@@ -15,9 +15,8 @@ export default function RelayManager() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-3">
-        <h3 className="text-md font-medium">リレー一覧</h3>
-        <div className="flex gap-2">
+      <div className="space-y-5">
+        <div className="flex gap-3">
           <Input 
             placeholder="wss://..." 
             value={url} 
@@ -31,37 +30,41 @@ export default function RelayManager() {
             追加
           </Button>
         </div>
-        <ul className="space-y-2">
+        
+        <div className="space-y-3">
           {relays.map(r => (
-            <li key={r.url} className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded border p-3 gap-2">
-              <div className="truncate text-sm sm:text-base">{r.url}</div>
-              <div className="flex items-center gap-2 text-sm flex-wrap">
-                <label className="flex items-center gap-1 cursor-pointer hover:text-purple-600 dark:hover:text-purple-400">
-                  <input type="checkbox" checked={r.read} onChange={() => toggleRead(r.url)} className="cursor-pointer" /> 
-                  <span>Read</span>
+            <div key={r.url} className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-xl border border-gray-200 dark:border-gray-700 p-4 gap-3 bg-gray-50 dark:bg-gray-900/30">
+              <div className="truncate text-sm sm:text-base font-mono bg-white dark:bg-gray-800 px-3 py-2 rounded-lg">
+                {r.url}
+              </div>
+              <div className="flex items-center gap-4 text-sm flex-wrap">
+                <label className="flex items-center gap-2 cursor-pointer hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                  <input type="checkbox" checked={r.read} onChange={() => toggleRead(r.url)} className="cursor-pointer w-4 h-4 rounded" /> 
+                  <span className="font-medium">Read</span>
                 </label>
-                <label className="flex items-center gap-1 cursor-pointer hover:text-purple-600 dark:hover:text-purple-400">
-                  <input type="checkbox" checked={r.write} onChange={() => toggleWrite(r.url)} className="cursor-pointer" /> 
-                  <span>Write</span>
+                <label className="flex items-center gap-2 cursor-pointer hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                  <input type="checkbox" checked={r.write} onChange={() => toggleWrite(r.url)} className="cursor-pointer w-4 h-4 rounded" /> 
+                  <span className="font-medium">Write</span>
                 </label>
-                <label className="flex items-center gap-1 cursor-pointer text-purple-600 dark:text-purple-400">
-                  <input type="checkbox" checked={r.nip50 || false} onChange={() => toggleNip50(r.url)} className="cursor-pointer" /> 
-                  <span>Search</span>
+                <label className="flex items-center gap-2 cursor-pointer text-purple-600 dark:text-purple-400">
+                  <input type="checkbox" checked={r.nip50 || false} onChange={() => toggleNip50(r.url)} className="cursor-pointer w-4 h-4 rounded" /> 
+                  <span className="font-medium">Search</span>
                 </label>
                 <Button
                   onClick={() => remove(r.url)}
                   variant="danger"
-                  className="whitespace-nowrap text-xs px-3 py-1"
+                  className="whitespace-nowrap text-xs px-3 py-1.5 ml-2"
                 >
                   削除
                 </Button>
               </div>
-            </li>
+            </div>
           ))}
-        </ul>
-        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
-          <p className="text-sm text-blue-800 dark:text-blue-200">
-            <strong>ヒント:</strong> Searchにチェックを入れたリレーは検索機能で使用されます。複数のリレーを選択できます。
+        </div>
+        
+        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+          <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
+            <strong className="font-semibold">ヒント:</strong> Searchにチェックを入れたリレーは検索機能で使用されます。複数のリレーを選択できます。
           </p>
         </div>
       </div>
