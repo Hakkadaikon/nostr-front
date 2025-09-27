@@ -35,7 +35,7 @@ export function MobileHeader() {
 
         {/* ページタイトル */}
         <h1 className="font-bold text-lg bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-          {getPageTitle()}
+          hamnoster
         </h1>
 
         {/* 設定ボタン */}

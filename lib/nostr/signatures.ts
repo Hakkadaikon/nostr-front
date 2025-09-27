@@ -32,13 +32,20 @@ function normalizeSecretKey(sk: string | Uint8Array): Uint8Array {
 export async function signEvent(event: Omit<NostrEvent, 'id' | 'sig'>, getSecretKey?: () => Promise<string | Uint8Array> | string | Uint8Array): Promise<NostrEvent> {
   // serialize sign requests to avoid multiple prompts
   queue = queue.then(async () => {
+    // 秘密鍵が明示的に空文字列の場合はNIP-07を試す
+    const hasSecretKey = getSecretKey && (typeof getSecretKey === 'function'
+      ? (await getSecretKey()) !== ''
+      : getSecretKey !== '');
+
     // NIP-07が利用可能で、秘密鍵が設定されていない場合は拡張機能を使用
-    if (hasNip07() && !getSecretKey) {
+    if (hasNip07() && !hasSecretKey) {
       try {
+        console.log('Attempting to sign with NIP-07 extension...');
         const nostr = (globalThis as any).nostr;
         const signed = await nostr.signEvent(event);
         // some providers may not set id
         signed.id = signed.id || getEventHash(signed);
+        console.log('Successfully signed with NIP-07');
         return signed as NostrEvent;
       } catch (error) {
         console.error('NIP-07 signing failed:', error);
@@ -53,15 +60,21 @@ export async function signEvent(event: Omit<NostrEvent, 'id' | 'sig'>, getSecret
 
     try {
       const skInput = typeof getSecretKey === 'function' ? await getSecretKey() : getSecretKey;
-      if (!skInput) {
+      if (!skInput || skInput === '') {
+        // 秘密鍵がなくNIP-07も使えない場合
+        if (!hasNip07()) {
+          throw new Error('No secret key provided and no Nostr extension found');
+        }
         throw new Error('No secret key provided');
       }
 
+      console.log('Attempting to sign with secret key...');
       const skBytes = normalizeSecretKey(skInput as any);
       const e: any = { ...event };
       if (!e.pubkey) e.pubkey = getPublicKey(skBytes);
       const signed = finalizeEvent(e, skBytes);
       signed.id = (signed as any).id || getEventHash(signed as any);
+      console.log('Successfully signed with secret key');
       return signed as NostrEvent;
     } catch (error) {
       console.error('Secret key signing failed:', error);
