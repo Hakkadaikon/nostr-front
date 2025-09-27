@@ -15,19 +15,21 @@ const pendingRequests = new Map<string, Promise<NotificationUser>>();
 /**
  * プロフィール情報を取得
  */
-export async function fetchProfileForNotification(pubkey: string): Promise<NotificationUser> {
-  // キャッシュチェック
-  if (profileCache.has(pubkey)) {
+export async function fetchProfileForNotification(pubkey: string, opts?: { forceRefresh?: boolean }): Promise<NotificationUser> {
+  const forceRefresh = opts?.forceRefresh;
+
+  // キャッシュチェック（強制リフレッシュ時はスキップ）
+  if (!forceRefresh && profileCache.has(pubkey)) {
     const cached = profileCache.get(pubkey)!;
     if (Date.now() - cached.fetchedAt < PROFILE_TTL_MS) {
       return cached.profile;
     } else {
-      profileCache.delete(pubkey); // TTL切れ
+        profileCache.delete(pubkey); // TTL切れ
     }
   }
 
-  // 既にリクエスト中の場合は待機
-  if (pendingRequests.has(pubkey)) {
+  // 既にリクエスト中の場合は待機（強制リフレッシュ時は新規取得を優先）
+  if (!forceRefresh && pendingRequests.has(pubkey)) {
     return pendingRequests.get(pubkey)!;
   }
 

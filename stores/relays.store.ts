@@ -51,16 +51,24 @@ export const useRelaysStore = create<State>()(
       name: 'nostr-relays-storage',
       storage: createJSONStorage(() => localStorage),
       version: 1,
-      migrate: (persistedState: State | undefined, _version) => {
-        if (!persistedState) return persistedState;
-        const relays = (persistedState.relays || []).map((relay) => {
-          if (relay.nip50) return relay;
+      migrate: (persistedState: unknown, _version: number) => {
+        if (!persistedState || typeof persistedState !== "object") {
+          return { relays: envRelays.length > 0 ? envRelays : defaultRelays } as State;
+        }
+        const state = persistedState as Partial<State>;
+        const existingRelays = state.relays || [];
+        const hasSearchRelay = existingRelays.some(relay => relay.nip50);
+        if (hasSearchRelay) {
+          // すでにNIP-50対応リレーがある場合はそのまま復元
+          return { ...state, relays: existingRelays.map(relay => ({ ...relay, nip50: relay.nip50 ?? false })) } as State;
+        }
+        const migratedRelays = existingRelays.map(relay => {
           if (envRelayUrls.includes(relay.url)) {
             return { ...relay, nip50: true };
           }
           return { ...relay, nip50: relay.nip50 ?? false };
         });
-        return { ...persistedState, relays };
+        return { ...state, relays: migratedRelays } as State;
       },
     }
   )
