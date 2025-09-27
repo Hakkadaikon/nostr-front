@@ -11,13 +11,14 @@ function buildAuthor(): Tweet['author'] {
   const profile = profileState.current;
 
   const npub = profile?.npub || authState.npub || authState.publicKey || 'anonymous';
+  const pubkey = authState.publicKey || ''; // publicKeyをpubkeyとして使用
   const displayName = profile?.displayName || profile?.name || npub.slice(0, 12);
 
   return {
     id: profile?.npub || authState.publicKey || npub,
     username: profile?.name || npub.slice(0, 12),
     name: displayName,
-    avatar: profile?.picture || `https://robohash.org/${npub}`,
+    avatar: getProfileImageUrl(profile?.picture, pubkey), // 統一されたアバター生成
     bio: profile?.about || '',
     followersCount: 0,
     followingCount: 0,

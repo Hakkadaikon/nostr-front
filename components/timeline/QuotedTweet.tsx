@@ -12,6 +12,7 @@ import { useRelaysStore } from '../../stores/relays.store';
 import { type Event as NostrEvent, nip19 } from 'nostr-tools';
 import { KIND_METADATA } from '../../lib/nostr/constants';
 import { isImageUrl } from '../../lib/utils/media-urls';
+import { getProfileImageUrl } from '../../lib/utils/avatar';
 
 interface QuotedTweetProps {
   quoteId: string;
@@ -65,7 +66,7 @@ export function QuotedTweet({ quoteId, relays = [] }: QuotedTweetProps) {
                 id: event.pubkey,
                 username: content.username || content.name || nip19.npubEncode(event.pubkey).slice(0, 12),
                 name: content.display_name || content.name || '',
-                avatar: content.picture || `https://robohash.org/${event.pubkey}`,
+                avatar: getProfileImageUrl(content.picture, event.pubkey), // 統一されたアバター生成
               };
               setAuthor(profile);
               setIsLoading(false);
@@ -87,7 +88,7 @@ export function QuotedTweet({ quoteId, relays = [] }: QuotedTweetProps) {
                 id: event.pubkey,
                 username: nip19.npubEncode(event.pubkey).slice(0, 12),
                 name: 'Nostr User',
-                avatar: `https://robohash.org/${event.pubkey}`,
+                avatar: getProfileImageUrl(null, event.pubkey), // 統一されたアバター生成
               };
             }
             return prevAuthor;

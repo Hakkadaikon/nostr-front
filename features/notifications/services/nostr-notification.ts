@@ -84,18 +84,23 @@ export class NostrNotificationService {
 
     // メンション通知を作成
     if (isMention) {
-      // メンション投稿自体の情報を取得（リポスト同様の処理）
-      const postData = await fetchPostData(event.id);
+      // メンション先の投稿を特定（NIP-10の'mention'マーカーを優先）
+      const mentionTargetTag = event.tags.find(tag => tag[0] === 'e' && tag[3] === 'mention');
+      const fallbackMentionTag = event.tags.find(tag => tag[0] === 'e' && !tag[3]);
+      const rawTargetPostId = mentionTargetTag?.[1] ?? fallbackMentionTag?.[1] ?? null;
+      const targetPostId = rawTargetPostId && rawTargetPostId !== event.id ? rawTargetPostId : null;
+
+      const mentionedPostData = targetPostId ? await fetchPostData(targetPostId) : null;
 
       await this.createNotification({
         type: 'mention',
         event,
         content: event.content,
-        postId: event.id,
-        postContent: postData?.content || event.content,
-        postAuthor: postData?.author,
-        postCreatedAt: postData?.createdAt || new Date(event.created_at * 1000),
-        postMedia: postData?.media,
+        postId: mentionedPostData?.id,
+        postContent: mentionedPostData?.content,
+        postAuthor: mentionedPostData?.author,
+        postCreatedAt: mentionedPostData?.createdAt,
+        postMedia: mentionedPostData?.media,
       });
       return;
     }

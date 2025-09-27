@@ -7,6 +7,7 @@ import { clsx } from 'clsx';
 import { useAuthStore } from '../../stores/auth.store';
 import { SafeImage } from '../ui/SafeImage';
 import { useUiStore } from '../../stores/ui.store';
+import { getProfileImageUrl } from '../../lib/utils/avatar';
 
 interface NavItem {
   label: string;
@@ -17,7 +18,7 @@ interface NavItem {
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { npub } = useAuthStore();
+  const { npub, publicKey } = useAuthStore();
   const openComposeModal = useUiStore(state => state.openComposeModal);
   
   const navItems: NavItem[] = [
@@ -118,7 +119,7 @@ export function Sidebar() {
           >
             <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 overflow-hidden">
               <SafeImage
-                src={`https://robohash.org/${npub}`}
+                src={getProfileImageUrl(null, publicKey || '')} 
                 alt="Profile"
                 fill
                 className="object-cover"

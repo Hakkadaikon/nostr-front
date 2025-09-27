@@ -18,6 +18,8 @@ import { followUser, unfollowUser, isFollowing as checkFollowStatus } from '../.
 import { useProfileStore } from '../../../stores/profile.store';
 import { useAuthStore } from '../../../stores/auth.store';
 import { Tweet } from '../../../features/timeline/types';
+import { getProfileImageUrl } from '../../../lib/utils/avatar';
+import { nip19 } from 'nostr-tools';
 import { likeTweet, unlikeTweet, retweet, undoRetweet } from '../../../features/timeline/services/timeline';
 import { decode } from '../../../lib/nostr/nip19';
 import { fetchProfileStats } from '../../../features/profile/services/profileStats';
@@ -74,6 +76,19 @@ export default function ProfilePage({ params }: Props) {
         // npubでもhexでも対応できるようにする
         const profileData = await fetchProfile(params.npub);
         
+        // npubからpubkeyを取得
+        let pubkey = '';
+        try {
+          const decoded = nip19.decode(params.npub);
+          if (decoded.type === 'npub') {
+            pubkey = decoded.data as string;
+          }
+        } catch (error) {
+          console.error('Failed to decode npub:', error);
+          // npubのデコードに失敗した場合はnpubをそのまま使用
+          pubkey = params.npub;
+        }
+        
         // プロフィールデータが空の場合のデフォルト値を設定
         const defaultName = params.npub.slice(0, 8) + '...';
         
@@ -82,7 +97,7 @@ export default function ProfilePage({ params }: Props) {
           name: profileData.name || defaultName,
           displayName: profileData.display_name || profileData.name || defaultName,
           about: profileData.about || '',
-          picture: profileData.picture || `https://robohash.org/${params.npub}`,
+          picture: getProfileImageUrl(profileData.picture, pubkey), // 統一されたアバター生成
           banner: profileData.banner || '',
           website: profileData.website || '',
           lud16: profileData.lud16 || '',
@@ -103,12 +118,24 @@ export default function ProfilePage({ params }: Props) {
         console.error('Failed to load profile:', error);
         // エラー時にもデフォルト値を設定
         const defaultName = params.npub.slice(0, 8) + '...';
+        
+        // npubからpubkeyを取得（エラー時も）
+        let pubkey = '';
+        try {
+          const decoded = nip19.decode(params.npub);
+          if (decoded.type === 'npub') {
+            pubkey = decoded.data as string;
+          }
+        } catch {
+          pubkey = params.npub;
+        }
+        
         setProfile({
           npub: params.npub,
           name: defaultName,
           displayName: defaultName,
           about: '',
-          picture: `https://robohash.org/${params.npub}`,
+          picture: getProfileImageUrl(null, pubkey), // 統一されたアバター生成
           banner: '',
           website: '',
           lud16: '',
