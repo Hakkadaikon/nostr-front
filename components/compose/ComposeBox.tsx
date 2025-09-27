@@ -52,7 +52,7 @@ export default function ComposeBox() {
     <div className="space-y-2 rounded border p-3">
       <div className="flex space-x-2">
         <Avatar src={current?.picture} />
-        <Textarea value={text} onChange={e => setText(e.target.value)} placeholder="What's happening?" rows={3} />
+        <Textarea value={text} onChange={e => setText(e.target.value)} placeholder="いまどうしてる？" rows={3} />
       </div>
       <div className="text-right">
         <Button variant="primary" disabled={!text.trim() || loading} onClick={onPost}>
