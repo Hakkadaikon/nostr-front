@@ -13,6 +13,7 @@ const mobileNavItems = [
   { href: '/explore', label: '検索', icon: Search },
   { href: '/notifications', label: '通知', icon: Bell },
   { href: '/profile', label: 'プロフィール', icon: User },
+  { href: '/settings', label: '設定', icon: Settings },
 ];
 
 export function MobileNav() {
@@ -25,7 +26,7 @@ export function MobileNav() {
     <>
       {/* モバイル下部ナビゲーション */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 z-50">
-        <div className="grid grid-cols-4 h-16">
+        <div className="grid grid-cols-5 h-16">
           {mobileNavItems.map(({ href, label, icon: Icon }) => {
             const isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
             const actualHref = href === '/profile' && npub ? `/profile/${npub}` : href;

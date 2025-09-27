@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { Zap, Settings } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '../../stores/auth.store';
 
@@ -38,14 +38,8 @@ export function MobileHeader() {
           hamnoster
         </h1>
 
-        {/* 設定ボタン */}
-        <Link
-          href="/settings"
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-          aria-label="設定"
-        >
-          <Settings className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-        </Link>
+        {/* 空のスペース（レイアウト調整用） */}
+        <div className="w-8" />
       </div>
     </header>
   );
