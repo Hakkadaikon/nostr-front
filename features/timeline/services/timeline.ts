@@ -5,7 +5,7 @@ import { useAuthStore } from '../../../stores/auth.store';
 import { type Event as NostrEvent, nip19 } from 'nostr-tools';
 import { format } from 'date-fns';
 import { fetchFollowList } from '../../follow/services/follow';
-import { KIND_TEXT_NOTE, KIND_METADATA, KIND_REACTION } from '../../../lib/nostr/constants';
+import { KIND_TEXT_NOTE, KIND_METADATA, KIND_REACTION, KIND_REPOST, KIND_ZAP_RECEIPT, KIND_ZAP_REQUEST } from '../../../lib/nostr/constants';
 import { createRepost, deleteRepost } from '../../repost/services/repost';
 import { getProfileImageUrl } from '../../../lib/utils/avatar';
 
@@ -111,6 +111,7 @@ async function fetchProfile(pubkey: string, relays: string[]): Promise<any> {
           const content = JSON.parse(latestEvent.content);
           profile = {
             id: pubkey,
+            pubkey,
             username: content.username || content.name || nip19.npubEncode(pubkey).slice(0, 12),
             name: content.display_name || content.name || '',
             avatar: content.picture || getProfileImageUrl(null, pubkey),
@@ -159,6 +160,7 @@ async function fetchProfile(pubkey: string, relays: string[]): Promise<any> {
         if (!profile) {
           profile = {
             id: pubkey,
+            pubkey,
             username: nip19.npubEncode(pubkey).slice(0, 12),
             name: 'Nostr User',
             avatar: getProfileImageUrl(null, pubkey),
@@ -217,6 +219,33 @@ async function fetchReactionCounts(eventIds: string[], relays: string[]): Promis
   });
 }
 
+async function fetchEventById(eventId: string, relays: string[]): Promise<NostrEvent | null> {
+  return new Promise((resolve) => {
+    let timeoutId: NodeJS.Timeout;
+    let resolved = false;
+
+    const sub = subscribeTo(
+      relays,
+      [{ ids: [eventId], limit: 1 }],
+      (event: NostrEvent) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timeoutId);
+        sub.close();
+        resolve(event);
+      }
+    );
+
+    timeoutId = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        sub.close();
+        resolve(null);
+      }
+    }, 2000);
+  });
+}
+
 /**
  * NostrイベントをTweet型に変換（リアクション数は後で設定）
  */
@@ -225,6 +254,8 @@ async function nostrEventToTweet(event: NostrEvent, relays: string[]): Promise<T
   
   const tags = event.tags as string[][];
   const quote = extractQuoteReference(tags);
+  const replyTag = tags.find(tag => tag[0] === 'e' && (tag[3] === 'reply' || !tag[3]));
+  const parentId = replyTag && replyTag[1] !== event.id ? replyTag[1] : undefined;
   
   return {
     id: event.id,
@@ -237,6 +268,7 @@ async function nostrEventToTweet(event: NostrEvent, relays: string[]): Promise<T
     zapsCount: 0, // NostrではZap数を別途集計する必要がある
     isLiked: false, // ユーザーの反応状態は別途確認が必要
     isRetweeted: false, // ユーザーのリポスト状態は別途確認が必要
+     parentId,
     tags,
     quote,
   };
@@ -289,15 +321,23 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
     }
 
     const events: NostrEvent[] = [];
-    const tweets: Tweet[] = [];
+    const timelineTweets: Tweet[] = [];
+    const seenKeys = new Set<string>();
+    const eventCache = new Map<string, NostrEvent>();
+
+    const includeActivities = params.type === 'following';
 
     return new Promise((resolve) => {
       let timeoutId: NodeJS.Timeout;
 
+      const kinds = includeActivities
+        ? [KIND_TEXT_NOTE, KIND_REPOST, KIND_REACTION, KIND_ZAP_RECEIPT]
+        : [KIND_TEXT_NOTE];
+
       const filters: any = {
-        kinds: [KIND_TEXT_NOTE],
-        limit: Math.min(limit * 2, 50),
-        until: until
+        kinds,
+        limit: Math.min(limit * (includeActivities ? 4 : 2), 100),
+        until,
       };
 
       if (params.type === 'following' && followingList.length > 0) {
@@ -305,42 +345,259 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
         console.log('[fetchTimeline] Setting authors filter for following tab:', filters.authors.length, 'authors');
       }
 
-      const sub = subscribeTo(
-        relays,
-        [filters],
-        async (event: NostrEvent) => {
-          if (!events.find(e => e.id === event.id)) {
-            events.push(event);
-            nostrEventToTweet(event, relays).then(tweet => {
-              tweets.push(tweet);
+      const getCachedEvent = async (eventId: string): Promise<NostrEvent | null> => {
+        if (eventCache.has(eventId)) {
+          return eventCache.get(eventId)!;
+        }
+        const fetched = await fetchEventById(eventId, relays);
+        if (fetched) {
+          eventCache.set(eventId, fetched);
+        }
+        return fetched;
+      };
 
-              if (tweets.length >= limit) {
-                // すぐ閉じると後から到着する同時刻付近のイベントを取り逃すことがあるので、
-                // 200ms の猶予を置いてから終了（フォロー数が多い場合の取りこぼし軽減）
-                clearTimeout(timeoutId);
-                setTimeout(() => {
-                  sub.close();
-                  processAndResolve();
-                }, 200);
-              }
-            }).catch(error => {
-              console.error('[fetchTimeline] Failed to convert event to tweet:', error);
+      const pushTweet = (originEvent: NostrEvent, tweet: Tweet) => {
+        const key = tweet.activity?.sourceEventId ?? originEvent.id;
+        if (seenKeys.has(key)) return;
+        seenKeys.add(key);
+
+        if (!tweet.author.pubkey) {
+          tweet.author.pubkey = tweet.author.id;
+        }
+
+        if (tweet.activity) {
+          tweet.activity.sourceEventId = tweet.activity.sourceEventId || originEvent.id;
+          tweet.activity.targetNoteId = tweet.activity.targetNoteId || tweet.id;
+        }
+
+        tweet.activityTimestamp = tweet.activityTimestamp ?? new Date(originEvent.created_at * 1000);
+
+        timelineTweets.push(tweet);
+        events.push(originEvent);
+
+        if (timelineTweets.length >= limit) {
+          clearTimeout(timeoutId);
+          setTimeout(() => {
+            sub.close();
+            finalize();
+          }, 200);
+        }
+      };
+
+      const buildNoteActivity = (event: NostrEvent, tweet: Tweet) => {
+        const isReply = event.tags?.some(tag => tag[0] === 'e' && tag[3] === 'reply');
+        if (isReply) {
+          tweet.activity = {
+            type: 'reply',
+            actor: { ...tweet.author },
+            sourceEventId: event.id,
+            targetNoteId: tweet.id,
+          };
+        }
+        tweet.activityTimestamp = new Date(event.created_at * 1000);
+      };
+
+      const processNoteEvent = async (event: NostrEvent) => {
+        const tweet = await nostrEventToTweet(event, relays);
+        if (includeActivities) {
+          buildNoteActivity(event, tweet);
+        }
+        pushTweet(event, tweet);
+      };
+
+      const processRepostEvent = async (event: NostrEvent) => {
+        const targetNoteId = event.tags.find(tag => tag[0] === 'e' && tag[1])?.[1];
+        if (!targetNoteId) return;
+        const originalEvent = await getCachedEvent(targetNoteId);
+        if (!originalEvent) return;
+
+        const baseTweet = await nostrEventToTweet(originalEvent, relays);
+        const actorProfile = await fetchProfile(event.pubkey, relays);
+
+        baseTweet.activity = {
+          type: 'repost',
+          actor: actorProfile,
+          sourceEventId: event.id,
+          targetNoteId,
+        };
+        baseTweet.activityTimestamp = new Date(event.created_at * 1000);
+        pushTweet(event, baseTweet);
+      };
+
+      const processReactionEvent = async (event: NostrEvent) => {
+        const targetNoteId = event.tags.find(tag => tag[0] === 'e' && tag[1])?.[1];
+        if (!targetNoteId) return;
+        const originalEvent = await getCachedEvent(targetNoteId);
+        if (!originalEvent) return;
+
+        const baseTweet = await nostrEventToTweet(originalEvent, relays);
+        const actorProfile = await fetchProfile(event.pubkey, relays);
+
+        const content = (event.content || '').trim();
+        const emojiReaction = content && content !== '+' && content !== '❤️' && content !== '♥';
+
+        baseTweet.activity = {
+          type: emojiReaction ? 'emoji' : 'like',
+          actor: actorProfile,
+          sourceEventId: event.id,
+          targetNoteId,
+          emoji: emojiReaction ? content.slice(0, 8) : undefined,
+        };
+        baseTweet.activityTimestamp = new Date(event.created_at * 1000);
+        pushTweet(event, baseTweet);
+      };
+
+      const parseBolt11AmountToSats = (invoice: string): number | null => {
+        const match = invoice.match(/lnbc(\d+)([munp]?)/i);
+        if (!match) return null;
+        const raw = parseInt(match[1]);
+        if (isNaN(raw)) return null;
+        const unit = match[2] || '';
+        const multipliers: Record<string, number> = {
+          '': 100_000_000,
+          m: 100_000,
+          u: 100,
+          n: 0.1,
+          p: 0.0001,
+        };
+        const sats = raw * (multipliers[unit] ?? 100_000_000);
+        return Math.floor(sats);
+      };
+
+      const processZapEvent = async (event: NostrEvent) => {
+        const descriptionTag = event.tags.find(tag => tag[0] === 'description');
+        if (!descriptionTag || !descriptionTag[1]) return;
+
+        let zapRequestEvent: any;
+        try {
+          zapRequestEvent = JSON.parse(descriptionTag[1]);
+        } catch (error) {
+          console.warn('[fetchTimeline] invalid zap description JSON');
+          return;
+        }
+
+        if (zapRequestEvent.kind !== KIND_ZAP_REQUEST) {
+          // 期待するzapリクエストではない
+          return;
+        }
+
+        const requestTags: string[][] = Array.isArray(zapRequestEvent.tags) ? zapRequestEvent.tags : [];
+        const targetNoteId = requestTags.find(tag => tag[0] === 'e' && tag[1])?.[1];
+        const zapMessage: string | undefined = typeof zapRequestEvent.content === 'string' && zapRequestEvent.content.length > 0
+          ? zapRequestEvent.content
+          : undefined;
+
+        let amountSats: number | null = null;
+        const bolt11Tag = event.tags.find(tag => tag[0] === 'bolt11' && tag[1]);
+        if (bolt11Tag) {
+          amountSats = parseBolt11AmountToSats(bolt11Tag[1]);
+        }
+
+        if (amountSats == null) {
+          const amountTag = requestTags.find(tag => tag[0] === 'amount' && tag[1]);
+          if (amountTag) {
+            const msats = parseInt(amountTag[1]);
+            if (!isNaN(msats) && msats > 0) amountSats = Math.floor(msats / 1000);
+          }
+        }
+
+        if (amountSats == null) {
+          const receiptAmountTag = event.tags.find(tag => tag[0] === 'amount' && tag[1]);
+          if (receiptAmountTag) {
+            const msats = parseInt(receiptAmountTag[1]);
+            if (!isNaN(msats) && msats > 0) amountSats = Math.floor(msats / 1000);
+          }
+        }
+
+        const zapperPubkey: string | undefined = typeof zapRequestEvent.pubkey === 'string' ? zapRequestEvent.pubkey : undefined;
+        const actorProfile = zapperPubkey
+          ? await fetchProfile(zapperPubkey, relays)
+          : await fetchProfile(event.pubkey, relays);
+
+        let baseTweet: Tweet | null = null;
+        if (targetNoteId) {
+          const originalEvent = await getCachedEvent(targetNoteId);
+          if (originalEvent) {
+            baseTweet = await nostrEventToTweet(originalEvent, relays);
+          }
+        }
+
+        if (!baseTweet) {
+          const recipientProfile = await fetchProfile(event.pubkey, relays);
+          baseTweet = {
+            id: targetNoteId || event.id,
+            content: zapMessage || '',
+            author: recipientProfile,
+            createdAt: new Date(event.created_at * 1000),
+            likesCount: 0,
+            retweetsCount: 0,
+            repliesCount: 0,
+            zapsCount: 0,
+            isLiked: false,
+            isRetweeted: false,
+            tags: Array.isArray(zapRequestEvent.tags) ? zapRequestEvent.tags : [],
+          };
+        }
+
+        baseTweet.activity = {
+          type: 'zap',
+          actor: actorProfile,
+          sourceEventId: event.id,
+          targetNoteId: targetNoteId || baseTweet.id,
+          amountSats: amountSats ?? 0,
+          message: zapMessage,
+        };
+        baseTweet.zapsCount = (baseTweet.zapsCount || 0) + 1;
+        baseTweet.activityTimestamp = new Date(event.created_at * 1000);
+        pushTweet(event, baseTweet);
+      };
+
+      const processEvent = async (event: NostrEvent) => {
+        try {
+          if (event.kind === KIND_TEXT_NOTE) {
+            await processNoteEvent(event);
+            return;
+          }
+
+          if (!includeActivities) return;
+
+          if (event.kind === KIND_REPOST) {
+            await processRepostEvent(event);
+            return;
+          }
+
+          if (event.kind === KIND_REACTION) {
+            await processReactionEvent(event);
+            return;
+          }
+
+          if (event.kind === KIND_ZAP_RECEIPT) {
+            await processZapEvent(event);
+            return;
+          }
+        } catch (conversionError) {
+          console.error('[fetchTimeline] Failed to convert event', conversionError);
+        }
+      };
+
+      const finalize = async () => {
+        if (timelineTweets.length > 0) {
+          const uniqueNoteIds = Array.from(new Set(timelineTweets.map(t => t.id)));
+          if (uniqueNoteIds.length > 0) {
+            const reactionCounts = await fetchReactionCounts(uniqueNoteIds, relays);
+            timelineTweets.forEach(tweet => {
+              tweet.likesCount = reactionCounts.get(tweet.id) || tweet.likesCount;
             });
           }
         }
-      );
 
-      const processAndResolve = async () => {
-        if (tweets.length > 0) {
-          const eventIds = tweets.map(t => t.id);
-          const reactionCounts = await fetchReactionCounts(eventIds, relays);
+        timelineTweets.sort((a, b) => {
+          const aTime = (a.activityTimestamp ?? a.createdAt).getTime();
+          const bTime = (b.activityTimestamp ?? b.createdAt).getTime();
+          return bTime - aTime;
+        });
 
-          tweets.forEach(tweet => {
-            tweet.likesCount = reactionCounts.get(tweet.id) || 0;
-          });
-        }
-
-        tweets.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        const sliced = timelineTweets.slice(0, limit);
 
         const oldestEvent = events.length > 0
           ? events.reduce((oldest, event) =>
@@ -349,16 +606,26 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
           : null;
 
         resolve({
-          tweets: tweets.slice(0, limit),
+          tweets: sliced,
           nextCursor: oldestEvent ? oldestEvent.created_at.toString() : undefined,
-          hasMore: tweets.length >= limit
+          hasMore: timelineTweets.length > sliced.length,
         });
       };
 
-      timeoutId = setTimeout(async () => {
+      const sub = subscribeTo(
+        relays,
+        [filters],
+        (event: NostrEvent) => {
+          processEvent(event).catch(error => {
+            console.error('[fetchTimeline] Failed to process event:', error);
+          });
+        }
+      );
+
+      timeoutId = setTimeout(() => {
         sub.close();
-        await processAndResolve();
-      }, 5000); // フォロータイムラインでイベントが少ない問題緩和: 4s -> 5s
+        finalize();
+      }, includeActivities ? 7000 : 5000);
     });
   } catch (error) {
     console.error('Failed to fetch timeline:', error);

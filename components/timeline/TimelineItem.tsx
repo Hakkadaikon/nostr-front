@@ -7,7 +7,7 @@ import EmbeddedNote from '../notes/EmbeddedNote';
 import { RichContent } from './RichContent';
 import Link from 'next/link';
 import { Tweet } from '../../features/timeline/types';
-import { Heart, MessageCircle, Repeat2, Share, Zap, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share, Zap, MoreHorizontal, Trash2, Smile } from 'lucide-react';
 import { IconButton } from '../ui/IconButton';
 import { QuotedTweet } from './QuotedTweet';
 import { ActivityPubBadge } from '../ui/ActivityPubBadge';
@@ -15,6 +15,7 @@ import { isActivityPubUser } from '../../lib/utils/activitypub';
 import { useState } from 'react';
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import { deleteNote } from '../../features/notes/delete';
+import { createReaction } from '../../features/reactions/services/reaction';
 
 interface TimelineItemProps {
   tweet: Tweet;
@@ -25,19 +26,29 @@ interface TimelineItemProps {
   onDelete?: (tweetId: string) => void;
 }
 
+const QUICK_EMOJIS = ['😀', '😂', '😍', '👍', '🔥', '👏', '😢', '🙏'];
+
 export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelete }: TimelineItemProps) {
   const { publicKey } = useAuth();
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-  const timeAgo = formatDistanceToNow(new Date(tweet.createdAt), {
+  const activity = tweet.activity;
+  const actor = activity?.actor;
+  const timelineTimestamp = tweet.activityTimestamp ?? tweet.createdAt;
+
+  const timeAgo = formatDistanceToNow(new Date(timelineTimestamp), {
     addSuffix: true,
     locale: ja,
   });
 
   // 自分の投稿かどうかを判定
   const isOwnTweet = publicKey && tweet.author.pubkey === publicKey;
+  const targetNoteId = activity?.targetNoteId ?? tweet.id;
+  const canInteractWithNote = !activity || !!activity.targetNoteId;
+  const noteAuthorPubkey = tweet.author.pubkey || tweet.author.id;
 
   const handleDelete = async () => {
     if (!isOwnTweet) return;
@@ -52,6 +63,89 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
       alert('投稿の削除に失敗しました');
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleEmojiReaction = async (emoji: string) => {
+    if (!canInteractWithNote || !targetNoteId || !noteAuthorPubkey) return;
+    try {
+      await createReaction(targetNoteId, noteAuthorPubkey, emoji);
+    } catch (error) {
+      console.error('Failed to send emoji reaction:', error);
+      alert('リアクションの送信に失敗しました');
+    } finally {
+      setShowEmojiPicker(false);
+    }
+  };
+
+  const renderActivityLabel = () => {
+    if (!activity || !actor) return null;
+    const actorName = actor.name || actor.username || actor.npub?.slice(0, 12) || actor.id.slice(0, 12);
+    switch (activity.type) {
+      case 'repost':
+        return (
+          <span>
+            <Link
+              href={`/profile/${actor.npub || actor.id}` as any}
+              className="font-semibold text-gray-900 dark:text-white hover:underline"
+            >
+              {actorName}
+            </Link>
+            <span className="ml-2">がリポストしました</span>
+          </span>
+        );
+      case 'like':
+        return (
+          <span>
+            <Link
+              href={`/profile/${actor.npub || actor.id}` as any}
+              className="font-semibold text-gray-900 dark:text-white hover:underline"
+            >
+              {actorName}
+            </Link>
+            <span className="ml-2">がこの投稿にいいねしました</span>
+          </span>
+        );
+      case 'emoji':
+        return (
+          <span className="flex items-center gap-2">
+            <Link
+              href={`/profile/${actor.npub || actor.id}` as any}
+              className="font-semibold text-gray-900 dark:text-white hover:underline"
+            >
+              {actorName}
+            </Link>
+            <span>が</span>
+            <span className="text-lg">{activity.emoji}</span>
+            <span>リアクションを送りました</span>
+          </span>
+        );
+      case 'zap':
+        return (
+          <span>
+            <Link
+              href={`/profile/${actor.npub || actor.id}` as any}
+              className="font-semibold text-gray-900 dark:text-white hover:underline"
+            >
+              {actorName}
+            </Link>
+            <span className="ml-2">が {activity.amountSats?.toLocaleString() ?? 0} sats Zap を送りました</span>
+          </span>
+        );
+      case 'reply':
+        return (
+          <span>
+            <Link
+              href={`/profile/${actor.npub || actor.id}` as any}
+              className="font-semibold text-gray-900 dark:text-white hover:underline"
+            >
+              {actorName}
+            </Link>
+            <span className="ml-2">が返信しました</span>
+          </span>
+        );
+      default:
+        return null;
     }
   };
 
@@ -74,6 +168,35 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
         </Link>
 
         <div className="flex-1 min-w-0">
+          {activity && actor && (
+            <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 mb-2">
+              <Link
+                href={`/profile/${actor.npub || actor.id}` as any}
+                className="flex-shrink-0"
+              >
+                {actor.avatar ? (
+                  <SafeImage
+                    src={actor.avatar}
+                    alt={actor.name}
+                    width={28}
+                    height={28}
+                    className="w-7 h-7 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
+                )}
+              </Link>
+              <div className="flex-1 min-w-0 text-sm sm:text-base">
+                {renderActivityLabel()}
+                {activity.type === 'zap' && activity.message && (
+                  <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    {activity.message}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* ヘッダー */}
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-1 flex-wrap">
@@ -143,9 +266,11 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
             </div>
           )}
           {/* コンテンツ */}
-          <div className="mt-2">
-            <RichContent content={tweet.content} tags={tweet.tags} suppressNoteIds={tweet.quote ? [tweet.quote.id] : undefined} />
-          </div>
+          {tweet.content && tweet.content.trim().length > 0 && (
+            <div className="mt-2">
+              <RichContent content={tweet.content} tags={tweet.tags} suppressNoteIds={tweet.quote ? [tweet.quote.id] : undefined} />
+            </div>
+          )}
 
           {/* 引用ツイート */}
           {tweet.quote && (
@@ -181,9 +306,10 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
           <div className="mt-3 flex items-center justify-between sm:max-w-lg lg:max-w-xl">
             {/* 返信 */}
             <IconButton
-              onClick={() => onReply?.(tweet)}
+              onClick={() => canInteractWithNote && onReply?.(tweet)}
               variant="share"
               size="small"
+              disabled={!canInteractWithNote}
               count={tweet.repliesCount}
               aria-label="返信"
             >
@@ -192,11 +318,12 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
 
             {/* リツイート */}
             <IconButton
-              onClick={() => onRetweet(tweet.id)}
+              onClick={() => canInteractWithNote && onRetweet(targetNoteId)}
               variant="retweet"
               size="small"
               active={tweet.isRetweeted}
               count={tweet.retweetsCount}
+              disabled={!canInteractWithNote}
               aria-label="リツイート"
             >
               <Repeat2 size={18} />
@@ -204,11 +331,12 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
 
             {/* いいね */}
             <IconButton
-              onClick={() => onLike(tweet.id)}
+              onClick={() => canInteractWithNote && onLike(targetNoteId)}
               variant="like"
               size="small"
               active={tweet.isLiked}
               count={tweet.likesCount}
+              disabled={!canInteractWithNote}
               aria-label="いいね"
             >
               <Heart
@@ -217,12 +345,30 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
               />
             </IconButton>
 
+            {/* 絵文字リアクション */}
+            <IconButton
+              onClick={() => {
+                if (!canInteractWithNote) return;
+                setShowEmojiPicker(prev => !prev);
+              }}
+              variant="share"
+              size="small"
+              aria-label="リアクション"
+              disabled={!canInteractWithNote}
+            >
+              <Smile size={18} />
+            </IconButton>
+
             {/* Zap */}
             <IconButton
-              onClick={() => onZap?.(tweet.id)}
+              onClick={() => {
+                if (!canInteractWithNote) return;
+                onZap?.(targetNoteId);
+              }}
               variant="zap"
               size="small"
               count={tweet.zapsCount}
+              disabled={!canInteractWithNote}
               aria-label="Zap"
             >
               <Zap size={18} />
@@ -237,6 +383,20 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
               <Share size={18} />
             </IconButton>
           </div>
+
+          {showEmojiPicker && canInteractWithNote && (
+            <div className="mt-2 flex flex-wrap gap-2 sm:gap-3">
+              {QUICK_EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => handleEmojiReaction(emoji)}
+                  className="px-3 py-2 text-lg rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

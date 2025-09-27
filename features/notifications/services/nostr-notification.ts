@@ -90,17 +90,36 @@ export class NostrNotificationService {
       const rawTargetPostId = mentionTargetTag?.[1] ?? fallbackMentionTag?.[1] ?? null;
       const targetPostId = rawTargetPostId && rawTargetPostId !== event.id ? rawTargetPostId : null;
 
-      const mentionedPostData = targetPostId ? await fetchPostData(targetPostId) : null;
+      // メンションの場合、通常は投稿者自身が言及しているので、
+      // targetPostIdがない場合は、メンション投稿自体を埋め込み表示する
+      let postData = null;
+      let postId = targetPostId;
+
+      if (targetPostId) {
+        postData = await fetchPostData(targetPostId);
+      } else {
+        // メンション投稿自体を埋め込みとして表示
+        postId = event.id;
+        // メンション投稿者のプロフィールを取得
+        const mentionAuthor = await fetchProfileForNotification(event.pubkey);
+        postData = {
+          id: event.id,
+          content: event.content,
+          author: mentionAuthor,
+          createdAt: new Date(event.created_at * 1000),
+          media: undefined, // メディアはRichContentで表示されるため除外
+        };
+      }
 
       await this.createNotification({
         type: 'mention',
         event,
         content: event.content,
-        postId: mentionedPostData?.id,
-        postContent: mentionedPostData?.content,
-        postAuthor: mentionedPostData?.author,
-        postCreatedAt: mentionedPostData?.createdAt,
-        postMedia: mentionedPostData?.media,
+        postId: postData?.id,
+        postContent: postData?.content,
+        postAuthor: postData?.author,
+        postCreatedAt: postData?.createdAt,
+        postMedia: postData?.media,
       });
       return;
     }

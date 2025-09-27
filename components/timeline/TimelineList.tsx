@@ -88,9 +88,11 @@ export function TimelineList({
   return (
     <>
       <div className="overflow-hidden divide-y divide-gray-200 dark:divide-gray-800">
-        {localTweets.map((tweet) => (
+        {localTweets.map((tweet) => {
+          const key = tweet.activity?.sourceEventId ?? tweet.id;
+          return (
           <TimelineItem
-            key={tweet.id}
+            key={key}
             tweet={tweet}
             onLike={onLike}
             onRetweet={onRetweet}
@@ -98,7 +100,8 @@ export function TimelineList({
             onReply={handleReply}
             onDelete={handleDelete}
           />
-        ))}
+          );
+        })}
         {isLoading && (
           <div className="p-3 sm:p-4 flex justify-center">
             <Spinner />

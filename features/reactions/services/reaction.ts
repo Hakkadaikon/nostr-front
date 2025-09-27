@@ -18,7 +18,7 @@ function getSecretKey() {
   return nsec || '';
 }
 
-export async function createReaction(eventId: string, authorPubkey: string): Promise<NostrEvent> {
+export async function createReaction(eventId: string, authorPubkey: string, content: string = '+'): Promise<NostrEvent> {
   requireSigningCapability();
   const authStore = useAuthStore.getState();
 
@@ -29,7 +29,7 @@ export async function createReaction(eventId: string, authorPubkey: string): Pro
       ['e', eventId],
       ['p', authorPubkey],
     ],
-    content: '+',
+    content,
     ...(authStore.publicKey ? { pubkey: authStore.publicKey } : {}),
   } as Omit<NostrEvent, 'id' | 'sig'>;
 

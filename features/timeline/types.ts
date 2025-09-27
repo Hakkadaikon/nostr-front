@@ -16,6 +16,18 @@ export interface User {
   website?: string;
 }
 
+export type TimelineActivityType = 'post' | 'reply' | 'repost' | 'like' | 'emoji' | 'zap';
+
+export interface TimelineActivity {
+  type: TimelineActivityType;
+  actor: User;
+  sourceEventId: string;
+  targetNoteId?: string;
+  emoji?: string;
+  amountSats?: number;
+  message?: string;
+}
+
 // ツイート（投稿）
 export interface QuoteReference {
   id: string;
@@ -38,6 +50,8 @@ export interface Tweet {
   quote?: QuoteReference;
   media?: TweetMedia[];
   tags?: string[][];
+  activity?: TimelineActivity;
+  activityTimestamp?: Date;
 }
 
 // ツイートメディア

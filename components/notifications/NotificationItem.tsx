@@ -140,52 +140,109 @@ export function NotificationItem({ notification }: NotificationItemProps) {
             {timeAgo}
           </div>
 
-          {/* 返信内容 / メンション内容 / Zap情報 */}
-          {(notification.type === 'zap' || notification.content) && (
+          {/* 返信内容のみ（メンションはEmbeddedPostで表示） */}
+          {notification.type === 'reply' && notification.content && (
             <div className="mt-2 text-gray-900 dark:text-white">
-              {notification.type === 'zap' ? (
-                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg p-3 mt-2">
-                  <div className="flex items-start gap-3">
-                    <span className="text-3xl">⚡</span>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-2xl text-yellow-600 dark:text-yellow-400">
-                        {(notification.amount ?? 0).toLocaleString()} sats
-                      </span>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        from
-                      </span>
-                      <Link
-                        href={`/profile/${notification.user.npub}` as any}
-                        className="font-semibold text-purple-600 dark:text-purple-400 hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {notification.user.name || notification.user.username}
-                      </Link>
-                    </div>
-                    {notification.content ? (
-                      <div className="mt-2 text-sm text-gray-700 dark:text-gray-300">
-                        <RichContent content={notification.content} />
-                      </div>
-                    ) : (
-                      <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 italic">
-                        Zapメッセージはありません
-                      </div>
-                    )}
-                  </div>
+              <RichContent content={notification.content} />
+            </div>
+          )}
+
+          {/* Zap情報 - 新しいレイアウト */}
+          {notification.type === 'zap' && (
+            <div className="mt-3">
+              {/* 金額と送信者 */}
+              <div className="flex items-center gap-2 mb-3">
+                <Zap className="w-5 h-5 text-yellow-500" fill="currentColor" />
+                <span className="font-bold text-2xl text-yellow-600 dark:text-yellow-400">
+                  {(notification.amount ?? 0).toLocaleString()}
+                </span>
+                <span className="text-lg text-gray-600 dark:text-gray-400">sats by</span>
+                <Link
+                  href={`/profile/${notification.user.npub}` as any}
+                  className="font-semibold text-lg text-purple-600 dark:text-purple-400 hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {notification.user.name || notification.user.username}
+                </Link>
+              </div>
+
+              {/* Zapメッセージ（あれば） */}
+              {notification.content && (
+                <div className="mb-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <div className="text-sm text-gray-700 dark:text-gray-300">
+                    <RichContent content={notification.content} />
                   </div>
                 </div>
-              ) : (
-                notification.content && <RichContent content={notification.content} />
+              )}
+
+              {/* Zapされた自分のポスト */}
+              {notification.postContent && notification.postId && notification.postAuthor && (
+                <div className="bg-gray-50 dark:bg-gray-900/30 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                  <div className="flex gap-3">
+                    {/* 自分のアバター */}
+                    <Link
+                      href={`/profile/${notification.postAuthor.npub}` as any}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <SafeImage
+                        src={notification.postAuthor.avatar || ''}
+                        alt={notification.postAuthor.name || ''}
+                        width={40}
+                        height={40}
+                        className="w-10 h-10 rounded-full object-cover"
+                        fallbackSrc=""
+                        onError={() => {}}
+                      />
+                      {(!notification.postAuthor.avatar || notification.postAuthor.avatar === '') && (
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
+                      )}
+                    </Link>
+
+                    {/* 自分の名前とポスト内容 */}
+                    <div className="flex-1 min-w-0">
+                      <Link
+                        href={`/profile/${notification.postAuthor.npub}` as any}
+                        className="font-semibold text-gray-900 dark:text-white hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {notification.postAuthor.name || notification.postAuthor.username}
+                      </Link>
+                      <div className="mt-1 text-sm text-gray-700 dark:text-gray-300">
+                        <RichContent content={notification.postContent} />
+                      </div>
+                      {/* メディアがあれば表示 */}
+                      {notification.postMedia && notification.postMedia.length > 0 && (
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          {notification.postMedia.map((media, index) => (
+                            <div key={index} className="relative rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700">
+                              {media.type === 'image' && (
+                                <SafeImage
+                                  src={media.url}
+                                  alt={media.altText || ''}
+                                  width={200}
+                                  height={150}
+                                  className="w-full h-32 object-cover"
+                                  fallbackSrc=""
+                                  onError={() => {}}
+                                />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           )}
 
-          {/* 元の投稿内容 - 埋め込み表示 */}
-          {notification.postContent && notification.postId && (() => {
-            // リポストとメンションではRichContent内でメディアが表示されるため、
+          {/* 元の投稿内容 - 埋め込み表示（Zap以外） */}
+          {notification.type !== 'zap' && notification.postContent && notification.postId && (() => {
+            // リポストではRichContent内でメディアが表示されるため、
             // EmbeddedPostにはmediaを渡さない（DRY/KISS原則）
-            const shouldExcludeMedia = notification.type === 'repost' || notification.type === 'mention';
+            // メンションは埋め込み内でメディアを表示する
+            const shouldExcludeMedia = notification.type === 'repost';
 
             return (
               <EmbeddedPost
