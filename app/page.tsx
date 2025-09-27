@@ -76,13 +76,7 @@ export default function HomePage() {
             <h1 className="text-2xl font-semibold text-gray-900 dark:text-white sm:text-3xl">ホーム</h1>
           </div>
           
-          {/* リアルタイム機能無効化の通知 */}
-          <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
-            <p className="text-sm text-yellow-800 dark:text-yellow-200">
-              🔧 リアルタイム機能は現在無効になっています。タイムラインはモックデータを表示しています。
-            </p>
-          </div>
-          
+
           <nav className="flex w-full flex-wrap gap-2" role="tablist" aria-label="ホームタブ">
             {TAB_ITEMS.map(({ id, label, description }) => {
               const isActive = activeTab === id;
