@@ -1,5 +1,5 @@
 import { nip19 } from 'nostr-tools';
-import { subscribe } from '../../../lib/nostr/client';
+import { subscribeTo } from '../../relays/services/relayPool';
 import { useRelaysStore } from '../../../stores/relays.store';
 import { KIND_METADATA } from '../../../lib/nostr/constants';
 import type { Event as NostrEvent } from 'nostr-tools';
@@ -72,38 +72,49 @@ async function fetchProfileFromNostr(pubkey: string): Promise<NotificationUser> 
     }
 
     return new Promise((resolve) => {
-      let resolved = false;
-      const timeoutId = setTimeout(() => {
-        if (!resolved) {
-          resolved = true;
-          sub.close();
+      // 受信した metadata の中で最新(created_at 最大)を選択
+      const events: NostrEvent[] = [];
+      let finalized = false;
+
+      const finalize = () => {
+        if (finalized) return;
+        finalized = true;
+        if (events.length === 0) {
+          resolve(defaultProfile);
+          return;
+        }
+        const latest = events.reduce((a, b) => (b.created_at > a.created_at ? b : a));
+        try {
+          const metadata = JSON.parse(latest.content);
+          resolve({
+            id: pubkey,
+            pubkey,
+            npub,
+            name: metadata.display_name || metadata.name || defaultProfile.name,
+            username: metadata.username || metadata.name || defaultProfile.username,
+            avatar: getProfileImageUrl(metadata.picture, pubkey),
+          });
+        } catch (e) {
+          console.error('Failed to parse profile metadata:', e);
           resolve(defaultProfile);
         }
-      }, 2000); // 2秒でタイムアウト
+      };
 
-      const sub = subscribe(
+      const timeoutId = setTimeout(() => {
+        finalize();
+        sub.close();
+      }, 1800); // 少し短縮して高速化
+
+      const sub = subscribeTo(
         relays,
-        [{ kinds: [KIND_METADATA], authors: [pubkey], limit: 1 }],
+        [{ kinds: [KIND_METADATA], authors: [pubkey], limit: 10 }],
         (event: NostrEvent) => {
-          if (resolved) return;
-
-          try {
-            const metadata = JSON.parse(event.content);
-            resolved = true;
-            clearTimeout(timeoutId);
-            sub.close();
-
-            resolve({
-              id: pubkey,
-              pubkey,
-              npub,
-              name: metadata.display_name || metadata.name || defaultProfile.name,
-              username: metadata.username || metadata.name || defaultProfile.username,
-              avatar: getProfileImageUrl(metadata.picture, pubkey), // 統一されたアバター処理
-            });
-          } catch (error) {
-            console.error('Failed to parse profile metadata:', error);
-          }
+          events.push(event);
+        },
+        () => {
+          clearTimeout(timeoutId);
+          finalize();
+          sub.close();
         }
       );
     });
@@ -122,4 +133,11 @@ export function clearProfileCache() {
     console.log('Profile cache cleared');
   }
   pendingRequests.clear();
+}
+
+/**
+ * avatar の強制再取得（UI で最新を強制したい場合に使用）
+ */
+export async function refreshProfileAvatar(pubkey: string): Promise<NotificationUser> {
+  return fetchProfileForNotification(pubkey, { forceRefresh: true });
 }
