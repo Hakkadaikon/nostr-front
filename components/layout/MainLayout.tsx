@@ -31,7 +31,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         <NavSidebar />
         
         {/* メインコンテンツエリア */}
-        <div className="flex-1 md:ml-72">
+        <div className="flex-1">
           <div className={innerContainerClass}>
             {/* ログイン促進 */}
             {/** NOTE: グローバルにログイン促進バナーを表示（未ログイン時のみ） */}
