@@ -41,11 +41,10 @@ export async function signEvent(event: Omit<NostrEvent, 'id' | 'sig'>, getSecret
     const hasValidSecretKey = secretKeyValue && secretKeyValue !== '' &&
       (typeof secretKeyValue === 'string' || secretKeyValue instanceof Uint8Array);
 
-    console.log('[signEvent] Secret key check', {
-      hasSecretKey: !!getSecretKey,
+    // セキュリティ配慮: 機密情報を含まないログ出力
+    console.log('[signEvent] Authentication check', {
+      hasSecretKeyProvider: !!getSecretKey,
       hasValidSecretKey,
-      type: secretKeyValue ? typeof secretKeyValue : 'none',
-      length: secretKeyValue ? (typeof secretKeyValue === 'string' ? secretKeyValue.length : secretKeyValue.byteLength) : 0,
       hasNip07: hasNip07()
     });
 
@@ -77,9 +76,9 @@ export async function signEvent(event: Omit<NostrEvent, 'id' | 'sig'>, getSecret
     try {
       const skInput = secretKeyValue!; // すでに取得済みなので使用
 
-      console.log('[signEvent] Attempting to sign with secret key...');
+      console.log('[signEvent] Attempting private key signing...');
       const skBytes = normalizeSecretKey(skInput as any);
-      console.log('[signEvent] Secret key normalized, bytes length:', skBytes.byteLength);
+      console.log('[signEvent] Private key normalized successfully');
 
       const e: any = { ...event };
       if (!e.pubkey) {
@@ -89,10 +88,10 @@ export async function signEvent(event: Omit<NostrEvent, 'id' | 'sig'>, getSecret
 
       const signed = finalizeEvent(e, skBytes);
       signed.id = (signed as any).id || getEventHash(signed as any);
-      console.log('[signEvent] Successfully signed with secret key, event ID:', signed.id);
+      console.log('[signEvent] Successfully signed with private key, event ID:', signed.id);
       return signed as NostrEvent;
     } catch (error) {
-      console.error('[signEvent] Secret key signing failed:', error);
+      console.error('[signEvent] Private key signing failed:', error);
       if (error instanceof Error) {
         if (error.message.includes('Unsupported secret key')) {
           throw new Error('Invalid secret key format. Please check your nsec or hex private key.');

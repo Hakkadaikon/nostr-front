@@ -7,11 +7,14 @@ import EmbeddedNote from '../notes/EmbeddedNote';
 import { RichContent } from './RichContent';
 import Link from 'next/link';
 import { Tweet } from '../../features/timeline/types';
-import { Heart, MessageCircle, Repeat2, Share, Zap } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share, Zap, MoreHorizontal, Trash2 } from 'lucide-react';
 import { IconButton } from '../ui/IconButton';
 import { QuotedTweet } from './QuotedTweet';
 import { ActivityPubBadge } from '../ui/ActivityPubBadge';
 import { isActivityPubUser } from '../../lib/utils/activitypub';
+import { useState } from 'react';
+import { useAuth } from '../../features/auth/hooks/useAuth';
+import { deleteNote } from '../../features/notes/delete';
 
 interface TimelineItemProps {
   tweet: Tweet;
@@ -19,13 +22,38 @@ interface TimelineItemProps {
   onRetweet: (tweetId: string) => void;
   onZap?: (tweetId: string) => void;
   onReply?: (tweet: Tweet) => void;
+  onDelete?: (tweetId: string) => void;
 }
 
-export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply }: TimelineItemProps) {
+export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelete }: TimelineItemProps) {
+  const { publicKey } = useAuth();
+  const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const timeAgo = formatDistanceToNow(new Date(tweet.createdAt), {
     addSuffix: true,
     locale: ja,
   });
+
+  // 自分の投稿かどうかを判定
+  const isOwnTweet = publicKey && tweet.author.pubkey === publicKey;
+
+  const handleDelete = async () => {
+    if (!isOwnTweet) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteNote(tweet.id);
+      onDelete?.(tweet.id);
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      console.error('Failed to delete tweet:', error);
+      alert('投稿の削除に失敗しました');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <article className="overflow-hidden border-b border-gray-200 dark:border-gray-800 p-4 sm:p-6 hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition-all duration-200 group">
@@ -72,6 +100,40 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply }: Timel
                 {timeAgo}
               </Link>
             </div>
+
+            {/* メニューボタン（自分の投稿のみ表示） */}
+            {isOwnTweet && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowMenu(!showMenu)}
+                  className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <MoreHorizontal size={18} className="text-gray-500 dark:text-gray-400" />
+                </button>
+
+                {/* ドロップダウンメニュー */}
+                {showMenu && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setShowMenu(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20">
+                      <button
+                        onClick={() => {
+                          setShowMenu(false);
+                          setShowDeleteConfirm(true);
+                        }}
+                        className="w-full px-4 py-2 text-left text-red-600 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2"
+                      >
+                        <Trash2 size={16} />
+                        投稿を削除
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* コンテンツ */}
@@ -171,6 +233,34 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply }: Timel
           </div>
         </div>
       </div>
+
+      {/* 削除確認ダイアログ */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 max-w-sm w-full">
+            <h3 className="text-lg font-bold mb-2">投稿を削除しますか？</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              この操作は取り消せません。投稿は完全に削除されます。
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {isDeleting ? '削除中...' : '削除'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </article>
   );
 }

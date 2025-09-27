@@ -11,6 +11,7 @@ export interface User {
   followingCount: number;
   createdAt: Date;
   npub?: string;
+  pubkey?: string; // hex public key
   nip05?: string;
   website?: string;
 }

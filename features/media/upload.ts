@@ -1,10 +1,81 @@
 /**
  * nostr.build API を使用した画像アップロードサービス
+ *
+ * 注意: nostr.buildの無料APIには以下の制限があります:
+ * - ファイルサイズ: 最大10MB
+ * - 対応形式: JPEG, PNG, GIF, WebP
+ * - CORSポリシー: ブラウザから直接アクセス可能
  */
 
 export interface UploadResult {
   url: string;
   error?: string;
+}
+
+/**
+ * void.catに画像をアップロード（Nostr向けサービス）
+ */
+async function uploadToVoidCat(file: File): Promise<UploadResult> {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch('https://void.cat/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`void.cat upload failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log('void.cat response:', data);
+
+    if (data.ok && data.file) {
+      // void.catのレスポンス形式: { ok: true, file: { id: "xxx", ... } }
+      const fileId = data.file.id || data.file;
+      return { url: `https://void.cat/d/${fileId}` };
+    }
+
+    throw new Error('void.cat APIレスポンスエラー');
+  } catch (error) {
+    console.error('void.cat upload error:', error);
+    throw error;
+  }
+}
+
+/**
+ * imgurに画像をアップロード（フォールバック用）
+ */
+async function uploadToImgur(file: File): Promise<UploadResult> {
+  try {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    // Imgur Anonymous Upload API (Client ID不要)
+    const response = await fetch('https://api.imgur.com/3/image', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Client-ID a0113a6e320c92e' // Public Client ID for anonymous uploads
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Imgur upload failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    if (data.success && data.data && data.data.link) {
+      return { url: data.data.link };
+    }
+
+    throw new Error('Imgur APIレスポンスエラー');
+  } catch (error) {
+    console.error('Imgur upload error:', error);
+    throw error;
+  }
 }
 
 /**
@@ -29,7 +100,8 @@ export async function uploadToNostrBuild(file: File): Promise<UploadResult> {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch('https://nostr.build/api/v2/upload/files', {
+    // nostr.build の無料APIエンドポイントを使用
+    const response = await fetch('https://nostr.build/api/upload', {
       method: 'POST',
       body: formData,
     });
@@ -40,40 +112,64 @@ export async function uploadToNostrBuild(file: File): Promise<UploadResult> {
       throw new Error(`アップロードに失敗しました: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    // レスポンスのContent-Typeを確認
+    const contentType = response.headers.get('content-type');
 
-    // レスポンスの形式を確認
-    if (data.status === 'success' && data.data) {
-      // 複数のURLが返される場合は最初のものを使用
-      if (Array.isArray(data.data)) {
-        const firstItem = data.data[0];
-        if (firstItem && firstItem.url) {
-          return { url: firstItem.url };
-        }
+    if (contentType && contentType.includes('application/json')) {
+      const data = await response.json();
+      console.log('Upload response:', data);
+
+      // nostr.build APIのレスポンス形式に対応
+      // 成功時: { "status": "success", "nip94_event": {...}, "url": "https://..." }
+      if (data.status === 'success' && data.url) {
+        return { url: data.url };
       }
-      // 単一のURLの場合
-      if (data.data.url) {
+
+      // 他の形式のレスポンスも試す
+      if (data.data && data.data.url) {
         return { url: data.data.url };
       }
-    }
 
-    // 旧形式のレスポンス対応
-    if (data.url) {
-      return { url: data.url };
-    }
+      if (Array.isArray(data) && data.length > 0 && data[0].url) {
+        return { url: data[0].url };
+      }
 
-    // URLがデータ配列の場合
-    if (Array.isArray(data) && data.length > 0 && data[0].url) {
-      return { url: data[0].url };
-    }
+      throw new Error('APIレスポンスにURLが含まれていません');
+    } else {
+      // テキストレスポンスの場合（URLが直接返される場合）
+      const text = await response.text();
+      console.log('Upload response (text):', text);
 
-    throw new Error('予期しないレスポンス形式です');
+      // URLパターンをチェック
+      if (text.startsWith('http://') || text.startsWith('https://')) {
+        return { url: text.trim() };
+      }
+
+      throw new Error('予期しないレスポンス形式です');
+    }
   } catch (error) {
-    console.error('Upload error:', error);
-    return {
-      url: '',
-      error: error instanceof Error ? error.message : '画像のアップロードに失敗しました',
-    };
+    console.error('Nostr.build upload error:', error);
+
+    // nostr.buildが失敗した場合、他のサービスにフォールバック
+    // 1. まずvoid.catを試す
+    try {
+      console.log('Trying void.cat...');
+      return await uploadToVoidCat(file);
+    } catch (voidCatError) {
+      console.error('void.cat also failed:', voidCatError);
+
+      // 2. 最後にimgurを試す
+      try {
+        console.log('Trying imgur as last resort...');
+        return await uploadToImgur(file);
+      } catch (imgurError) {
+        console.error('All upload services failed');
+        return {
+          url: '',
+          error: '画像のアップロードに失敗しました。しばらく時間をおいて再度お試しください。',
+        };
+      }
+    }
   }
 }
 

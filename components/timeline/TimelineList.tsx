@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Tweet } from '../../features/timeline/types';
 import { TimelineItem } from './TimelineItem';
 import { Spinner } from '../ui/Spinner';
@@ -29,9 +29,15 @@ export function TimelineList({
   const [selectedTweetId, setSelectedTweetId] = useState<string>('');
   const [selectedTweet, setSelectedTweet] = useState<Tweet | null>(null);
   const [replyToTweet, setReplyToTweet] = useState<Tweet | null>(null);
+  const [localTweets, setLocalTweets] = useState<Tweet[]>(tweets);
+
+  // tweetsプロパティが変更されたときにlocalTweetsを更新
+  React.useEffect(() => {
+    setLocalTweets(tweets);
+  }, [tweets]);
 
   const handleZap = (tweetId: string) => {
-    const tweet = tweets.find(t => t.id === tweetId);
+    const tweet = localTweets.find(t => t.id === tweetId);
     if (tweet) {
       setSelectedTweetId(tweetId);
       setSelectedTweet(tweet);
@@ -47,6 +53,11 @@ export function TimelineList({
   const handleReplyCreated = (newTweet: Tweet) => {
     // 返信が作成されたら、タイムラインに追加するロジックをここに実装
     // 現在は親コンポーネントでリフレッシュ等の処理を行う想定
+  };
+
+  const handleDelete = (tweetId: string) => {
+    // ローカル状態から削除されたツイートを除外
+    setLocalTweets(prevTweets => prevTweets.filter(tweet => tweet.id !== tweetId));
   };
   if (error) {
     return (
@@ -64,7 +75,7 @@ export function TimelineList({
     );
   }
 
-  if (tweets.length === 0) {
+  if (localTweets.length === 0) {
     return (
       <div className="p-8 text-center">
         <p className="text-gray-500 dark:text-gray-400">
@@ -77,7 +88,7 @@ export function TimelineList({
   return (
     <>
       <div className="w-full overflow-hidden divide-y divide-gray-200 dark:divide-gray-800">
-        {tweets.map((tweet) => (
+        {localTweets.map((tweet) => (
           <TimelineItem
             key={tweet.id}
             tweet={tweet}
@@ -85,6 +96,7 @@ export function TimelineList({
             onRetweet={onRetweet}
             onZap={handleZap}
             onReply={handleReply}
+            onDelete={handleDelete}
           />
         ))}
         {isLoading && (

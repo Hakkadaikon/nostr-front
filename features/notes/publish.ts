@@ -5,6 +5,7 @@ import { buildRepostTags, buildQuote } from '../../lib/nostr/nip18';
 import { signEvent, verify } from '../../lib/nostr/signatures';
 import { publish as publishClient } from '../../lib/nostr/client';
 import { decode } from '../../lib/nostr/nip19';
+import { secureLog, performanceLog } from '../../lib/utils/secureLogger';
 
 function getWriteRelays(): string[] {
   try {
@@ -20,14 +21,10 @@ function getSecretKey(): string | Uint8Array {
     const { useAuthStore } = require('../../stores/auth.store');
     const state = useAuthStore.getState();
 
-    // デバッグログ追加
-    console.log('[getSecretKey] Auth state check', {
+    // セキュリティ配慮: 機密情報を含まないログ出力
+    secureLog.debug('[getSecretKey] Auth state check', {
       hasNsec: !!state.nsec,
       hasPublicKey: !!state.publicKey,
-      hasPubkey: !!state.pubkey,
-      nsecType: state.nsec ? typeof state.nsec : 'undefined',
-      nsecLength: state.nsec ? state.nsec.length : 0,
-      nsecPrefix: state.nsec ? state.nsec.substring(0, 6) : 'N/A',
       locked: state.locked
     });
 
@@ -35,8 +32,8 @@ function getSecretKey(): string | Uint8Array {
     const secret = state.nsec;
 
     if (!secret) {
-      console.log('[getSecretKey] No secret key found in auth store');
-      console.log('[getSecretKey] Note: nsec is not persisted on page reload for security');
+      secureLog.info('[getSecretKey] No secret key found in auth store');
+      secureLog.debug('[getSecretKey] Note: nsec is not persisted on page reload for security');
       return '';
     }
 
@@ -44,13 +41,13 @@ function getSecretKey(): string | Uint8Array {
       try {
         const decoded = decode(secret);
         if (decoded.type === 'nsec') {
-          console.log('[getSecretKey] Successfully decoded nsec');
+          secureLog.debug('[getSecretKey] Successfully decoded nsec');
           return decoded.data as Uint8Array;
         }
-        console.error('[getSecretKey] Decoded data is not nsec type:', decoded.type);
+        secureLog.error('[getSecretKey] Decoded data is not nsec type:', decoded.type);
         return '';
       } catch (e) {
-        console.error('[getSecretKey] Failed to decode nsec:', e);
+        secureLog.error('[getSecretKey] Failed to decode nsec:', e);
         return '';
       }
     }
@@ -105,7 +102,7 @@ export async function publishNote(content: string, extra?: {
   try {
     // 秘密鍵を取得して関数として渡す
     const secretKey = getSecretKey();
-    console.log('[publishNote] Secret key obtained:', secretKey ? 'Yes' : 'No');
+    console.log('[publishNote] Authentication method available:', !!secretKey);
 
     // 秘密鍵がない場合はNIP-07を試す（signEvent内で自動的に処理される）
     signed = await signEvent(unsigned, secretKey ? () => secretKey : undefined);
@@ -143,7 +140,7 @@ export async function publishRepost(targetId: string, targetAuthor?: string) {
   } as any;
   // 秘密鍵を取得して関数として渡す
   const secretKey = getSecretKey();
-  console.log('[publishRepost] Secret key obtained:', secretKey ? 'Yes' : 'No');
+  console.log('[publishRepost] Authentication method available:', !!secretKey);
   // 秘密鍵がない場合はNIP-07を試す（signEvent内で自動的に処理される）
   const signed = await signEvent(unsigned, secretKey ? () => secretKey : undefined);
   if (!verify(signed)) throw new Error('Invalid signature');
@@ -164,7 +161,7 @@ export async function publishQuote(targetId: string) {
   } as any;
   // 秘密鍵を取得して関数として渡す
   const secretKey = getSecretKey();
-  console.log('[publishQuote] Secret key obtained:', secretKey ? 'Yes' : 'No');
+  console.log('[publishQuote] Authentication method available:', !!secretKey);
   // 秘密鍵がない場合はNIP-07を試す（signEvent内で自動的に処理される）
   const signed = await signEvent(unsigned, secretKey ? () => secretKey : undefined);
   if (!verify(signed)) throw new Error('Invalid signature');
