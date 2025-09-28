@@ -242,20 +242,82 @@ export class NostrNotificationService {
   private async processReaction(event: NostrEvent) {
     if (!this.userPubkey) return;
 
-    // いいね検出（+リアクション）
-    if (event.content === '+' || event.content === '👍') {
-      const pTags = event.tags.filter(tag => 
-        tag[0] === 'p' && tag[1] === this.userPubkey
-      );
-      
-      if (pTags.length > 0) {
-        const eTags = event.tags.filter(tag => tag[0] === 'e');
-        await this.createNotification({
-          type: 'like',
-          event,
-          postId: eTags[0]?.[1],
-        });
+    // 対象ノートID
+    const eTags = event.tags.filter(tag => tag[0] === 'e');
+    const targetPostId = eTags[0]?.[1];
+    if (!targetPostId) return;
+
+    // いいね/絵文字リアクション判定
+    let isEmojiLike = false;
+    const content = event.content?.trim();
+    if (content === '+' || content === '👍') {
+      isEmojiLike = true;
+    } else if (content) {
+      // ハート系や単一/少数の絵文字を対象（NIP-25 で一般的な使い方）
+      const heartEmojis = ['❤', '❤️', '♥', '♥️', '💙', '💚', '💛', '🧡', '💜', '🖤', '🤍', '🤎', '💖', '💗', '💓', '💞', '💕', '💘', '💝'];
+      if (heartEmojis.includes(content)) {
+        isEmojiLike = true;
+      } else {
+        try {
+          // 絵文字のみ(最大2文字: 例: 絵文字+VS16) かつテキストを含まない
+            // かなり緩いフィルタ: 1~4コードポイントで拡張絵文字ピクトグラフが含まれている
+          if (/^(\p{Extended_Pictographic}|\u2764\uFE0F|\u2764)(\uFE0F)?$/u.test(content)) {
+            isEmojiLike = true;
+          }
+        } catch {
+          // プロパティエスケープ非対応環境向けフォールバック: サロゲートペアを含む短い文字列
+          if (/[\uD800-\uDBFF][\uDC00-\uDFFF]/.test(content) && content.length <= 4) {
+            isEmojiLike = true;
+          }
+        }
       }
+    }
+
+    if (!isEmojiLike) return; // 対象外
+
+    // a) 自分の投稿へのリアクション (pタグに自分)
+    const pTags = event.tags.filter(tag => tag[0] === 'p');
+    const reactedToMyPost = pTags.some(tag => tag[1] === this.userPubkey);
+
+    // b) 自分をメンションしている投稿へのリアクション
+    let reactedToMentionPost = false;
+    let postData = null;
+    if (!reactedToMyPost) {
+      try {
+        postData = await fetchPostData(targetPostId);
+        if (postData) {
+          // 投稿本文に @npub... 形式、nostr:npub... 形式が含まれているかチェック
+          try {
+            const { nip19 } = await import('nostr-tools');
+            const myNpub = nip19.npubEncode(this.userPubkey);
+            const mentionPattern = new RegExp(`(@|nostr:)${myNpub}`, 'i');
+            if (mentionPattern.test(postData.content)) {
+              reactedToMentionPost = true;
+            }
+          } catch (e) {
+            // ignore
+          }
+        }
+      } catch (e) {
+        // ignore fetch errors
+      }
+    } else {
+      // 自分の投稿の場合のみ必要に応じて postData を取得（後でUIで表示するかもしれないので）
+      try {
+        postData = await fetchPostData(targetPostId);
+      } catch {/* noop */}
+    }
+
+    if (reactedToMyPost || reactedToMentionPost) {
+      await this.createNotification({
+        type: 'like',
+        event,
+        postId: targetPostId,
+        postContent: postData?.content,
+        postAuthor: postData?.author,
+        postCreatedAt: postData?.createdAt,
+        postMedia: postData?.media,
+      });
     }
   }
 

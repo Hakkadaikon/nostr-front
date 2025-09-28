@@ -1,9 +1,28 @@
 "use client";
 
+import { nip19 } from 'nostr-tools';
+import EmbeddedNote from './EmbeddedNote';
+
 function renderContent(text: string) {
   const parts = text.split(/(nostr:[a-z0-9]+)/i);
   return parts.map((p, i) => {
     if (/^nostr:/i.test(p)) {
+      const bech = p.slice(6); // remove 'nostr:'
+      try {
+        const decoded = nip19.decode(bech);
+        if (decoded.type === 'note') {
+          return <EmbeddedNote key={i} reference={{ id: decoded.data as string }} className="mt-2" />;
+        }
+        if (decoded.type === 'nevent') {
+          const d = decoded.data as { id: string; relays?: string[] };
+            return <EmbeddedNote key={i} reference={{ id: d.id, relays: d.relays }} className="mt-2" />;
+        }
+        if (decoded.type === 'npub' || decoded.type === 'nprofile') {
+          return <a key={i} href={`/profile/${bech}`} className="underline" rel="noopener noreferrer">{p}</a>;
+        }
+      } catch {
+        /* fall through to default link */
+      }
       return <a key={i} href={p} className="underline" rel="noopener noreferrer">{p}</a>;
     }
     return <span key={i}>{p}</span>;
