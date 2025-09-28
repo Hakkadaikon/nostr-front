@@ -13,6 +13,7 @@ export function useNotifications() {
   const { addNotification, clearNotifications } = useNotificationStore();
   const subscriptionRef = useRef<any>(null);
   const [userPostIds, setUserPostIds] = useState<string[]>([]);
+  const [mentionPostIds, setMentionPostIds] = useState<string[]>([]);
 
   // ユーザーの投稿IDを取得
   useEffect(() => {
@@ -25,6 +26,7 @@ export function useNotifications() {
     if (relays.length === 0) return;
 
     const postIds: string[] = [];
+    const mentionIds: string[] = [];
     let timeoutId: NodeJS.Timeout;
 
     // ユーザーの投稿を取得（最近100件）
@@ -38,6 +40,14 @@ export function useNotifications() {
       }],
       (event: NostrEvent) => {
         postIds.push(event.id);
+        // 自分をメンションしているか検出して別リストにも追加
+        try {
+          const pTags = event.tags.filter(t => t[0] === 'p');
+          const mentioned = pTags.some(t => t[1] === publicKey);
+          if (mentioned) {
+            mentionIds.push(event.id);
+          }
+        } catch {/* ignore */}
       }
     );
 
@@ -45,6 +55,7 @@ export function useNotifications() {
     timeoutId = setTimeout(() => {
       sub.close();
       setUserPostIds(postIds);
+      setMentionPostIds(mentionIds);
     }, 3000);
 
     return () => {
@@ -88,6 +99,15 @@ export function useNotifications() {
       });
     }
 
+    // 自分がメンションされている投稿へ付いたリアクションを取得するためのフィルター
+    if (mentionPostIds.length > 0) {
+      filters.push({
+        kinds: [7], // reaction
+        '#e': mentionPostIds,
+        since: Math.floor(Date.now() / 1000) - 86400 * 7,
+      });
+    }
+
     // 購読開始
     subscriptionRef.current = subscribe(relays, filters, async (event) => {
       await nostrNotificationService.processEvent(event);
@@ -100,7 +120,7 @@ export function useNotifications() {
         subscriptionRef.current = null;
       }
     };
-  }, [publicKey, userPostIds]);
+  }, [publicKey, userPostIds, mentionPostIds]);
 
   return {
     npub,
