@@ -526,7 +526,8 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
           const recipientProfile = await fetchProfile(event.pubkey, relays);
           baseTweet = {
             id: targetNoteId || event.id,
-            content: zapMessage || '',
+            // 元の投稿イベントを取得できなかった場合は本文は空。Zapメッセージは activity.message として表示する
+            content: '',
             author: recipientProfile,
             createdAt: new Date(event.created_at * 1000),
             likesCount: 0,
