@@ -55,7 +55,8 @@ export function NotificationItem({ notification }: NotificationItemProps) {
       case 'like':
         return <Heart className="w-4 h-4 text-red-500" fill="currentColor" />;
       case 'reply':
-        return <MessageCircle className="w-4 h-4 text-blue-500" />;
+        // 返信通知もリポスト風アイコンに変更（円形の矢印2つ）
+        return <Repeat2 className="w-4 h-4 text-blue-500" />;
       case 'repost':
         return <Repeat2 className="w-4 h-4 text-green-500" />;
       case 'follow':
@@ -140,11 +141,15 @@ export function NotificationItem({ notification }: NotificationItemProps) {
             {timeAgo}
           </div>
 
-          {/* 返信内容のみ（メンションはEmbeddedPostで表示） */}
-          {notification.type === 'reply' && notification.content && (
-            <div className="mt-2 text-gray-900 dark:text-white">
-              <RichContent content={notification.content} />
-            </div>
+          {/* 返信通知では自分（ユーザー自身）がリポストした内容を表示する想定 */}
+          {notification.type === 'reply' && notification.postContent && notification.postId && (
+            <EmbeddedPost
+              postId={notification.postId}
+              content={notification.postContent || ''}
+              author={notification.postAuthor}
+              createdAt={notification.postCreatedAt}
+              media={notification.postMedia}
+            />
           )}
 
           {/* Zap情報 - シンプル表示（再構築） */}
