@@ -69,40 +69,6 @@ export async function fetchFollowerCount(pubkey: string): Promise<number> {
   });
 }
 
-/**
- * ユーザーの投稿数を取得
- */
-export async function fetchPostCount(pubkey: string): Promise<number> {
-  const relays = useRelaysStore.getState().relays
-    .filter(r => r.read)
-    .map(r => r.url);
-
-  if (relays.length === 0) return 0;
-
-  return new Promise((resolve) => {
-    let postCount = 0;
-    let timeoutId: NodeJS.Timeout;
-
-    const sub = subscribeTo(
-      relays,
-      [{ 
-        kinds: [KIND_TEXT_NOTE], 
-        authors: [pubkey],
-        // 最新1000件まで取得（全投稿数のカウントには制限がある）
-        limit: 1000
-      }],
-      (event: NostrEvent) => {
-        postCount++;
-      }
-    );
-
-    // タイムアウト設定（3秒）
-    timeoutId = setTimeout(() => {
-      sub.close();
-      resolve(postCount);
-    }, 3000);
-  });
-}
 
 /**
  * プロフィール統計情報を一度に取得
@@ -110,19 +76,16 @@ export async function fetchPostCount(pubkey: string): Promise<number> {
 export interface ProfileStats {
   followingCount: number;
   followerCount: number;
-  postCount: number;
 }
 
 export async function fetchProfileStats(pubkey: string): Promise<ProfileStats> {
-  const [followingCount, followerCount, postCount] = await Promise.all([
+  const [followingCount, followerCount] = await Promise.all([
     fetchFollowingCount(pubkey),
-    fetchFollowerCount(pubkey),
-    fetchPostCount(pubkey)
+    fetchFollowerCount(pubkey)
   ]);
 
   return {
     followingCount,
-    followerCount,
-    postCount
+    followerCount
   };
 }

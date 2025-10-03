@@ -454,7 +454,6 @@ export default function ProfilePage({ params }: Props) {
         isFollowing={isFollowing}
         followCount={followingCount}
         followerCount={followerCount}
-        postCount={tweets.length}
         onLoadFollowingCount={handleLoadFollowingCount}
         onLoadFollowerCount={handleLoadFollowerCount}
         isLoadingFollowingCount={isLoadingFollowingCount}

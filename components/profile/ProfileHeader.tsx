@@ -24,7 +24,6 @@ interface ProfileHeaderProps {
   isFollowing?: boolean;
   followCount?: number | null;
   followerCount?: number | null;
-  postCount?: number | null;
   onLoadFollowingCount?: () => void;
   onLoadFollowerCount?: () => void;
   isLoadingFollowingCount?: boolean;
@@ -39,7 +38,6 @@ export function ProfileHeader({
   isFollowing = false,
   followCount,
   followerCount,
-  postCount,
   onLoadFollowingCount,
   onLoadFollowerCount,
   isLoadingFollowingCount = false,
@@ -175,12 +173,6 @@ export function ProfileHeader({
               </div>
 
               <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                {postCount !== null && postCount !== undefined && (
-                  <div>
-                    <span className="font-bold text-gray-900 dark:text-white">{postCount.toLocaleString()}</span>{' '}
-                    <span>ポスト</span>
-                  </div>
-                )}
                 {followCount !== null && followCount !== undefined ? (
                   <Link
                     href={`/profile/${profile.npub}/following` as any}
