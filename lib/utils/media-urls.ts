@@ -1,6 +1,6 @@
 // Media URL detection and parsing utilities
 
-export type MediaPlatform = 'youtube' | 'x' | 'twitter' | 'spotify' | 'apple-podcasts' | 'image' | 'unknown';
+export type MediaPlatform = 'youtube' | 'x' | 'twitter' | 'spotify' | 'apple-podcasts' | 'image' | 'video' | 'unknown';
 
 export interface MediaInfo {
   platform: MediaPlatform;
@@ -35,6 +35,9 @@ const APPLE_PODCASTS_PATTERNS = [
 
 // Image extensions
 const IMAGE_EXTENSIONS = /\.(png|jpe?g|gif|webp|avif|svg)$/i;
+
+// Video extensions
+const VIDEO_EXTENSIONS = /\.(mp4|webm|mov|avi|mkv|flv|wmv|m4v|ogv)$/i;
 
 /**
  * Extract YouTube video ID from URL
@@ -81,20 +84,32 @@ function getSpotifyInfo(url: string): { type: string; id: string } | null {
 export function isImageUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    
+
     // 特定の画像共有サービスは除外
     const excludedHosts = [
       'share.yabu.me',
       'imgur.com/gallery',
       'gyazo.com',
     ];
-    
+
     if (excludedHosts.some(host => parsed.hostname.includes(host))) {
       return false;
     }
-    
+
     // 直接的な画像URLかチェック
     return IMAGE_EXTENSIONS.test(parsed.pathname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Check if URL is a video
+ */
+export function isVideoUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return VIDEO_EXTENSIONS.test(parsed.pathname);
   } catch {
     return false;
   }
@@ -155,6 +170,14 @@ export function parseMediaUrl(url: string): MediaInfo {
   if (isImageUrl(url)) {
     return {
       platform: 'image',
+      originalUrl: url,
+    };
+  }
+
+  // Check for videos
+  if (isVideoUrl(url)) {
+    return {
+      platform: 'video',
       originalUrl: url,
     };
   }

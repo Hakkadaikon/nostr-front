@@ -1,7 +1,7 @@
 "use client";
 
 import { parseMediaUrl } from '../../lib/utils/media-urls';
-import { EmbeddedImage } from './EmbeddedMedia';
+import { EmbeddedImage, EmbeddedVideo } from './EmbeddedMedia';
 import { YouTubeEmbed } from './embeds/YouTubeEmbed';
 import { XEmbed } from './embeds/XEmbed';
 import { SpotifyEmbed } from './embeds/SpotifyEmbed';
@@ -39,6 +39,9 @@ export function MediaEmbed({ url }: MediaEmbedProps) {
 
     case 'image':
       return <EmbeddedImage url={url} />;
+
+    case 'video':
+      return <EmbeddedVideo url={url} />;
 
     default:
       return <LinkPreview url={url} />;
