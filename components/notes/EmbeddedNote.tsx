@@ -62,7 +62,7 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
       active = false;
       clearTimeout(safetyTimeout);
     };
-  }, [reference.id, relayKey, relays, isLoading]);
+  }, [reference.id, relayKey, relays]);
 
   if (isLoading) {
     return (

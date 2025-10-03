@@ -7,12 +7,7 @@ interface EmbeddedMediaProps {
 
 export function EmbeddedImage({ url, alt }: EmbeddedMediaProps) {
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="mt-3 block overflow-hidden rounded-2xl border border-gray-200 bg-black/5 dark:border-gray-700 dark:bg-gray-900/40"
-    >
+    <div className="mt-3 block overflow-hidden rounded-2xl border border-gray-200 bg-black/5 dark:border-gray-700 dark:bg-gray-900/40">
       <div className="relative h-64 w-full">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -23,6 +18,6 @@ export function EmbeddedImage({ url, alt }: EmbeddedMediaProps) {
           referrerPolicy="no-referrer"
         />
       </div>
-    </a>
+    </div>
   );
 }
