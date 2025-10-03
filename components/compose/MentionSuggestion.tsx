@@ -99,9 +99,15 @@ export function MentionSuggestion({ query, onSelect, onClose, position }: Mentio
 
       // フォローリストがあれば、フォローユーザーのメタデータのみを取得
       const followList = Array.from(followListRef.current);
-      const filters = followList.length > 0
-        ? [{ kinds: [KIND_METADATA], authors: followList, limit: 50 }]
-        : [{ kinds: [KIND_METADATA], limit: 50 }];
+
+      // フォローリストが空の場合は何も表示しない
+      if (followList.length === 0) {
+        setProfiles([]);
+        setIsLoading(false);
+        return;
+      }
+
+      const filters = [{ kinds: [KIND_METADATA], authors: followList, limit: 50 }];
 
       const sub = subscribeTo(
       configuredRelays,
@@ -148,15 +154,13 @@ export function MentionSuggestion({ query, onSelect, onClose, position }: Mentio
       const timeoutId = setTimeout(() => {
         sub.close();
 
-        // フォローユーザーを優先してソート
+        // フォローユーザーのみを表示（最大10件）
         const allProfiles = Array.from(foundProfiles.values());
-        const followedProfiles = allProfiles.filter(p => followListRef.current.has(p.pubkey));
-        const otherProfiles = allProfiles.filter(p => !followListRef.current.has(p.pubkey));
+        const followedProfiles = allProfiles.filter(p => followListRef.current.has(p.pubkey)).slice(0, 10);
 
-        const sortedProfiles = [...followedProfiles, ...otherProfiles].slice(0, 10);
-        setProfiles(sortedProfiles);
+        setProfiles(followedProfiles);
         setIsLoading(false);
-      }, followList.length > 0 ? 1000 : 2000);
+      }, 1000);
 
       return () => {
         clearTimeout(timeoutId);
