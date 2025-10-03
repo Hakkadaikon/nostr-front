@@ -10,6 +10,7 @@ import { useProfileStore } from '../../stores/profile.store';
 import { Avatar } from '../ui/Avatar';
 import { useAuthStore } from '../../stores/auth.store';
 import { fetchProfile } from '../../features/profile/fetchProfile';
+import { MentionSuggestion } from '../compose/MentionSuggestion';
 
 interface TweetComposerProps {
   onTweetCreated?: (tweet: Tweet) => void;
@@ -24,8 +25,8 @@ interface TweetComposerProps {
   };
 }
 
-export function TweetComposer({ 
-  onTweetCreated, 
+export function TweetComposer({
+  onTweetCreated,
   placeholder = "いまどうしてる？",
   maxHeight = "200px",
   replyTo
@@ -38,6 +39,10 @@ export function TweetComposer({
   const { postTweet, isPosting, error, clearError } = useTweets();
   const { current: currentProfile, setCurrent } = useProfileStore();
   const { publicKey } = useAuthStore();
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionPosition, setMentionPosition] = useState({ top: 0, left: 0 });
+  const [cursorPosition, setCursorPosition] = useState(0);
 
   // ログインユーザーのプロフィール情報を取得
   useEffect(() => {
@@ -77,6 +82,60 @@ export function TweetComposer({
     return (text.match(regex) || []).map(mention => mention.substring(1));
   };
 
+  // テキスト変更時のメンション検出
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newContent = e.target.value;
+    const newCursor = e.target.selectionStart;
+    setContent(newContent);
+    setCursorPosition(newCursor);
+
+    const textBeforeCursor = newContent.slice(0, newCursor);
+    const match = textBeforeCursor.match(/@(\w*)$/);
+
+    if (match) {
+      const query = match[1];
+      setMentionQuery(query);
+      setShowMentions(true);
+
+      if (textareaRef.current) {
+        const rect = textareaRef.current.getBoundingClientRect();
+        setMentionPosition({
+          top: rect.bottom + window.scrollY,
+          left: rect.left + window.scrollX,
+        });
+      }
+    } else {
+      setShowMentions(false);
+      setMentionQuery('');
+    }
+  };
+
+  // メンション選択
+  const handleMentionSelect = (profile: { pubkey: string; name: string; npub: string }) => {
+    const textBeforeCursor = content.slice(0, cursorPosition);
+    const textAfterCursor = content.slice(cursorPosition);
+    const mentionStartIndex = textBeforeCursor.lastIndexOf('@');
+
+    const nostrUri = `nostr:${profile.npub}`;
+    const newContent =
+      content.slice(0, mentionStartIndex) +
+      nostrUri +
+      ' ' +
+      textAfterCursor;
+
+    setContent(newContent);
+    setShowMentions(false);
+    setMentionQuery('');
+
+    setTimeout(() => {
+      if (textareaRef.current) {
+        const newCursorPos = mentionStartIndex + nostrUri.length + 1;
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    }, 0);
+  };
+
   // 絵文字の挿入
   const handleEmojiSelect = (emoji: string) => {
     if (textareaRef.current) {
@@ -84,7 +143,7 @@ export function TweetComposer({
       const end = textareaRef.current.selectionEnd;
       const newContent = content.slice(0, start) + emoji + content.slice(end);
       setContent(newContent);
-      
+
       // カーソル位置を絵文字の後に移動
       setTimeout(() => {
         if (textareaRef.current) {
@@ -161,7 +220,7 @@ export function TweetComposer({
           <textarea
             ref={textareaRef}
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={handleContentChange}
             onFocus={() => setIsExpanded(true)}
             className="w-full p-3 text-lg sm:text-xl bg-transparent text-gray-900 dark:text-white placeholder-gray-500 resize-none focus:outline-none overflow-y-auto"
             placeholder={placeholder}
@@ -275,6 +334,14 @@ export function TweetComposer({
           )}
         </div>
       </div>
+      {showMentions && (
+        <MentionSuggestion
+          query={mentionQuery}
+          onSelect={handleMentionSelect}
+          onClose={() => setShowMentions(false)}
+          position={mentionPosition}
+        />
+      )}
     </div>
   );
 }

@@ -103,6 +103,10 @@ export async function fetchUserPosts(npub: string, limit: number = 20): Promise<
           limit: limit
         }],
         async (event: NostrEvent) => {
+          // NIP-10: 'e'タグを持つイベント（リプライ）を除外
+          const hasETag = event.tags.some(tag => tag[0] === 'e');
+          if (hasETag) return;
+
           // プロフィール情報を作成（簡易版）
           const author = {
             id: pubkey,

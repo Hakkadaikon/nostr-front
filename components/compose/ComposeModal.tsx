@@ -13,6 +13,7 @@ import { EmojiPicker } from './EmojiPicker';
 import { useProfileStore } from '../../stores/profile.store';
 import { Avatar } from '../ui/Avatar';
 import { useTweets } from '../../features/tweets/hooks/useTweets';
+import { MentionSuggestion } from './MentionSuggestion';
 
 const DRAFT_KEY = 'compose:modal';
 
@@ -27,6 +28,10 @@ export default function ComposeModal() {
   const { show } = useToast();
   const { postTweet, error, clearError } = useTweets();
   const { current: currentProfile } = useProfileStore();
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionPosition, setMentionPosition] = useState({ top: 0, left: 0 });
+  const [cursorPosition, setCursorPosition] = useState(0);
 
   useEffect(() => {
     if (isOpen) {
@@ -58,6 +63,32 @@ export default function ComposeModal() {
     closeModal();
     setSelectedMedia([]);
     setShowPreview(false);
+    setShowMentions(false);
+  };
+
+  const handleMentionSelect = (profile: { pubkey: string; name: string; npub: string }) => {
+    const textBeforeCursor = text.slice(0, cursorPosition);
+    const textAfterCursor = text.slice(cursorPosition);
+    const mentionStartIndex = textBeforeCursor.lastIndexOf('@');
+
+    const nostrUri = `nostr:${profile.npub}`;
+    const newText =
+      text.slice(0, mentionStartIndex) +
+      nostrUri +
+      ' ' +
+      textAfterCursor;
+
+    setText(newText);
+    setShowMentions(false);
+    setMentionQuery('');
+
+    setTimeout(() => {
+      if (textareaRef.current) {
+        const newCursorPos = mentionStartIndex + nostrUri.length + 1;
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    }, 0);
   };
 
   // 絵文字の挿入
@@ -137,7 +168,32 @@ export default function ComposeModal() {
               <Textarea
                 ref={textareaRef}
                 value={text}
-                onChange={e => setText(e.target.value)}
+                onChange={(e) => {
+                  const newText = e.target.value;
+                  const newCursor = e.target.selectionStart;
+                  setText(newText);
+                  setCursorPosition(newCursor);
+
+                  const textBeforeCursor = newText.slice(0, newCursor);
+                  const match = textBeforeCursor.match(/@(\w*)$/);
+
+                  if (match) {
+                    const query = match[1];
+                    setMentionQuery(query);
+                    setShowMentions(true);
+
+                    if (textareaRef.current) {
+                      const rect = textareaRef.current.getBoundingClientRect();
+                      setMentionPosition({
+                        top: rect.bottom,
+                        left: rect.left,
+                      });
+                    }
+                  } else {
+                    setShowMentions(false);
+                    setMentionQuery('');
+                  }
+                }}
                 placeholder="いまどうしてる？"
                 rows={6}
                 className="w-full resize-none border-0 focus:ring-0 text-lg bg-transparent"
@@ -249,6 +305,14 @@ export default function ComposeModal() {
           )}
         </div>
       </div>
+      {showMentions && (
+        <MentionSuggestion
+          query={mentionQuery}
+          onSelect={handleMentionSelect}
+          onClose={() => setShowMentions(false)}
+          position={mentionPosition}
+        />
+      )}
     </div>
   );
 }
