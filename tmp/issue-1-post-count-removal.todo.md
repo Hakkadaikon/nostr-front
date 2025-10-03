@@ -1,6 +1,0 @@
-- [ ] Update `components/profile/ProfileHeader.tsx` to drop the post count prop and remove the corresponding UI snippet.
-- [ ] Stop providing a post count value from `app/profile/[npub]/page.tsx` and prune any related state.
-- [ ] Remove `fetchPostCount` and the `postCount` field from `features/profile/services/profileStats.ts`, ensuring `fetchProfileStats` still returns follower/following counts.
-- [ ] Sweep for lingering `postCount` references, cleaning up imports or types that become unused.
-- [ ] Manually verify the profile header renders without a post count and network requests omit the post-count fetch.
-- [ ] Run `npm run lint` (or the project's preferred check) to confirm the build/type status remains green.

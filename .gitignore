@@ -57,3 +57,5 @@ playwright-report/
 secrets/
 private/
 .env.production
+
+tmp
