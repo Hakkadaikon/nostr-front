@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Button } from '../ui/Button';
 import { useAuthStore } from '../../stores/auth.store';
 import { nip19 } from 'nostr-tools';
 import Link from 'next/link';
 
 export default function Nip07LoginPrompt() {
+  const pathname = usePathname();
   const { hasNip07, npub, publicKey } = useAuthStore();
   const unlock = useAuthStore(s => s.unlock);
   const [loading, setLoading] = useState(false);
@@ -18,6 +20,9 @@ export default function Nip07LoginPrompt() {
     const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
     setIsMobile(mobileRegex.test(ua));
   }, []);
+
+  // オンボーディング画面では表示しない（既にログイン方法選択UIがあるため）
+  if (pathname === '/onboarding') return null;
 
   if (npub || publicKey) return null;
 
