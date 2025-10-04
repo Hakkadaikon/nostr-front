@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import { UserCard } from '../search/UserCard';
@@ -20,31 +20,47 @@ export function FollowList({ npub, type }: FollowListProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadFollowList = async () => {
-      try {
+  const loadFollowList = useCallback(async (forceRefresh = false) => {
+    try {
+      if (!forceRefresh) {
         setIsLoading(true);
-        setError(null);
+      }
+      setError(null);
 
-        // npubからpubkeyに変換
-        const decoded = nip19.decode(npub);
-        if (decoded.type !== 'npub') {
-          throw new Error('Invalid npub');
-        }
-        const pubkey = decoded.data as string;
+      // npubからpubkeyに変換
+      const decoded = nip19.decode(npub);
+      if (decoded.type !== 'npub') {
+        throw new Error('Invalid npub');
+      }
+      const pubkey = decoded.data as string;
 
-        // フォロー/フォロワーリストを取得
-        const followList = await fetchUserFollowList(pubkey, type);
-        setUsers(followList);
-      } catch (err) {
-        setError('フォロー一覧の読み込みに失敗しました');
-      } finally {
-        setIsLoading(false);
+      // フォロー/フォロワーリストを取得
+      const followList = await fetchUserFollowList(pubkey, type, forceRefresh);
+      setUsers(followList);
+    } catch (err) {
+      setError('フォロー一覧の読み込みに失敗しました');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [npub, type]);
+
+  useEffect(() => {
+    loadFollowList();
+  }, [loadFollowList]);
+
+  // ページがフォーカスされたときに再取得
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadFollowList(true);
       }
     };
 
-    loadFollowList();
-  }, [npub, type]);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [loadFollowList]);
 
   const handleBack = () => {
     router.back();

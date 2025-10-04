@@ -154,10 +154,10 @@ export async function isFollowing(targetNpubOrPubkey: string): Promise<boolean> 
 /**
  * 特定ユーザーのフォロー/フォロワー一覧を取得
  */
-export async function fetchUserFollowList(pubkey: string, type: 'following' | 'followers'): Promise<User[]> {
+export async function fetchUserFollowList(pubkey: string, type: 'following' | 'followers', forceRefresh = false): Promise<User[]> {
   try {
     const relays = useRelaysStore.getState().relays.filter(r => r.read).map(r => r.url);
-    
+
     if (relays.length === 0) {
       return [];
     }
@@ -167,7 +167,8 @@ export async function fetchUserFollowList(pubkey: string, type: 'following' | 'f
       return new Promise((resolve) => {
         const users: User[] = [];
         const userMap = new Map<string, User>();
-        
+        const profileEventMap = new Map<string, NostrEvent>();
+
         const timeout = setTimeout(() => {
           sub.close();
           resolve(Array.from(userMap.values()));
@@ -181,7 +182,7 @@ export async function fetchUserFollowList(pubkey: string, type: 'following' | 'f
             const followingPubkeys = event.tags
               .filter(tag => tag[0] === 'p' && tag[1])
               .map(tag => tag[1]);
-            
+
             // フォロー中のユーザーのプロフィールを取得
             if (followingPubkeys.length > 0) {
               const profileSub = subscribe(
@@ -189,20 +190,26 @@ export async function fetchUserFollowList(pubkey: string, type: 'following' | 'f
                 [{ kinds: [0], authors: followingPubkeys }],
                 async (profileEvent: NostrEvent) => {
                   try {
-                    const content = JSON.parse(profileEvent.content);
-                    const npub = nip19.npubEncode(profileEvent.pubkey);
-                    const user: User = {
-                      id: profileEvent.pubkey,
-                      username: content.username || content.name || 'nostr:' + profileEvent.pubkey.slice(0, 8),
-                      name: content.display_name || content.name || '',
-                      avatar: getProfileImageUrl(content.picture, profileEvent.pubkey),
-                      bio: content.about || '',
-                      followersCount: 0,
-                      followingCount: 0,
-                      createdAt: new Date(profileEvent.created_at * 1000),
-                      npub,
-                    };
-                    userMap.set(profileEvent.pubkey, user);
+                    // 既存のイベントより新しい場合のみ更新
+                    const existingEvent = profileEventMap.get(profileEvent.pubkey);
+                    if (!existingEvent || profileEvent.created_at > existingEvent.created_at) {
+                      profileEventMap.set(profileEvent.pubkey, profileEvent);
+
+                      const content = JSON.parse(profileEvent.content);
+                      const npub = nip19.npubEncode(profileEvent.pubkey);
+                      const user: User = {
+                        id: profileEvent.pubkey,
+                        username: content.username || content.name || 'nostr:' + profileEvent.pubkey.slice(0, 8),
+                        name: content.display_name || content.name || '',
+                        avatar: getProfileImageUrl(content.picture, profileEvent.pubkey),
+                        bio: content.about || '',
+                        followersCount: 0,
+                        followingCount: 0,
+                        createdAt: new Date(profileEvent.created_at * 1000),
+                        npub,
+                      };
+                      userMap.set(profileEvent.pubkey, user);
+                    }
                   } catch (error) {
                   }
                 }
@@ -226,7 +233,7 @@ export async function fetchUserFollowList(pubkey: string, type: 'following' | 'f
       // フォロワーを取得（自分をpタグに含むkind:3イベントを探す）
       return new Promise((resolve) => {
         const userMap = new Map<string, User>();
-        
+
         const timeout = setTimeout(() => {
           sub.close();
           resolve(Array.from(userMap.values()));
@@ -239,10 +246,10 @@ export async function fetchUserFollowList(pubkey: string, type: 'following' | 'f
           async (event: NostrEvent) => {
             // このイベントの作者がフォロワー
             const followerPubkey = event.pubkey;
-            
-            // フォロワーのプロフィールを取得
+
+            // フォロワーのプロフィールを取得（forceRefreshを渡す）
             try {
-              const profile = await fetchProfileForNotification(followerPubkey);
+              const profile = await fetchProfileForNotification(followerPubkey, { forceRefresh });
               const user: User = {
                 id: profile.id,
                 username: profile.username,
