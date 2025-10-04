@@ -149,6 +149,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
               author={notification.postAuthor}
               createdAt={notification.postCreatedAt}
               media={notification.postMedia}
+              authorPubkey={notification.postAuthor?.id}
             />
           )}
 
@@ -174,7 +175,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
               {/* Zapメッセージ（あれば） */}
               {notification.content && (
                 <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-sm text-gray-700 dark:text-gray-300">
-                  <RichContent content={notification.content} />
+                  <RichContent content={notification.content} authorPubkey={notification.user.pubkey} />
                 </div>
               )}
 
@@ -190,6 +191,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                     author={notification.postAuthor}
                     createdAt={notification.postCreatedAt}
                     media={notification.postMedia}
+                    authorPubkey={notification.postAuthor?.id}
                   />
                 </div>
               )}
@@ -216,6 +218,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                 author={notification.postAuthor}
                 createdAt={notification.postCreatedAt}
                 media={shouldExcludeMedia ? undefined : notification.postMedia}
+                authorPubkey={notification.postAuthor?.id}
               />
             );
           })()}
