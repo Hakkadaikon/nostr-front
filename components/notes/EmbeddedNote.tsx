@@ -23,11 +23,9 @@ interface EmbeddedNoteProps {
 export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps) {
   const { getNote, setNote: setCachedNote } = useNoteCacheStore();
 
-  // キャッシュチェック：初期値をキャッシュから取得
-  const cachedData = getNote(reference.id);
-  const [note, setNote] = useState<NostrEvent | null>(cachedData?.note || null);
-  const [author, setAuthor] = useState<NotificationUser | null>(cachedData?.author || null);
-  const [isLoading, setIsLoading] = useState(!cachedData); // キャッシュがあればローディングをスキップ
+  const [note, setNote] = useState<NostrEvent | null>(null);
+  const [author, setAuthor] = useState<NotificationUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const { relayKey, relays } = useMemo(() => {
     const list = reference.relays ? [...reference.relays] : [];
@@ -51,7 +49,11 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
     }
 
     // キャッシュミス：ローディング状態にしてフェッチ開始
-    setIsLoading(true);
+    if (active) {
+      setIsLoading(true);
+      setNote(null);
+      setAuthor(null);
+    }
 
     // Safety timeout: in rare cases fetchNote may hang (relay never sends EOSE)
     const safetyTimeout = setTimeout(() => {
