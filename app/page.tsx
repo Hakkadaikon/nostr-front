@@ -34,6 +34,18 @@ export default function HomePage() {
   }));
   const isAuthenticated = Boolean(npub || publicKey);
 
+  // タブごとに独立したタイムラインを保持（ちらつき防止）
+  const globalTimeline = useTimeline({
+    type: 'home',
+    limit: 20,
+  });
+
+  const followingTimeline = useTimeline({
+    type: 'following',
+    limit: 20,
+  });
+
+  // アクティブなタブに応じてタイムラインを切り替え
   const {
     tweets,
     isLoading,
@@ -43,10 +55,7 @@ export default function HomePage() {
     toggleLike,
     toggleRetweet,
     reset,
-  } = useTimeline({
-    type: activeTab === 'global' ? 'home' : 'following',
-    limit: 20,
-  });
+  } = activeTab === 'global' ? globalTimeline : followingTimeline;
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 
