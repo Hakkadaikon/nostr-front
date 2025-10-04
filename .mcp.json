@@ -18,6 +18,12 @@
       "command": "npx",
       "args": ["chrome-devtools-mcp@latest"]
     },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"],
+      "env": {}
+    },
     "gemini-cli": {
       "type": "stdio",
       "command": "npx",
