@@ -237,6 +237,9 @@ export async function searchNostr(
         type,
         users: usersArray.length,
         tweets: tweetsWithStats.length,
+        totalEvents: eventCount,
+        kind0Events: kind0Count,
+        kind1Events: kind1Count,
         duration: `${duration}ms`,
         eoseReceived
       });
@@ -262,6 +265,8 @@ export async function searchNostr(
     }, 5000);
 
     let eventCount = 0;
+    let kind0Count = 0;
+    let kind1Count = 0;
     const receivedEventIds = new Set<string>();
     const sub = subscribe(
       searchRelays,
@@ -278,6 +283,7 @@ export async function searchNostr(
 
         if (event.kind === 0) {
           // ユーザープロフィール
+          kind0Count++;
           const existingEvent = eventCache.get(event.pubkey);
 
           if (!existingEvent || event.created_at > existingEvent.created_at) {
@@ -289,12 +295,20 @@ export async function searchNostr(
           }
         } else if (event.kind === 1) {
           // テキストノート
+          kind1Count++;
+          console.log('[NIP-50 Search] Received kind:1 event', {
+            id: event.id?.slice(0, 8),
+            content: event.content.slice(0, 50),
+            pubkey: event.pubkey.slice(0, 8)
+          });
           tweetPubkeys.add(event.pubkey);
           const author = userCache.get(event.pubkey);
           const tweet = eventToTweet(event, author);
           if (tweet) {
             tweets.push(tweet);
           }
+        } else {
+          console.warn('[NIP-50 Search] Unexpected event kind:', event.kind);
         }
       },
       handleEose
