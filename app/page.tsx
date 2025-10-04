@@ -83,79 +83,73 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-gray-50 dark:bg-black">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 overflow-hidden">
-        <header className="flex flex-col gap-4 rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-gray-800 dark:bg-gray-950/70">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white sm:text-3xl">{t('page.home.title')}</h1>
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col">
+        <header className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+          <div className="px-4 py-4 sm:px-6 lg:px-8">
+            <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
+              {t('page.home.title')}
+            </h1>
           </div>
 
-
-          <nav className="flex w-full flex-wrap gap-2" role="tablist" aria-label={t('page.home.tabsAriaLabel')}>
-            {TAB_ITEMS.map(({ id, label, description }) => {
-              const isActive = activeTab === id;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => {
-                    setActiveTab(id);
-                    const sp = new URLSearchParams(Array.from(searchParams.entries()));
-                    sp.set('tab', id);
-                    router.replace(`/?${sp.toString()}`);
-                  }}
-                  className={`flex-1 min-w-[140px] rounded-full border px-4 py-2 text-sm font-medium transition-all sm:text-base ${
-                    isActive
-                      ? 'border-transparent bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-lg shadow-purple-500/30'
-                      : 'border-gray-200 text-gray-600 hover:border-purple-300 hover:text-purple-600 dark:border-gray-800 dark:text-gray-300 dark:hover:border-purple-500 dark:hover:text-purple-300'
-                  }`}
-                  role="tab"
-                  aria-selected={isActive}
-                >
-                  <span className="block text-sm sm:text-base">{label}</span>
-                  <span className="mt-0.5 block text-xs font-normal text-gray-400 dark:text-gray-500">
-                    {description}
-                  </span>
-                </button>
-              );
-            })}
-          </nav>
+          <div className="border-t border-gray-200 dark:border-gray-800">
+            <nav className="grid grid-cols-2 gap-1 sm:flex sm:overflow-x-auto" role="tablist" aria-label={t('page.home.tabsAriaLabel')}>
+              {TAB_ITEMS.map(({ id, label }) => {
+                const isActive = activeTab === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => {
+                      setActiveTab(id);
+                      const sp = new URLSearchParams(Array.from(searchParams.entries()));
+                      sp.set('tab', id);
+                      router.replace(`/?${sp.toString()}`);
+                    }}
+                    className={`w-full sm:flex-1 px-4 py-3 text-sm sm:text-base text-center font-medium transition-all duration-200 whitespace-nowrap ${
+                      isActive
+                        ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-600 sm:border-b-2'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/50'
+                    }`}
+                    role="tab"
+                    aria-selected={isActive}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
         </header>
 
-        <div className="flex flex-1 flex-col gap-6 lg:flex-row">
-          <main className="min-w-0 flex-1 space-y-6 overflow-hidden">
-
-            <section className="rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-950 overflow-hidden">
-              {shouldBlockFollowingTimeline ? (
-                <div className="px-6 py-12 text-center">
-                  <p className="text-base font-medium text-gray-700 dark:text-gray-300">
-                    {t('page.home.loginRequiredForFollowing')}
-                  </p>
-                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    {t('page.home.followingPostsWillAppear')}
-                  </p>
+        <main className="flex-1 w-full">
+          {shouldBlockFollowingTimeline ? (
+            <div className="px-4 sm:px-6 lg:px-8 py-12 text-center">
+              <p className="text-base font-medium text-gray-700 dark:text-gray-300">
+                {t('page.home.loginRequiredForFollowing')}
+              </p>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                {t('page.home.followingPostsWillAppear')}
+              </p>
+            </div>
+          ) : (
+            <div className="w-full max-w-full overflow-hidden">
+              <TimelineList
+                tweets={tweets}
+                isLoading={isLoading}
+                error={error}
+                onLike={toggleLike}
+                onRetweet={toggleRetweet}
+                hideReactions={activeTab === 'following'}
+              />
+              <div ref={sentinelRef} className="h-10" />
+              {!hasMore && tweets.length > 0 && (
+                <div className="px-4 pb-6 text-center text-sm text-gray-400 dark:text-gray-600">
+                  {t('timeline.allPostsShown')}
                 </div>
-              ) : (
-                <>
-                  <TimelineList
-                    tweets={tweets}
-                    isLoading={isLoading}
-                    error={error}
-                    onLike={toggleLike}
-                    onRetweet={toggleRetweet}
-                    hideReactions={activeTab === 'following'}
-                  />
-                  <div ref={sentinelRef} className="h-10" />
-                  {!hasMore && tweets.length > 0 && (
-                    <div className="px-4 pb-6 text-center text-sm text-gray-400 dark:text-gray-600">
-                      {t('timeline.allPostsShown')}
-                    </div>
-                  )}
-                </>
               )}
-            </section>
-          </main>
-
-        </div>
+            </div>
+          )}
+        </main>
       </div>
     </div>
   );
