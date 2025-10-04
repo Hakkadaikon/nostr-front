@@ -135,7 +135,7 @@ export async function fetchUserLikes(npub: string, limit: number = 20): Promise<
         [{
           kinds: [KIND_REACTION],
           authors: [pubkey],
-          limit: limit * 2, // いいねを多めに取得
+          limit: limit * 3, // より多めに取得して、実際に詳細が取得できた投稿をlimit個確保
         }],
         (event: NostrEvent) => {
           // いいねリアクションかチェック
@@ -143,13 +143,6 @@ export async function fetchUserLikes(npub: string, limit: number = 20): Promise<
             const targetPostId = event.tags.find(tag => tag[0] === 'e')?.[1];
             if (targetPostId && !likedPostIds.includes(targetPostId)) {
               likedPostIds.push(targetPostId);
-
-              // 必要数に達したら投稿の詳細を取得開始
-              if (likedPostIds.length >= limit) {
-                clearTimeout(timeoutId);
-                likesSub.close();
-                fetchLikedPostsDetails();
-              }
             }
           }
         }
@@ -157,9 +150,12 @@ export async function fetchUserLikes(npub: string, limit: number = 20): Promise<
 
       // いいねした投稿の詳細を取得
       const fetchLikedPostsDetails = async () => {
-        const targetPostIds = likedPostIds.slice(0, limit);
-        const postDetails = await fetchPostDetails(targetPostIds, relays);
-        const reactionCounts = await fetchPostReactions(targetPostIds, relays);
+        // より多めに収集したIDから投稿詳細を取得
+        const postDetails = await fetchPostDetails(likedPostIds, relays);
+
+        // 実際に取得できた投稿のIDのみを対象にリアクション数を取得
+        const availablePostIds = Array.from(postDetails.keys());
+        const reactionCounts = await fetchPostReactions(availablePostIds, relays);
 
         // 著者ごとのプロフィールメタデータ取得用にpubkeyを収集
         const authorPubkeys = Array.from(new Set(Array.from(postDetails.values()).map(ev => ev.pubkey)));
@@ -232,8 +228,9 @@ export async function fetchUserLikes(npub: string, limit: number = 20): Promise<
           likedPosts.push(tweet);
         }
 
+        // 作成日時でソートしてlimit個に絞り込む
         likedPosts.sort((a, b) => toTimestamp(b.createdAt) - toTimestamp(a.createdAt));
-        resolve(likedPosts);
+        resolve(likedPosts.slice(0, limit));
       };
 
       // タイムアウト設定（3秒）
