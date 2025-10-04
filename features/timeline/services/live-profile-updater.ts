@@ -1,4 +1,4 @@
-import { subscribeTo } from '../../relays/services/relayPool';
+import { subscribeTo, type Subscription } from '../../relays/services/relayPool';
 import { useRelaysStore } from '../../../stores/relays.store';
 import { useProfileStore } from '../../../stores/profile.store';
 import { KIND_METADATA } from '../../../lib/nostr/constants';
@@ -11,6 +11,7 @@ import { getProfileImageUrl } from '../../../lib/utils/avatar';
 const tracked = new Set<string>();
 let batch: string[] = [];
 let flushTimer: any = null;
+const subscriptions: Subscription[] = [];
 
 function flushSubscribe() {
   if (batch.length === 0) return;
@@ -21,11 +22,12 @@ function flushSubscribe() {
   const authors = [...batch];
   batch = [];
 
+  // リアルタイム更新: 現在時刻以降の新しいmetadataイベントを継続的に監視
   const filters: Filter[] = [
-    { kinds: [KIND_METADATA], authors, limit: 1 }
+    { kinds: [KIND_METADATA], authors, since: Math.floor(Date.now() / 1000) }
   ];
 
-  subscribeTo(relays, filters, (event: NostrEvent) => {
+  const sub = subscribeTo(relays, filters, (event: NostrEvent) => {
     try {
       const meta = JSON.parse(event.content);
       const avatarUrl = getProfileImageUrl(meta.picture, event.pubkey);
@@ -34,6 +36,20 @@ function flushSubscribe() {
       console.warn('timeline-live-profile-updater: failed to parse metadata', e);
     }
   });
+
+  subscriptions.push(sub);
+}
+
+// クリーンアップ関数: 全てのsubscriptionを閉じる（必要に応じて呼び出す）
+export function cleanupTimelineLiveProfileTracking() {
+  subscriptions.forEach(sub => sub.close());
+  subscriptions.length = 0;
+  tracked.clear();
+  batch = [];
+  if (flushTimer) {
+    clearTimeout(flushTimer);
+    flushTimer = null;
+  }
 }
 
 export function ensureTimelineLiveProfileTracking(pubkey: string) {
