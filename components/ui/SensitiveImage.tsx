@@ -55,13 +55,8 @@ export function SensitiveImage({
       return;
     }
 
-    // 判定不能（null）の場合はぼかしなしで表示（フォローリスト取得中の可能性）
-    if (authorFollowStatus === null || actorFollowStatus === null) {
-      setShouldBlur(false);
-      return;
-    }
-
-    // 明確に非フォロー（false）の場合のみぼかす
+    // authorまたはactorのいずれかがフォロー中（true）でない場合はぼかす
+    // （判定不能（null）の場合も安全のためぼかす）
     setShouldBlur(true);
   }, [authorPubkey, actorPubkey, src, revealedImages]);
 
