@@ -201,13 +201,16 @@ export function isImageUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
 
+    // 直接的な画像URLかチェック（pathnameのみで判定するためクエリパラメータは影響しない）
+    const hasImageExtension = IMAGE_EXTENSIONS.test(parsed.pathname);
+
     // 特定の画像共有サービスは除外（ギャラリーページなど）
-    // imgur.com/gallery のようなギャラリーは除外するが、i.imgur.com の直接画像は許可
-    if (parsed.hostname === 'share.yabu.me') {
+    // ただし、直接的な画像拡張子を持つURLは許可
+    if (parsed.hostname === 'share.yabu.me' && !hasImageExtension) {
       return false;
     }
 
-    if (parsed.hostname === 'gyazo.com') {
+    if (parsed.hostname === 'gyazo.com' && !hasImageExtension) {
       return false;
     }
 
@@ -216,8 +219,7 @@ export function isImageUrl(url: string): boolean {
       return false;
     }
 
-    // 直接的な画像URLかチェック（pathnameのみで判定するためクエリパラメータは影響しない）
-    return IMAGE_EXTENSIONS.test(parsed.pathname);
+    return hasImageExtension;
   } catch {
     return false;
   }
