@@ -11,7 +11,7 @@ interface NotificationStore {
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   clearNotifications: () => void;
-  getFilteredNotifications: () => Notification[];
+  getFilteredNotifications: (limit?: number) => Notification[];
   updateUserProfile: (pubkey: string, data: { name?: string; username?: string; avatar?: string }) => void;
   refreshAllProfiles: () => Promise<void>;
 }
@@ -99,13 +99,20 @@ export const useNotificationStore = create<NotificationStore>()(
         unreadCount: 0,
       })),
       
-      getFilteredNotifications: () => {
+      getFilteredNotifications: (limit?: number) => {
         const state = get();
         const settings = useNotificationSettingsStore.getState().settings;
-        
+
         const filtered = state.notifications.filter(notification => settings[notification.type]);
         // createdAt の新しい順（降順）で並び替え
-        return filtered.sort((a, b) => toTimestamp(b.createdAt as unknown) - toTimestamp(a.createdAt as unknown));
+        const sorted = filtered.sort((a, b) => toTimestamp(b.createdAt as unknown) - toTimestamp(a.createdAt as unknown));
+
+        // 件数制限を適用（デフォルトは20件）
+        if (limit !== undefined && limit > 0) {
+          return sorted.slice(0, limit);
+        }
+
+        return sorted;
       },
 
       // プロフィール部分更新（最新 metadata を受けた時に使用）
