@@ -210,7 +210,8 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
 
           console.log(`[XEmbed] Creating tweet embed for ${statusId} with theme: ${theme}, width: ${calculatedWidth}`);
 
-          const tweetElement = await window.twttr.widgets.createTweet(
+          // createTweetにタイムアウトを追加（15秒）
+          const createTweetPromise = window.twttr.widgets.createTweet(
             statusId,
             containerRef.current,
             {
@@ -223,6 +224,20 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
               linkColor: theme === 'dark' ? '#8B5CF6' : '#7C3AED',
             }
           );
+
+          const timeoutPromise = new Promise<null>((_, reject) => {
+            setTimeout(() => reject(new Error('Tweet embed timeout after 15 seconds')), 15000);
+          });
+
+          const tweetElement = await Promise.race([createTweetPromise, timeoutPromise]);
+
+          console.log(`[XEmbed] createTweet returned:`, {
+            tweetElement,
+            isNull: tweetElement === null,
+            type: typeof tweetElement,
+            isMounted,
+            aborted: abortController.signal.aborted
+          });
 
           // Check if aborted after async operation
           if (abortController.signal.aborted || !isMounted) {
