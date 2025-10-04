@@ -119,7 +119,7 @@ export function MentionSuggestion({ query, onSelect, onClose, position }: Mentio
         pubkey: p.pubkey,
         name: p.name,
         displayName: p.displayName,
-        picture: p.picture,
+        picture: getProfileImageUrl(p.picture, p.pubkey),
         npub: p.npub,
         isFollowing: true,
       }))
