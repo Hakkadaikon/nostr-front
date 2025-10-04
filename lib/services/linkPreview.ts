@@ -8,8 +8,12 @@ interface LinkPreviewData {
   image?: string;
 }
 
-const CORS_PROXY = 'https://corsproxy.io/?';
-const FETCH_TIMEOUT_MS = 4000;
+// 複数のCORS Proxyをフォールバックで使用
+const CORS_PROXIES = [
+  'https://api.allorigins.win/raw?url=',
+  'https://corsproxy.io/?',
+];
+const FETCH_TIMEOUT_MS = 6000;
 const MAX_HTML_LENGTH = 100_000;
 
 // キャッシュ管理
@@ -40,23 +44,48 @@ export async function fetchLinkPreview(url: string): Promise<LinkPreviewData | n
     cacheTimestamps.delete(normalizedUrl);
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  // 複数のプロキシを試行
+  let lastError: Error | null = null;
+  let response: Response | null = null;
+
+  for (const proxy of CORS_PROXIES) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    try {
+      // CORS Proxyを使用してフェッチ
+      const proxyUrl = `${proxy}${encodeURIComponent(normalizedUrl)}`;
+      response = await fetch(proxyUrl, {
+        method: 'GET',
+        signal: controller.signal,
+        headers: {
+          'Accept': 'text/html,application/xhtml+xml',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
+      });
+
+      clearTimeout(timeout);
+
+      if (response.ok) {
+        break; // 成功したらループを抜ける
+      }
+
+      lastError = new Error(`Failed to fetch: ${response.status}`);
+      response = null;
+    } catch (error) {
+      clearTimeout(timeout);
+      lastError = error as Error;
+      response = null;
+      // 次のプロキシを試す
+      continue;
+    }
+  }
+
+  if (!response) {
+    throw lastError || new Error('All proxies failed');
+  }
 
   try {
-    // CORS Proxyを使用してフェッチ
-    const proxyUrl = `${CORS_PROXY}${encodeURIComponent(normalizedUrl)}`;
-    const response = await fetch(proxyUrl, {
-      method: 'GET',
-      signal: controller.signal,
-      headers: {
-        'Accept': 'text/html,application/xhtml+xml',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch: ${response.status}`);
-    }
 
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('text/html')) {
@@ -116,8 +145,6 @@ export async function fetchLinkPreview(url: string): Promise<LinkPreviewData | n
     previewCache.set(normalizedUrl, null);
     cacheTimestamps.set(normalizedUrl, Date.now());
     return null;
-  } finally {
-    clearTimeout(timeout);
   }
 }
 
