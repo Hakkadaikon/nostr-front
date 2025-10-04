@@ -31,7 +31,7 @@ export function ProfileTabs({ activeTab, onTabChange, counts = {} }: ProfileTabs
               type="button"
               onClick={() => onTabChange(tab.id)}
               className={clsx(
-                'relative flex min-w-max flex-1 items-center justify-center gap-1.5 px-4 py-3 text-sm font-medium transition-all duration-200 sm:py-3.5',
+                'relative flex min-w-max flex-1 items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium transition-all duration-200',
                 isActive
                   ? 'text-gray-900 dark:text-white'
                   : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'

@@ -114,8 +114,8 @@ export function ProfileHeader({
       </div>
 
       <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-6 pb-4 sm:pb-6">
-        <div className="-mt-10 sm:-mt-12 md:-mt-16 flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-end">
+        <div className="-mt-10 sm:-mt-12 md:-mt-16 flex flex-col gap-4 sm:gap-6">
+          <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-end lg:flex-1">
             <div className="relative h-20 w-20 sm:h-24 sm:w-24 md:h-32 md:w-32 flex-shrink-0 aspect-square overflow-hidden rounded-full border-2 sm:border-4 border-white bg-gray-200 shadow-lg sm:shadow-xl dark:border-gray-950 dark:bg-gray-800">
               {avatarSrc ? (
                 <SafeImage
@@ -219,11 +219,11 @@ export function ProfileHeader({
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-start sm:justify-end gap-2 sm:gap-3 mt-4 lg:mt-0">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-start sm:justify-start lg:justify-end gap-2 sm:gap-3">
             <Button
               onClick={handleShare}
               variant="ghost"
-              className="gap-2 min-w-[120px] justify-center sm:justify-start flex-shrink-0"
+              className="gap-2 w-full sm:w-auto sm:min-w-[120px] justify-center flex-shrink-0"
             >
               <Share2 size={16} />
               {copiedLink ? 'コピーしました' : 'シェア'}
@@ -233,7 +233,7 @@ export function ProfileHeader({
               <Button
                 onClick={onEditClick}
                 variant="primary"
-                className="min-w-[140px] justify-center flex-shrink-0"
+                className="w-full sm:w-auto sm:min-w-[140px] justify-center flex-shrink-0"
               >
                 プロフィールを編集
               </Button>
@@ -241,7 +241,7 @@ export function ProfileHeader({
               <Button
                 onClick={onFollowClick}
                 variant={isFollowing ? 'secondary' : 'primary'}
-                className="min-w-[100px] justify-center flex-shrink-0"
+                className="w-full sm:w-auto sm:min-w-[100px] justify-center flex-shrink-0"
               >
                 {isFollowing ? 'フォロー中' : 'フォロー'}
               </Button>

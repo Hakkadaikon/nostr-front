@@ -41,8 +41,8 @@ export function ProfileSidebar({ profile }: ProfileSidebarProps) {
         </section>
       )}
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900/60">
-        <h2 className="mb-3 sm:mb-4 text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+      <section className="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900/60">
+        <h2 className="mb-2 sm:mb-3 text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">
           プロフィール情報
         </h2>
         <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm text-gray-600 dark:text-gray-300">
