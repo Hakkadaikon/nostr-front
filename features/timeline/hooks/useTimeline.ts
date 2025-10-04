@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useReducer } from 'react';
+import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { fetchTimeline, likeTweet, unlikeTweet, retweet, undoRetweet, clearProfileCache } from '../services/timeline';
 import { TimelineParams, TimelineState, Tweet, TimelineError } from '../types';
 import { useAuthStore } from '../../../stores/auth.store';
@@ -277,7 +277,22 @@ export function useTimeline(params: TimelineParams) {
   const authPubkey = useAuthStore(state => state.publicKey);
 
   // 初回読み込み・パラメータ変更時、または公開鍵取得時のリセット
+  const paramsTypeRef = useRef(params.type);
+  const authPubkeyRef = useRef(authPubkey);
+  const initializedRef = useRef(false);
+
   useEffect(() => {
+    // パラメータが変更された場合のみ処理を実行
+    const typeChanged = paramsTypeRef.current !== params.type;
+    const authChanged = authPubkeyRef.current !== authPubkey;
+
+    if (!typeChanged && !authChanged && initializedRef.current) {
+      return; // 無限ループ防止：変更がない場合は何もしない
+    }
+
+    paramsTypeRef.current = params.type;
+    authPubkeyRef.current = authPubkey;
+
     // フォロー中タブは公開鍵が必要（kind3でフォローリストを取得するため）
     if (params.type === 'following' && !authPubkey) return;
 
@@ -285,11 +300,13 @@ export function useTimeline(params: TimelineParams) {
     const cached = timelineCache.getTimeline(params.type);
     if (cached && cached.tweets.length > 0) {
       dispatch({ type: 'RESTORE_FROM_CACHE', tweets: cached.tweets, cursor: cached.cursor });
+      initializedRef.current = true;
     } else {
       reset();
       loadMore();
+      initializedRef.current = true;
     }
-  }, [params.type, authPubkey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [params.type, authPubkey, timelineCache, reset, loadMore]);
 
   // 外部からのタイムライン更新要求（例: 新規投稿後）
   // リセットではなくリフレッシュを使用（既存投稿を保持）
