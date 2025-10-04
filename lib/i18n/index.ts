@@ -4,6 +4,7 @@ export {
   defaultLocale,
   supportedLocales,
   localeNames,
+  getBrowserLocale,
   type SupportedLocale
 } from './config';
 export {

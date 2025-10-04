@@ -1,16 +1,15 @@
 "use client";
 
-import { Languages } from 'lucide-react';
 import { useTranslation } from '../../lib/i18n/hooks';
-import { supportedLocales, localeNames } from '../../lib/i18n/config';
 import { clsx } from 'clsx';
 
 export function LanguageToggle() {
   const { i18n } = useTranslation();
   const currentLocale = i18n.language;
+  const isJapanese = currentLocale === 'ja';
 
   const toggleLocale = () => {
-    const newLocale = currentLocale === 'ja' ? 'en' : 'ja';
+    const newLocale = isJapanese ? 'en' : 'ja';
 
     // i18nの言語を変更
     i18n.changeLanguage(newLocale);
@@ -30,14 +29,43 @@ export function LanguageToggle() {
         'hover:bg-gray-100 dark:hover:bg-gray-800',
         'group relative overflow-hidden w-full'
       )}
-      aria-label={`Switch to ${currentLocale === 'ja' ? 'English' : '日本語'}`}
+      aria-label={`Switch to ${isJapanese ? 'English' : '日本語'}`}
     >
-      <Languages
-        className="w-5 h-5 text-gray-600 dark:text-gray-300 group-hover:scale-110 transition-all duration-200"
-      />
-      <span className="font-medium text-gray-700 dark:text-gray-200 transition-colors duration-200">
-        {currentLocale === 'ja' ? 'EN' : 'JA'}
-      </span>
+      {/* トグルスイッチ */}
+      <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-300 dark:bg-gray-600 transition-colors duration-200">
+        <span
+          className={clsx(
+            'inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200',
+            isJapanese ? 'translate-x-1' : 'translate-x-6'
+          )}
+        />
+      </div>
+
+      {/* 言語表示 */}
+      <div className="flex items-center space-x-2">
+        <span
+          className={clsx(
+            'text-sm font-medium transition-colors duration-200',
+            isJapanese
+              ? 'text-gray-900 dark:text-gray-100'
+              : 'text-gray-400 dark:text-gray-500'
+          )}
+        >
+          JA
+        </span>
+        <span className="text-gray-400 dark:text-gray-500">/</span>
+        <span
+          className={clsx(
+            'text-sm font-medium transition-colors duration-200',
+            !isJapanese
+              ? 'text-gray-900 dark:text-gray-100'
+              : 'text-gray-400 dark:text-gray-500'
+          )}
+        >
+          EN
+        </span>
+      </div>
+
       <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-pink-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
     </button>
   );

@@ -9,7 +9,8 @@ import { ThemeProvider } from '../providers/ThemeProvider';
 import Nip07LoginPrompt from '../auth/Nip07LoginPrompt';
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import { useLoadNip65Relays } from '../../features/relays/hooks/useLoadNip65Relays';
-import { I18nProvider, defaultLocale } from '../../lib/i18n';
+import { I18nProvider, getBrowserLocale } from '../../lib/i18n';
+import type { SupportedLocale } from '../../lib/i18n/config';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -21,17 +22,23 @@ export function MainLayout({ children }: MainLayoutProps) {
   // Load relays from NIP-65 (kind:10002) when pubkey is ready
   useLoadNip65Relays();
 
-  const [locale, setLocale] = useState(defaultLocale);
+  const [locale, setLocale] = useState<SupportedLocale>('en');
 
   useEffect(() => {
     // クライアント側でロケールを取得
     const cookieLocale = document.cookie
       .split('; ')
       .find(row => row.startsWith('NEXT_LOCALE='))
-      ?.split('=')[1];
+      ?.split('=')[1] as SupportedLocale | undefined;
 
     if (cookieLocale) {
       setLocale(cookieLocale);
+    } else {
+      // Cookieがない場合はブラウザの言語を検出
+      const browserLocale = getBrowserLocale();
+      setLocale(browserLocale);
+      // Cookieに保存
+      document.cookie = `NEXT_LOCALE=${browserLocale}; path=/; max-age=${365 * 24 * 60 * 60}`;
     }
   }, []);
 
