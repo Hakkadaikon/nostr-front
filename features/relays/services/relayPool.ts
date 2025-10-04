@@ -4,7 +4,40 @@ export type RelayInfo = { url: string; read: boolean; write: boolean; healthy?: 
 export type Subscription = { close: () => void };
 
 let pool: SimplePool | null = null;
-function getPool() { return (pool ??= new SimplePool()); }
+
+// SimplePoolを初期化
+function getPool() {
+  if (!pool) {
+    pool = new SimplePool();
+  }
+  return pool;
+}
+
+// ブラウザ環境でのWebSocketエラーを静かに処理（初回のみ実行）
+if (typeof window !== 'undefined') {
+  let errorHandlerInstalled = false;
+
+  // グローバルエラーハンドラーでWebSocket接続エラーを捕捉
+  if (!errorHandlerInstalled) {
+    window.addEventListener('error', (event) => {
+      // WebSocket関連のエラーを検出
+      if (
+        event.message &&
+        (event.message.includes('WebSocket') || event.message.includes('wss://'))
+      ) {
+        // エラーの伝播を防止（コンソールにエラーが表示されるのを抑制）
+        event.preventDefault();
+
+        // デバッグモードでのみログ出力
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('[relayPool] WebSocket error suppressed:', event.message);
+        }
+      }
+    }, true); // キャプチャフェーズで処理
+
+    errorHandlerInstalled = true;
+  }
+}
 
 export function getReadRelays(relays: RelayInfo[]) {
   return relays.filter(r => r.read).map(r => r.url);
@@ -17,7 +50,7 @@ export function subscribeTo(
   relays: string[],
   filters: Filter[],
   onEvent: (e: NostrEvent) => void,
-  optionsOrOnEose?: { onEose?: () => void } | (() => void)
+  optionsOrOnEose?: { onEose?: () => void; onError?: (url: string, error: any) => void } | (() => void)
 ): Subscription {
   const p = getPool();
 
@@ -26,16 +59,38 @@ export function subscribeTo(
     ? { onEose: optionsOrOnEose }
     : optionsOrOnEose;
 
-  const sub = p.subscribeMany(relays, filters, {
-    onevent: (event) => {
-      onEvent(event);
-    },
-    oneose: () => {
-      if (options?.onEose) options.onEose();
-    }
-  });
+  try {
+    const sub = p.subscribeMany(relays, filters, {
+      onevent: (event) => {
+        try {
+          onEvent(event);
+        } catch (error) {
+          console.error('[relayPool] Error processing event:', error);
+        }
+      },
+      oneose: () => {
+        if (options?.onEose) {
+          try {
+            options.onEose();
+          } catch (error) {
+            console.error('[relayPool] Error in onEose callback:', error);
+          }
+        }
+      }
+    });
 
-  return { close: () => sub.close() };
+    return { close: () => {
+      try {
+        sub.close();
+      } catch (error) {
+        // Silently handle close errors
+      }
+    }};
+  } catch (error) {
+    console.warn('[relayPool] Failed to create subscription:', error);
+    // Return a dummy subscription that does nothing
+    return { close: () => {} };
+  }
 }
 
 export async function publishTo(relays: string[], event: NostrEvent) {
