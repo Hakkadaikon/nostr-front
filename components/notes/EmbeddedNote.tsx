@@ -8,6 +8,7 @@ import { fetchNote } from '../../features/notes/fetchNote';
 import { fetchProfileForNotification } from '../../features/profile/services/profile-cache';
 import { Spinner } from '../ui/Spinner';
 import type { NotificationUser } from '../../types/notification';
+import { useNoteCacheStore } from '../../stores/note-cache.store';
 
 export type NoteReference = {
   id: string;
@@ -20,9 +21,13 @@ interface EmbeddedNoteProps {
 }
 
 export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps) {
-  const [note, setNote] = useState<NostrEvent | null>(null);
-  const [author, setAuthor] = useState<NotificationUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { getNote, setNote: setCachedNote } = useNoteCacheStore();
+
+  // キャッシュチェック：初期値をキャッシュから取得
+  const cachedData = getNote(reference.id);
+  const [note, setNote] = useState<NostrEvent | null>(cachedData?.note || null);
+  const [author, setAuthor] = useState<NotificationUser | null>(cachedData?.author || null);
+  const [isLoading, setIsLoading] = useState(!cachedData); // キャッシュがあればローディングをスキップ
 
   const { relayKey, relays } = useMemo(() => {
     const list = reference.relays ? [...reference.relays] : [];
@@ -32,10 +37,21 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
 
   useEffect(() => {
     let active = true;
-    setIsLoading(true);
-    setNote(null);
-    setAuthor(null);
 
+    // キャッシュチェック：既にキャッシュがあれば何もしない
+    const cached = getNote(reference.id);
+    if (cached) {
+      // キャッシュヒット時は状態を更新して終了（ちらつき防止）
+      if (active) {
+        setNote(cached.note);
+        setAuthor(cached.author || null);
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    // キャッシュミス：ローディング状態にしてフェッチ開始
+    setIsLoading(true);
 
     // Safety timeout: in rare cases fetchNote may hang (relay never sends EOSE)
     const safetyTimeout = setTimeout(() => {
@@ -48,15 +64,17 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
     // Use longer timeout for fetchNote to accommodate slower relays
     fetchNote(reference.id, relays.length > 0 ? relays : undefined, 6000)
       .then(async event => {
-        if (!active) return;
+        if (!active || !event) return;
         setNote(event);
 
         // Fetch author profile
-        if (event?.pubkey) {
+        let authorProfile: NotificationUser | undefined;
+        if (event.pubkey) {
           try {
             const profile = await fetchProfileForNotification(event.pubkey);
             if (active) {
               setAuthor(profile);
+              authorProfile = profile;
             }
           } catch (error) {
             console.error('EmbeddedNote: Error fetching author profile', error);
@@ -64,6 +82,8 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
           }
         }
 
+        // キャッシュに保存
+        setCachedNote(reference.id, event, authorProfile);
         setIsLoading(false);
       })
       .catch(error => {
