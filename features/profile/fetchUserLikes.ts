@@ -4,6 +4,7 @@ import { useRelaysStore } from '../../stores/relays.store';
 import { KIND_TEXT_NOTE, KIND_REACTION, KIND_REPOST, KIND_ZAP_RECEIPT, KIND_METADATA } from '../../lib/nostr/constants';
 import { Tweet } from '../timeline/types';
 import { getProfileImageUrl } from '../../lib/utils/avatar';
+import { toTimestamp } from '../../lib/utils/date';
 
 /**
  * 投稿の詳細情報を取得
@@ -233,7 +234,7 @@ export async function fetchUserLikes(npub: string, limit: number = 20): Promise<
           likedPosts.push(tweet);
         }
 
-        likedPosts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        likedPosts.sort((a, b) => toTimestamp(b.createdAt) - toTimestamp(a.createdAt));
         resolve(likedPosts);
       };
 

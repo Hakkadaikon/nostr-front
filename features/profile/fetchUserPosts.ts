@@ -4,6 +4,7 @@ import { useRelaysStore } from '../../stores/relays.store';
 import { KIND_TEXT_NOTE, KIND_REACTION, KIND_REPOST, KIND_ZAP_RECEIPT } from '../../lib/nostr/constants';
 import { Tweet } from '../timeline/types';
 import { getProfileImageUrl } from '../../lib/utils/avatar';
+import { toTimestamp } from '../../lib/utils/date';
 
 /**
  * 投稿のリアクション数を取得
@@ -154,7 +155,7 @@ export async function fetchUserPosts(npub: string, limit: number = 20): Promise<
             });
             
             // 時系列でソート（新しい順）
-            posts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+            posts.sort((a, b) => toTimestamp(b.createdAt) - toTimestamp(a.createdAt));
             resolve(posts.slice(0, limit));
           }
         }
@@ -181,7 +182,7 @@ export async function fetchUserPosts(npub: string, limit: number = 20): Promise<
         }
         
         // 時系列でソート（新しい順）
-        posts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        posts.sort((a, b) => toTimestamp(b.createdAt) - toTimestamp(a.createdAt));
         resolve(posts);
       }, 3000);
     });

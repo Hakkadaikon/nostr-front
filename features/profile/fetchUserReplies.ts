@@ -5,6 +5,7 @@ import { KIND_TEXT_NOTE, KIND_REACTION, KIND_REPOST, KIND_ZAP_RECEIPT } from '..
 import { Tweet } from '../timeline/types';
 import { getProfileImageUrl } from '../../lib/utils/avatar';
 import { extractReplyTo } from '../../lib/nostr/nip10';
+import { toTimestamp } from '../../lib/utils/date';
 
 /**
  * 投稿のリアクション数を取得
@@ -162,7 +163,7 @@ export async function fetchUserReplies(npub: string, limit: number = 20): Promis
             });
 
             // 時系列でソート（新しい順）
-            replies.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+            replies.sort((a, b) => toTimestamp(b.createdAt) - toTimestamp(a.createdAt));
             resolve(replies.slice(0, limit));
           }
         }
@@ -189,7 +190,7 @@ export async function fetchUserReplies(npub: string, limit: number = 20): Promis
         }
 
         // 時系列でソート（新しい順）
-        replies.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        replies.sort((a, b) => toTimestamp(b.createdAt) - toTimestamp(a.createdAt));
         resolve(replies);
       }, 3000);
     });

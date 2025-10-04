@@ -5,6 +5,7 @@ import { fetchTimeline, likeTweet, unlikeTweet, retweet, undoRetweet } from '../
 import { TimelineParams, TimelineState, Tweet, TimelineError } from '../types';
 import { useAuthStore } from '../../../stores/auth.store';
 import { useTimelineCacheStore } from '../../../stores/timeline-cache.store';
+import { toTimestamp } from '../../../lib/utils/date';
 
 // Action types
 type TimelineAction =
@@ -35,8 +36,8 @@ function timelineReducer(state: TimelineState, action: TimelineAction): Timeline
 
       // activityTimestamp または createdAt でソート（降順）
       const sortedTweets = mergedTweets.sort((a, b) => {
-        const aTime = (a.activityTimestamp ?? a.createdAt).getTime();
-        const bTime = (b.activityTimestamp ?? b.createdAt).getTime();
+        const aTime = toTimestamp(a.activityTimestamp ?? a.createdAt);
+        const bTime = toTimestamp(b.activityTimestamp ?? b.createdAt);
         return bTime - aTime;
       });
 

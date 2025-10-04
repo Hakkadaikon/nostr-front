@@ -4,6 +4,7 @@ import { SearchResult, SearchType } from '../../features/search/types';
 import { TimelineItem } from '../timeline/TimelineItem';
 import { UserCard } from './UserCard';
 import { Spinner } from '../ui/Spinner';
+import { toTimestamp } from '../../lib/utils/date';
 
 interface SearchResultsProps {
   results: SearchResult | null;
@@ -98,7 +99,7 @@ export function SearchResults({
                 }
                 
                 // 4. 作成日時が新しいものを優先
-                return b.createdAt.getTime() - a.createdAt.getTime();
+                return toTimestamp(b.createdAt) - toTimestamp(a.createdAt);
               })
               .slice(0, 10) // 上位10件のみ表示
               .map((user) => (
