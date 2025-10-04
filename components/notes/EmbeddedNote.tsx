@@ -21,8 +21,6 @@ interface EmbeddedNoteProps {
 }
 
 export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps) {
-  const { getNote, setNote: setCachedNote } = useNoteCacheStore();
-
   const [note, setNote] = useState<NostrEvent | null>(null);
   const [author, setAuthor] = useState<NotificationUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,7 +35,7 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
     let active = true;
 
     // キャッシュチェック：既にキャッシュがあれば何もしない
-    const cached = getNote(reference.id);
+    const cached = useNoteCacheStore.getState().getNote(reference.id);
     if (cached) {
       // キャッシュヒット時は状態を更新して終了（ちらつき防止）
       if (active) {
@@ -83,7 +81,7 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
         }
 
         // キャッシュに保存
-        setCachedNote(reference.id, event, authorProfile);
+        useNoteCacheStore.getState().setNote(reference.id, event, authorProfile);
         setIsLoading(false);
       })
       .catch(error => {
