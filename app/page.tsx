@@ -142,6 +142,7 @@ export default function HomePage() {
                     error={error}
                     onLike={toggleLike}
                     onRetweet={toggleRetweet}
+                    hideReactions={activeTab === 'following'}
                   />
                   <div ref={sentinelRef} className="h-10" />
                   {!hasMore && tweets.length > 0 && (

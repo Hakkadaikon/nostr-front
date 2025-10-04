@@ -14,6 +14,7 @@ interface TimelineListProps {
   onLike: (tweetId: string) => void;
   onRetweet: (tweetId: string) => void;
   emptyMessage?: string;
+  hideReactions?: boolean;
 }
 
 export function TimelineList({
@@ -23,6 +24,7 @@ export function TimelineList({
   onLike,
   onRetweet,
   emptyMessage = 'まだツイートがありません',
+  hideReactions = false,
 }: TimelineListProps) {
   const [zapModalOpen, setZapModalOpen] = useState(false);
   const [replyModalOpen, setReplyModalOpen] = useState(false);
@@ -107,6 +109,7 @@ export function TimelineList({
             onZap={handleZap}
             onReply={handleReply}
             onDelete={handleDelete}
+            hideReactions={hideReactions}
           />
           );
         })}

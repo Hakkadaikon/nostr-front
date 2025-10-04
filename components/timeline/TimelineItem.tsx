@@ -27,11 +27,12 @@ interface TimelineItemProps {
   onZap?: (tweetId: string) => void;
   onReply?: (tweet: Tweet) => void;
   onDelete?: (tweetId: string) => void;
+  hideReactions?: boolean;
 }
 
 const QUICK_EMOJIS = ['😀', '😂', '😍', '👍', '🔥', '👏', '😢', '🙏'];
 
-export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelete }: TimelineItemProps) {
+export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelete, hideReactions = false }: TimelineItemProps) {
   const { publicKey } = useAuth();
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -364,42 +365,46 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
             </IconButton>
 
             {/* リアクション */}
-            <IconButton
-              onClick={async () => {
-                if (!canInteractWithNote || !targetNoteId || !noteAuthorPubkey) return;
-                try {
-                  await createReaction(targetNoteId, noteAuthorPubkey);
-                  onLike(targetNoteId);
-                } catch (error) {
-                  alert('リアクションの送信に失敗しました');
-                }
-              }}
-              variant="like"
-              size="small"
-              active={tweet.isLiked}
-              count={tweet.likesCount}
-              disabled={!canInteractWithNote}
-              aria-label="リアクション"
-            >
-              <Heart
-                className="w-4 h-4 sm:w-[18px] sm:h-[18px]"
-                fill={tweet.isLiked ? 'currentColor' : 'none'}
-              />
-            </IconButton>
+            {!hideReactions && (
+              <IconButton
+                onClick={async () => {
+                  if (!canInteractWithNote || !targetNoteId || !noteAuthorPubkey) return;
+                  try {
+                    await createReaction(targetNoteId, noteAuthorPubkey);
+                    onLike(targetNoteId);
+                  } catch (error) {
+                    alert('リアクションの送信に失敗しました');
+                  }
+                }}
+                variant="like"
+                size="small"
+                active={tweet.isLiked}
+                count={tweet.likesCount}
+                disabled={!canInteractWithNote}
+                aria-label="リアクション"
+              >
+                <Heart
+                  className="w-4 h-4 sm:w-[18px] sm:h-[18px]"
+                  fill={tweet.isLiked ? 'currentColor' : 'none'}
+                />
+              </IconButton>
+            )}
 
             {/* 絵文字リアクション */}
-            <IconButton
-              onClick={() => {
-                if (!canInteractWithNote) return;
-                setShowEmojiPicker(prev => !prev);
-              }}
-              variant="share"
-              size="small"
-              aria-label="リアクション"
-              disabled={!canInteractWithNote}
-            >
-              <Smile className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
-            </IconButton>
+            {!hideReactions && (
+              <IconButton
+                onClick={() => {
+                  if (!canInteractWithNote) return;
+                  setShowEmojiPicker(prev => !prev);
+                }}
+                variant="share"
+                size="small"
+                aria-label="リアクション"
+                disabled={!canInteractWithNote}
+              >
+                <Smile className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+              </IconButton>
+            )}
 
             {/* Zap */}
             <IconButton
@@ -426,7 +431,7 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
             </IconButton>
           </div>
 
-          {showEmojiPicker && canInteractWithNote && (
+          {!hideReactions && showEmojiPicker && canInteractWithNote && (
             <div className="mt-2 flex flex-wrap gap-2 sm:gap-3">
               {QUICK_EMOJIS.map((emoji) => (
                 <button
