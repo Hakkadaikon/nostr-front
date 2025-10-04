@@ -2,6 +2,7 @@ import { Filter, Event as NostrEvent } from 'nostr-tools';
 import { subscribe } from '../../../lib/nostr/client';
 import { useRelaysStore } from '../../../stores/relays.store';
 import { Tweet, User } from '../../timeline/types';
+import { getProfileImageUrl } from '../../../lib/utils/avatar';
 
 /**
  * NIP-50対応の検索フィルタを作成
@@ -121,7 +122,7 @@ export function eventToUser(event: NostrEvent): User | null {
       id: event.pubkey,
       username: content.username || content.name || 'nostr:' + event.pubkey.slice(0, 8),
       name: content.display_name || content.name || '',
-      avatar: content.picture || undefined,
+      avatar: getProfileImageUrl(content.picture, event.pubkey),
       bio: content.about || '',
       followersCount: 0,
       followingCount: 0,

@@ -6,6 +6,7 @@ import { KIND_FOLLOW } from '../../lib/nostr/constants';
 import { fetchFollowList } from '../follow/services/follow';
 import { User } from '../timeline/types';
 import { fetchProfileForNotification } from './services/profile-cache';
+import { getProfileImageUrl } from '../../lib/utils/avatar';
 
 export interface FollowList {
   pubkeys: string[];
@@ -203,7 +204,7 @@ export async function fetchUserFollowList(pubkey: string, type: 'following' | 'f
                       id: profileEvent.pubkey,
                       username: content.username || content.name || 'nostr:' + profileEvent.pubkey.slice(0, 8),
                       name: content.display_name || content.name || '',
-                      avatar: content.picture,
+                      avatar: getProfileImageUrl(content.picture, profileEvent.pubkey),
                       bio: content.about || '',
                       followersCount: 0,
                       followingCount: 0,
