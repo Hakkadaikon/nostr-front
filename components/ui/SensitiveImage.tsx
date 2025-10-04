@@ -19,8 +19,8 @@ interface SensitiveImageProps {
  *
  * 動作:
  * - authorPubkey または actorPubkey がフォロー中の場合: ぼかしなしで表示
- * - どちらも非フォローの場合: 初回はぼかし、クリックで解除
- * - 両方未指定またはフォロー情報が取得できない場合: 安全側（ぼかす）
+ * - どちらも明確に非フォロー（false）の場合: 初回はぼかし、クリックで解除
+ * - 判定不能（null）の場合: ぼかしなしで表示（フォローリスト取得中の可能性を考慮）
  */
 export function SensitiveImage({
   src,
@@ -54,7 +54,13 @@ export function SensitiveImage({
       return;
     }
 
-    // 非フォローまたは判定不能の場合はぼかす（安全側）
+    // 判定不能（null）の場合はぼかしなしで表示（フォローリスト取得中の可能性）
+    if (authorFollowStatus === null || actorFollowStatus === null) {
+      setShouldBlur(false);
+      return;
+    }
+
+    // 明確に非フォロー（false）の場合のみぼかす
     setShouldBlur(true);
   }, [authorPubkey, actorPubkey, src, isRevealed]);
 
