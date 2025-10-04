@@ -173,107 +173,138 @@ export async function searchNostr(
   query: string,
   type: 'users' | 'tweets' = 'users'
 ): Promise<{ users: User[], tweets: Tweet[] }> {
+  const startTime = Date.now();
   const relayStore = useRelaysStore.getState();
   const searchRelays = relayStore.getSearchRelays();
 
+  console.log('[NIP-50 Search] Starting search', { query, type, searchRelays });
 
   if (searchRelays.length === 0) {
     throw new Error('検索用のNIP-50対応リレーが設定されていません。設定ページで検索リレーを指定してください。');
   }
 
   const filters = createNip50Filter(query, type);
-  
+
   const tweets: Tweet[] = [];
   const userCache = new Map<string, User>();
   const eventCache = new Map<string, NostrEvent>();
+  const tweetPubkeys = new Set<string>();
 
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(async () => {
+  return new Promise((resolve) => {
+    let eoseReceived = false;
+    let timeout: NodeJS.Timeout;
+
+    const finalize = async () => {
       sub.close();
-      
-      // フォロー数の取得は削除（高速化のため）
-      const usersWithStats: User[] = Array.from(userCache.values())
-      
-      // ツイートの統計情報を取得
-      const tweetsWithStats: Tweet[] = [];
-      for (const tweet of tweets) {
-        const stats = await getPostStats(tweet.id);
-        const tweetWithStats = {
-          ...tweet,
-          likesCount: stats.likesCount,
-          retweetsCount: stats.repostsCount,
-          repliesCount: stats.repliesCount,
-          zapsCount: stats.zapsCount,
-        };
-        tweetsWithStats.push(tweetWithStats);
-      }
-      
-      
-      // 重複チェック
-      const uniquePubkeys = new Set(usersWithStats.map(u => u.id));
-      if (uniquePubkeys.size !== usersWithStats.length) {
-        console.error('[NIP-50 Search] DUPLICATE USERS DETECTED!', {
-          totalUsers: usersWithStats.length,
-          uniquePubkeys: uniquePubkeys.size,
-          duplicates: usersWithStats.length - uniquePubkeys.size
-        });
-        
-        // 重複しているユーザーを特定
-        const pubkeyCount = new Map<string, number>();
-        for (const user of usersWithStats) {
-          pubkeyCount.set(user.id, (pubkeyCount.get(user.id) || 0) + 1);
-        }
-        for (const [pubkey, count] of pubkeyCount) {
-          if (count > 1) {
-            console.error('[NIP-50 Search] Duplicate pubkey:', pubkey.slice(0, 8) + '...', 'count:', count);
-          }
+      clearTimeout(timeout);
+
+      const usersArray = Array.from(userCache.values());
+
+      // ツイート検索時にプロフィール未取得のauthorを補完
+      if (type === 'tweets' && tweetPubkeys.size > 0) {
+        const missingPubkeys = Array.from(tweetPubkeys).filter(pk => !userCache.has(pk));
+        if (missingPubkeys.length > 0) {
+          console.log('[NIP-50 Search] Fetching missing profiles', { count: missingPubkeys.length });
+          const profiles = await fetchUserProfiles(missingPubkeys);
+          profiles.forEach((user, pubkey) => userCache.set(pubkey, user));
+
+          // ツイートのauthorを更新
+          tweets.forEach(tweet => {
+            if (!tweet.author.name && userCache.has(tweet.author.id)) {
+              tweet.author = userCache.get(tweet.author.id)!;
+            }
+          });
         }
       }
-      
-      resolve({ users: usersWithStats, tweets: tweetsWithStats });
-    }, 5000); // 5秒でタイムアウト
+
+      // ツイートの統計情報を並列取得
+      const tweetsWithStats = await Promise.all(
+        tweets.map(async (tweet) => {
+          const stats = await getPostStats(tweet.id);
+          return {
+            ...tweet,
+            likesCount: stats.likesCount,
+            retweetsCount: stats.repostsCount,
+            repliesCount: stats.repliesCount,
+            zapsCount: stats.zapsCount,
+          };
+        })
+      );
+
+      const duration = Date.now() - startTime;
+      console.log('[NIP-50 Search] Search completed', {
+        query,
+        type,
+        users: usersArray.length,
+        tweets: tweetsWithStats.length,
+        duration: `${duration}ms`,
+        eoseReceived
+      });
+
+      resolve({ users: usersArray, tweets: tweetsWithStats });
+    };
+
+    // EOSEハンドラ: イベント取得完了
+    const handleEose = () => {
+      if (!eoseReceived) {
+        eoseReceived = true;
+        console.log('[NIP-50 Search] EOSE received');
+        finalize();
+      }
+    };
+
+    // タイムアウト: 5秒経過しても完了しない場合
+    timeout = setTimeout(() => {
+      if (!eoseReceived) {
+        console.warn('[NIP-50 Search] Timeout reached (5s)');
+        finalize();
+      }
+    }, 5000);
 
     let eventCount = 0;
     const receivedEventIds = new Set<string>();
-    const sub = subscribe(searchRelays, filters, (event: NostrEvent) => {
-      eventCount++;
-      
-      // イベントIDの重複チェック
-      if (receivedEventIds.has(event.id || '')) {
-        console.warn('[NIP-50 Search] Duplicate event ID received:', event.id);
-        return;
-      }
-      receivedEventIds.add(event.id || '');
+    const sub = subscribe(
+      searchRelays,
+      filters,
+      (event: NostrEvent) => {
+        eventCount++;
 
-      if (event.kind === 0) {
-        // ユーザープロフィール
-        const existingEvent = eventCache.get(event.pubkey);
-        
-        // 既存のイベントがない、または新しいイベントのタイムスタンプが新しい場合のみ処理
-        if (!existingEvent || event.created_at > existingEvent.created_at) {
-          const user = eventToUser(event);
-          if (user) {
-            userCache.set(event.pubkey, user);
-            eventCache.set(event.pubkey, event);
+        // イベントIDの重複チェック
+        if (receivedEventIds.has(event.id || '')) {
+          console.warn('[NIP-50 Search] Duplicate event ID received:', event.id);
+          return;
+        }
+        receivedEventIds.add(event.id || '');
+
+        if (event.kind === 0) {
+          // ユーザープロフィール
+          const existingEvent = eventCache.get(event.pubkey);
+
+          if (!existingEvent || event.created_at > existingEvent.created_at) {
+            const user = eventToUser(event);
+            if (user) {
+              userCache.set(event.pubkey, user);
+              eventCache.set(event.pubkey, event);
+            }
+          }
+        } else if (event.kind === 1) {
+          // テキストノート
+          tweetPubkeys.add(event.pubkey);
+          const author = userCache.get(event.pubkey);
+          const tweet = eventToTweet(event, author);
+          if (tweet) {
+            tweets.push(tweet);
           }
         }
-      } else if (event.kind === 1) {
-        // テキストノート
-        const author = userCache.get(event.pubkey);
-        const tweet = eventToTweet(event, author);
-        if (tweet) {
-          tweets.push(tweet);
-        }
-      }
-    });
+      },
+      handleEose
+    );
 
-    // エラーハンドリング
-    setTimeout(async () => {
+    // 早期終了チェック: 1秒経過してもイベントが0件の場合
+    setTimeout(() => {
       if (userCache.size === 0 && tweets.length === 0 && eventCount === 0) {
-        clearTimeout(timeout);
-        sub.close();
-        
-        resolve({ users: [], tweets: [] });
+        console.log('[NIP-50 Search] No events received after 1s, closing');
+        finalize();
       }
     }, 1000);
   });

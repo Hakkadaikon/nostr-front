@@ -86,7 +86,7 @@ export async function searchContent(params: SearchParams): Promise<SearchResult>
   try {
     // Nostr検索を使用
     const { users, tweets } = await searchNostr(params.query, params.type);
-    
+
     return {
       users,
       tweets,
@@ -94,29 +94,35 @@ export async function searchContent(params: SearchParams): Promise<SearchResult>
     };
   } catch (error) {
     console.error('Failed to search:', error);
-    
-    // エラーが発生した場合はモックデータにフォールバック
-    const query = params.query.toLowerCase();
-    
-    // ユーザー検索
-    const filteredUsers = params.type === 'tweets' ? [] : 
-      mockUsers.filter(user => 
-        user.name.toLowerCase().includes(query) ||
-        user.username.toLowerCase().includes(query) ||
-        (user.bio && user.bio.toLowerCase().includes(query))
-      );
-    
-    // ツイート検索
-    const filteredTweets = params.type === 'users' ? [] :
-      mockTweets.filter(tweet => 
-        tweet.content.toLowerCase().includes(query)
-      );
-    
-    return {
-      users: filteredUsers,
-      tweets: filteredTweets,
-      hasMore: false,
-    };
+
+    // 開発環境の場合のみモックデータにフォールバック
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[Search] Using mock data fallback in development mode');
+      const query = params.query.toLowerCase();
+
+      // ユーザー検索
+      const filteredUsers = params.type === 'tweets' ? [] :
+        mockUsers.filter(user =>
+          user.name.toLowerCase().includes(query) ||
+          user.username.toLowerCase().includes(query) ||
+          (user.bio && user.bio.toLowerCase().includes(query))
+        );
+
+      // ツイート検索
+      const filteredTweets = params.type === 'users' ? [] :
+        mockTweets.filter(tweet =>
+          tweet.content.toLowerCase().includes(query)
+        );
+
+      return {
+        users: filteredUsers,
+        tweets: filteredTweets,
+        hasMore: false,
+      };
+    }
+
+    // 本番環境ではエラーを再スロー
+    throw error;
   }
 }
 

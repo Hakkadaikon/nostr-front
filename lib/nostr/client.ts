@@ -10,10 +10,16 @@ function getPool() {
   return pool;
 }
 
-export function subscribe(relays: string[], filters: Filter[], onEvent: (e: NostrEvent) => void): Subscription {
+export function subscribe(
+  relays: string[],
+  filters: Filter[],
+  onEvent: (e: NostrEvent) => void,
+  onEose?: () => void
+): Subscription {
   const p = getPool();
   const sub = p.subscribeMany(relays, filters, {
-    onevent: onEvent
+    onevent: onEvent,
+    oneose: onEose
   });
   return { close: () => sub.close() };
 }

@@ -45,7 +45,15 @@ export function SearchResults({
       : '一致する投稿が見つかりませんでした';
     return (
       <div className="p-8 text-center">
-        <p className="text-gray-500 dark:text-gray-400">{emptyMessage}</p>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">{emptyMessage}</p>
+        <div className="text-xs text-gray-400 dark:text-gray-500 space-y-1">
+          <p>以下をお試しください：</p>
+          <ul className="list-disc list-inside text-left max-w-md mx-auto">
+            <li>別のキーワードで検索</li>
+            <li>検索種別を切り替え（ユーザー/投稿）</li>
+            <li>設定で検索対応リレー（NIP-50）を確認</li>
+          </ul>
+        </div>
       </div>
     );
   }
