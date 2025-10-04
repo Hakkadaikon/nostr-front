@@ -6,6 +6,7 @@ import { parseNostrUri } from '../../lib/utils/url';
 import EmbeddedNote from '../notes/EmbeddedNote';
 import { useMemo, ReactNode } from 'react';
 import { MediaEmbed } from './MediaEmbed';
+import { isImageUrl } from '../../lib/utils/media-urls';
 
 interface RichContentProps {
   content: string;
@@ -32,6 +33,22 @@ function renderLink(url: string, key: string, seenUrls: Set<string>, suppressUrl
   // suppressUrlsに含まれる場合は表示しない
   if (suppressUrls?.some(suppressUrl => cleaned === suppressUrl || cleaned.startsWith(suppressUrl))) {
     return null;
+  }
+
+  // 画像URLの場合はインライン表示
+  if (isImageUrl(cleaned)) {
+    return (
+      <span key={key} className="inline-block my-2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={cleaned}
+          alt="Embedded image"
+          loading="lazy"
+          className="max-w-full h-auto max-h-96 rounded-lg border border-gray-200 dark:border-gray-700"
+          referrerPolicy="no-referrer"
+        />
+      </span>
+    );
   }
 
   return <MediaEmbed key={key} url={cleaned} />;
