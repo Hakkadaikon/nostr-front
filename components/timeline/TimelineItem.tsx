@@ -3,6 +3,7 @@
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { SafeImage } from '../ui/SafeImage';
+import { SensitiveImage } from '../ui/SensitiveImage';
 import EmbeddedNote from '../notes/EmbeddedNote';
 import { RichContent } from './RichContent';
 import Link from 'next/link';
@@ -285,9 +286,9 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
           {/* メディア */}
           {tweet.media && tweet.media.length > 0 && (
             <div className={`mt-3 grid gap-2 ${
-              tweet.media.length === 1 ? 'grid-cols-1' : 
-              tweet.media.length === 2 ? 'grid-cols-2' : 
-              tweet.media.length === 3 ? 'grid-cols-2 sm:grid-cols-3' : 
+              tweet.media.length === 1 ? 'grid-cols-1' :
+              tweet.media.length === 2 ? 'grid-cols-2' :
+              tweet.media.length === 3 ? 'grid-cols-2 sm:grid-cols-3' :
               'grid-cols-2'
             }`}>
               {tweet.media.map((media, index) => (
@@ -295,12 +296,18 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
                   tweet.media && tweet.media.length === 3 && index === 2 ? 'col-span-2 sm:col-span-1' : ''
                 }`}>
                   {media.type === 'image' && (
-                    <SafeImage
+                    <SensitiveImage
                       src={media.url}
                       alt={media.altText || ''}
-                      fill
-                      className="object-cover"
-                    />
+                      authorPubkey={tweet.author.pubkey}
+                    >
+                      <SafeImage
+                        src={media.url}
+                        alt={media.altText || ''}
+                        fill
+                        className="object-cover"
+                      />
+                    </SensitiveImage>
                   )}
                 </div>
               ))}
