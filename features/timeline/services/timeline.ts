@@ -625,7 +625,13 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
         const totalElapsed = Date.now() - startTime;
         const finalizeElapsed = Date.now() - finalizeStart;
 
-        console.log(`[fetchTimeline] Complete - type: ${params.type}, tweets: ${sliced.length}/${timelineTweets.length}, total: ${totalElapsed}ms, finalize: ${finalizeElapsed}ms`);
+        // メトリクスログ
+        const duplicateRate = timelineTweets.length > 0
+          ? ((timelineTweets.length - new Set(timelineTweets.map(t => t.id)).size) / timelineTweets.length * 100).toFixed(2)
+          : 0;
+
+        console.log(`[fetchTimeline] Complete - type: ${params.type}, tweets: ${sliced.length}/${timelineTweets.length}, duplicates: ${duplicateRate}%, total: ${totalElapsed}ms, finalize: ${finalizeElapsed}ms`);
+        console.log(`[fetchTimeline] Metrics - cursor: ${params.cursor || 'none'}, followingList: ${followingList.length}, relays: ${relays.length}`);
 
         resolve({
           tweets: sliced,

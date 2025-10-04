@@ -59,12 +59,21 @@ export function TimelineList({
     // ローカル状態から削除されたツイートを除外
     setLocalTweets(prevTweets => prevTweets.filter(tweet => tweet.id !== tweetId));
   };
-  if (error) {
+  if (error && tweets.length === 0) {
     return (
       <div className="p-6 sm:p-8 text-center">
-        <p className="text-red-500">エラーが発生しました: {error.message}</p>
+        <p className="text-red-500 font-medium">タイムラインの取得に失敗しました</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{error.message}</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+          ページを再読み込みするか、しばらく待ってから再度お試しください。
+        </p>
       </div>
     );
+  }
+
+  // エラーがあるが既存のツイートがある場合（フォールバック表示）
+  if (error && tweets.length > 0) {
+    console.warn('[TimelineList] Showing cached tweets after error:', error.message);
   }
 
   if (isLoading && tweets.length === 0) {

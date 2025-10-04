@@ -4,15 +4,17 @@ import { useCallback, useEffect, useReducer } from 'react';
 import { fetchTimeline, likeTweet, unlikeTweet, retweet, undoRetweet } from '../services/timeline';
 import { TimelineParams, TimelineState, Tweet, TimelineError } from '../types';
 import { useAuthStore } from '../../../stores/auth.store';
+import { useTimelineCacheStore } from '../../../stores/timeline-cache.store';
 
 // Action types
 type TimelineAction =
   | { type: 'FETCH_START' }
-  | { type: 'FETCH_SUCCESS'; tweets: Tweet[]; nextCursor?: string; hasMore: boolean; error?: TimelineError }
+  | { type: 'FETCH_SUCCESS'; tweets: Tweet[]; nextCursor?: string; hasMore: boolean; error?: TimelineError; isRefresh?: boolean }
   | { type: 'FETCH_ERROR'; error: Error }
   | { type: 'TOGGLE_LIKE'; tweetId: string }
   | { type: 'TOGGLE_RETWEET'; tweetId: string }
-  | { type: 'RESET' };
+  | { type: 'RESET' }
+  | { type: 'RESTORE_FROM_CACHE'; tweets: Tweet[]; cursor?: string };
 
 // Reducer
 function timelineReducer(state: TimelineState, action: TimelineAction): TimelineState {
@@ -21,15 +23,34 @@ function timelineReducer(state: TimelineState, action: TimelineAction): Timeline
       // ローディング中も直前のツイートを保持（空にしない）
       return { ...state, isLoading: true, error: null };
 
-    case 'FETCH_SUCCESS':
+    case 'FETCH_SUCCESS': {
+      // IDベースで重複を排除しつつマージ
+      const existingIds = new Set(state.tweets.map(t => t.id));
+      const newTweets = action.tweets.filter(t => !existingIds.has(t.id));
+
+      // リフレッシュの場合は新着を先頭に追加、通常のロードは末尾に追加
+      const mergedTweets = action.isRefresh
+        ? [...newTweets, ...state.tweets]
+        : [...state.tweets, ...newTweets];
+
+      // activityTimestamp または createdAt でソート（降順）
+      const sortedTweets = mergedTweets.sort((a, b) => {
+        const aTime = (a.activityTimestamp ?? a.createdAt).getTime();
+        const bTime = (b.activityTimestamp ?? b.createdAt).getTime();
+        return bTime - aTime;
+      });
+
+      console.log(`[useTimeline] Merged ${newTweets.length} new tweets (total: ${sortedTweets.length}, refresh: ${action.isRefresh})`);
+
       return {
         ...state,
-        tweets: [...state.tweets, ...action.tweets],
+        tweets: sortedTweets,
         nextCursor: action.nextCursor,
         hasMore: action.hasMore,
         isLoading: false,
         error: action.error || null,
       };
+    }
 
     case 'FETCH_ERROR':
       return {
@@ -81,6 +102,16 @@ function timelineReducer(state: TimelineState, action: TimelineAction): Timeline
         nextCursor: undefined,
       };
 
+    case 'RESTORE_FROM_CACHE':
+      console.log('[useTimeline] Restored from cache:', action.tweets.length, 'tweets');
+      return {
+        tweets: action.tweets,
+        isLoading: false,
+        error: null,
+        hasMore: true,
+        nextCursor: action.cursor,
+      };
+
     default:
       return state;
   }
@@ -97,7 +128,9 @@ export function useTimeline(params: TimelineParams) {
     hasMore: true,
   });
 
-  // タイムラインを読み込む
+  const timelineCache = useTimelineCacheStore();
+
+  // タイムラインを読み込む（追加ロード）
   const loadMore = useCallback(async () => {
     if (state.isLoading || !state.hasMore) return;
 
@@ -115,11 +148,56 @@ export function useTimeline(params: TimelineParams) {
         nextCursor: response.nextCursor,
         hasMore: response.hasMore,
         error: response.error,
+        isRefresh: false,
       });
+
+      // キャッシュに保存
+      timelineCache.setTimeline(params.type, [...state.tweets, ...response.tweets], response.nextCursor);
+    } catch (error) {
+      dispatch({ type: 'FETCH_ERROR', error: error as Error });
+
+      // エラー時はキャッシュから復元を試みる
+      const cached = timelineCache.getTimeline(params.type);
+      if (cached && state.tweets.length === 0) {
+        console.log('[useTimeline] Restoring from cache after error');
+        dispatch({ type: 'RESTORE_FROM_CACHE', tweets: cached.tweets, cursor: cached.cursor });
+      }
+    }
+  }, [params, state.isLoading, state.hasMore, state.nextCursor, state.tweets, timelineCache]);
+
+  // リフレッシュ（新着取得）
+  const refresh = useCallback(async () => {
+    if (state.isLoading) return;
+
+    dispatch({ type: 'FETCH_START' });
+
+    try {
+      // 最新のツイートを取得（cursorなし）
+      const response = await fetchTimeline({
+        ...params,
+        cursor: undefined, // 最新から取得
+      });
+
+      dispatch({
+        type: 'FETCH_SUCCESS',
+        tweets: response.tweets,
+        nextCursor: response.nextCursor,
+        hasMore: response.hasMore,
+        error: response.error,
+        isRefresh: true, // リフレッシュフラグ
+      });
+
+      // キャッシュを更新
+      const existingIds = new Set(state.tweets.map(t => t.id));
+      const newTweets = response.tweets.filter(t => !existingIds.has(t.id));
+      const mergedTweets = [...newTweets, ...state.tweets];
+      timelineCache.setTimeline(params.type, mergedTweets, response.nextCursor);
+
+      console.log(`[useTimeline] Refreshed: ${newTweets.length} new tweets`);
     } catch (error) {
       dispatch({ type: 'FETCH_ERROR', error: error as Error });
     }
-  }, [params, state.isLoading, state.hasMore, state.nextCursor]);
+  }, [params, state.isLoading, state.tweets, timelineCache]);
 
   // いいねの切り替え
   const toggleLike = useCallback(async (tweetId: string) => {
@@ -196,15 +274,24 @@ export function useTimeline(params: TimelineParams) {
   useEffect(() => {
     // フォロー中タブは公開鍵が必要（kind3でフォローリストを取得するため）
     if (params.type === 'following' && !authPubkey) return;
-    reset();
-    loadMore();
+
+    // キャッシュから復元を試みる
+    const cached = timelineCache.getTimeline(params.type);
+    if (cached && cached.tweets.length > 0) {
+      console.log('[useTimeline] Restoring from cache on init');
+      dispatch({ type: 'RESTORE_FROM_CACHE', tweets: cached.tweets, cursor: cached.cursor });
+    } else {
+      reset();
+      loadMore();
+    }
   }, [params.type, authPubkey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 外部からのタイムライン更新要求（例: 新規投稿後）
+  // リセットではなくリフレッシュを使用（既存投稿を保持）
   useEffect(() => {
     const handler = () => {
-      reset();
-      loadMore();
+      console.log('[useTimeline] timeline:refresh event received, refreshing...');
+      refresh();
     };
     if (typeof window !== 'undefined') {
       window.addEventListener('timeline:refresh', handler);
@@ -214,7 +301,7 @@ export function useTimeline(params: TimelineParams) {
         window.removeEventListener('timeline:refresh', handler);
       }
     };
-  }, [reset, loadMore]);
+  }, [refresh]);
 
   return {
     tweets: state.tweets,
@@ -225,5 +312,6 @@ export function useTimeline(params: TimelineParams) {
     toggleLike,
     toggleRetweet,
     reset,
+    refresh, // リフレッシュ機能を追加
   };
 }
