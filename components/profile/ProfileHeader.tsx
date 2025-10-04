@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Profile } from '../../features/profile/types';
 import { SafeImage } from '../ui/SafeImage';
@@ -15,6 +15,8 @@ import clsx from 'clsx';
 import { ActivityPubBadge } from '../ui/ActivityPubBadge';
 import { isActivityPubUser } from '../../lib/utils/activitypub';
 import { User } from '../../features/timeline/types';
+import { ensureTimelineLiveProfileTracking } from '../../features/timeline/services/live-profile-updater';
+import { useProfileStore } from '../../stores/profile.store';
 
 interface ProfileHeaderProps {
   profile: Profile;
@@ -45,11 +47,45 @@ export function ProfileHeader({
 }: ProfileHeaderProps) {
   const [bannerError, setBannerError] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const getProfilePicture = useProfileStore(state => state.getProfilePicture);
 
   const displayName = profile.displayName || profile.name || 'Nostrユーザー';
   const username = profile.name || profile.npub.slice(0, 12);
   const truncatedNpub = `${profile.npub.slice(0, 8)}...${profile.npub.slice(-6)}`;
-  const avatarSrc = profile.picture || '';
+
+  // npubからpubkeyを取得してライブ追跡を開始
+  useEffect(() => {
+    const getPubkeyFromNpub = async () => {
+      try {
+        const { nip19 } = await import('nostr-tools');
+        const decoded = nip19.decode(profile.npub);
+        if (decoded.type === 'npub') {
+          const pubkey = decoded.data as string;
+          ensureTimelineLiveProfileTracking(pubkey);
+        }
+      } catch (error) {
+        console.warn('Failed to decode npub for profile tracking:', error);
+      }
+    };
+    getPubkeyFromNpub();
+  }, [profile.npub]);
+
+  // 最新のアバターURLを取得（プロフィール更新時に即時反映）
+  const getLatestAvatar = () => {
+    try {
+      const { nip19 } = require('nostr-tools');
+      const decoded = nip19.decode(profile.npub);
+      if (decoded.type === 'npub') {
+        const pubkey = decoded.data as string;
+        return getProfilePicture(pubkey) || profile.picture || '';
+      }
+    } catch (error) {
+      // デコード失敗時はprofile.pictureを使用
+    }
+    return profile.picture || '';
+  };
+
+  const avatarSrc = getLatestAvatar();
 
   // ActivityPubチェック用のUserオブジェクトを作成
   const profileAsUser: User = {

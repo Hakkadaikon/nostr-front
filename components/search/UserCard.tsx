@@ -6,6 +6,9 @@ import { User } from '../../features/timeline/types';
 import { Button } from '../ui/Button';
 import { ActivityPubBadge } from '../ui/ActivityPubBadge';
 import { isActivityPubUser } from '../../lib/utils/activitypub';
+import { useEffect } from 'react';
+import { ensureTimelineLiveProfileTracking } from '../../features/timeline/services/live-profile-updater';
+import { useProfileStore } from '../../stores/profile.store';
 
 interface UserCardProps {
   user: User;
@@ -13,14 +16,26 @@ interface UserCardProps {
 }
 
 export function UserCard({ user, onFollow }: UserCardProps) {
+  const getProfilePicture = useProfileStore(state => state.getProfilePicture);
+
+  // ライブで最新プロフィールを追跡（アイコン変更即時反映）
+  useEffect(() => {
+    if (user.pubkey || user.id) {
+      ensureTimelineLiveProfileTracking(user.pubkey || user.id);
+    }
+  }, [user.pubkey, user.id]);
+
+  // 最新のアバターURLを取得（ストアに更新があれば上書き）
+  const userAvatar = getProfilePicture(user.pubkey || user.id) || user.avatar;
+
   return (
     <div className="p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
       <div className="flex items-start gap-3">
         {/* アバター */}
         <Link href={`/profile/${user.npub || user.id}` as any} className="flex-shrink-0">
-          {user.avatar ? (
+          {userAvatar ? (
             <SafeImage
-              src={user.avatar}
+              src={userAvatar}
               alt={user.name}
               width={48}
               height={48}
