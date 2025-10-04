@@ -239,7 +239,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                     await toggleFollow();
                   } catch (error) {
                     console.error('Failed to toggle follow:', error);
-                    alert('フォロー操作に失敗しました。もう一度お試しください。');
+                    alert(t('notifications.errors.followFailed'));
                   }
                 }}
                 disabled={isFollowLoading}
@@ -254,9 +254,9 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                 {isFollowLoading ? (
                   '...'
                 ) : isFollowing ? (
-                  'フォロー中'
+                  t('notifications.buttons.following')
                 ) : (
-                  'フォローする'
+                  t('notifications.buttons.follow')
                 )}
               </button>
             )}
@@ -270,7 +270,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                     await toggleLike();
                   } catch (error) {
                     console.error('Failed to toggle like:', error);
-                    alert('リアクション操作に失敗しました。もう一度お試しください。');
+                    alert(t('notifications.errors.reactionFailed'));
                   }
                 }}
                 disabled={isLikeLoading}

@@ -10,6 +10,7 @@ import { Zap, AlertCircle } from 'lucide-react';
 import QRCode from 'qrcode';
 import { generateZapInvoice, DEFAULT_TEST_LN_ADDRESS } from '../../features/zap/services/zap';
 import { useAuthStore } from '../../stores/auth.store';
+import { useTranslation } from 'react-i18next';
 
 interface ZapModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ interface ZapModalProps {
 }
 
 export function ZapModal({ isOpen, onClose, tweetId, recipientNpub, recipientLnAddress }: ZapModalProps) {
+  const { t } = useTranslation();
   const [amount, setAmount] = useState('1');
   const [message, setMessage] = useState('');
   const [invoice, setInvoice] = useState('');
@@ -27,7 +29,7 @@ export function ZapModal({ isOpen, onClose, tweetId, recipientNpub, recipientLnA
   const [error, setError] = useState('');
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
   const [usedLnAddress, setUsedLnAddress] = useState('');
-  
+
   const npub = useAuthStore((state) => state.npub);
 
   // Generate QR code when invoice changes
@@ -68,7 +70,7 @@ export function ZapModal({ isOpen, onClose, tweetId, recipientNpub, recipientLnA
       setInvoice(generatedInvoice);
     } catch (err: any) {
       console.error('Failed to generate invoice:', err);
-      setError(err.message || 'インボイスの生成に失敗しました');
+      setError(err.message || t('zap.errors.invoiceFailed'));
     } finally {
       setIsGenerating(false);
     }
@@ -104,9 +106,9 @@ export function ZapModal({ isOpen, onClose, tweetId, recipientNpub, recipientLnA
                 <div className="flex items-start gap-2">
                   <AlertCircle className="text-amber-600 dark:text-amber-400 mt-0.5" size={16} />
                   <div>
-                    <p className="text-amber-800 dark:text-amber-200 font-medium">テストモード</p>
+                    <p className="text-amber-800 dark:text-amber-200 font-medium">{t('zap.testMode')}</p>
                     <p className="text-amber-700 dark:text-amber-300 text-xs mt-1">
-                      受信者のLightning Addressが設定されていないため、テスト用アドレス ({DEFAULT_TEST_LN_ADDRESS}) を使用します。
+                      {t('zap.testModeDescription', { address: DEFAULT_TEST_LN_ADDRESS })}
                     </p>
                   </div>
                 </div>
@@ -115,7 +117,7 @@ export function ZapModal({ isOpen, onClose, tweetId, recipientNpub, recipientLnA
 
             <div>
               <label htmlFor="amount" className="block text-sm font-medium mb-1">
-                金額 (sats)
+                {t('zap.amountLabel')}
               </label>
               <Input
                 id="amount"
@@ -129,13 +131,13 @@ export function ZapModal({ isOpen, onClose, tweetId, recipientNpub, recipientLnA
 
             <div>
               <label htmlFor="message" className="block text-sm font-medium mb-1">
-                メッセージ (任意)
+                {t('zap.messageLabel')}
               </label>
               <Textarea
                 id="message"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Zapメッセージを入力..."
+                placeholder={t('zap.messagePlaceholder')}
                 rows={3}
               />
             </div>
@@ -151,13 +153,13 @@ export function ZapModal({ isOpen, onClose, tweetId, recipientNpub, recipientLnA
 
             <div className="flex justify-end gap-2">
               <Button onClick={handleClose} variant="secondary">
-                キャンセル
+                {t('common.cancel')}
               </Button>
               <Button
                 onClick={handleGenerateInvoice}
                 disabled={!amount || parseInt(amount) < 1 || isGenerating}
               >
-                {isGenerating ? <Spinner /> : 'インボイスを生成'}
+                {isGenerating ? <Spinner /> : t('zap.generateInvoice')}
               </Button>
             </div>
           </>
@@ -165,11 +167,11 @@ export function ZapModal({ isOpen, onClose, tweetId, recipientNpub, recipientLnA
           <>
             <div className="text-center space-y-4">
               <p className="text-sm text-gray-600">
-                以下のQRコードをスキャンしてZapを送信してください
+                {t('zap.invoiceGenerated')}
               </p>
 
               <div className="text-center text-xs text-gray-500 dark:text-gray-400">
-                送信先: {usedLnAddress}
+                {t('zap.sendTo', { address: usedLnAddress })}
               </div>
 
               <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -188,7 +190,7 @@ export function ZapModal({ isOpen, onClose, tweetId, recipientNpub, recipientLnA
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium">インボイス:</p>
+                <p className="text-sm font-medium">{t('zap.invoiceLabel')}</p>
                 <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded text-xs break-all font-mono select-all">
                   {invoice}
                 </div>
@@ -199,10 +201,10 @@ export function ZapModal({ isOpen, onClose, tweetId, recipientNpub, recipientLnA
                   onClick={() => navigator.clipboard.writeText(invoice)}
                   variant="secondary"
                 >
-                  コピー
+                  {t('zap.copyButton')}
                 </Button>
                 <Button onClick={handleReset}>
-                  新しいインボイス
+                  {t('zap.newInvoice')}
                 </Button>
               </div>
             </div>

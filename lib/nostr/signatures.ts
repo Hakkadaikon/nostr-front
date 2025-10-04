@@ -1,5 +1,6 @@
 import { finalizeEvent, getEventHash, validateEvent, verifyEvent, getPublicKey, nip19, type Event as NostrEvent } from 'nostr-tools';
 import { secureLog } from '../utils/secureLogger';
+import i18n from '../i18n/config';
 
 let queue: Promise<any> = Promise.resolve();
 
@@ -98,9 +99,9 @@ export async function signEvent(event: Omit<NostrEvent, 'id' | 'sig'>, getSecret
           throw new Error('Invalid secret key format. Please check your nsec or hex private key.');
         }
         if (error.message.includes('bad scalar size')) {
-          throw new Error('秘密鍵の形式が正しくありません。nsec1で始まる秘密鍵を使用してください。');
+          throw new Error(i18n.t('signatures.errors.invalidKeyFormat'));
         }
-        throw new Error(`署名エラー: ${error.message}`);
+        throw new Error(i18n.t('signatures.errors.signatureError', { message: error.message }));
       }
       throw error;
     }

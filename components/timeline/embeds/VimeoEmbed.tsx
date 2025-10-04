@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Play } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface VimeoEmbedProps {
   videoId: string;
@@ -9,6 +10,7 @@ interface VimeoEmbedProps {
 }
 
 export function VimeoEmbed({ videoId, url }: VimeoEmbedProps) {
+  const { t } = useTranslation();
   const [showEmbed, setShowEmbed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -46,7 +48,7 @@ export function VimeoEmbed({ videoId, url }: VimeoEmbedProps) {
       <div className="relative aspect-video">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-900/90">
-            <div className="text-white">読み込み中...</div>
+            <div className="text-white">{t('embeds.vimeo.loading')}</div>
           </div>
         )}
         <iframe

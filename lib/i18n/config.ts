@@ -7,7 +7,7 @@ export const supportedLocales = ['ja', 'en'] as const;
 export type SupportedLocale = typeof supportedLocales[number];
 
 export const localeNames: Record<SupportedLocale, string> = {
-  ja: '日本語',
+  ja: '日本語', // Keep native language names as-is for language selector
   en: 'English',
 };
 
