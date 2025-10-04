@@ -20,7 +20,7 @@ export function VimeoEmbed({ videoId, url }: VimeoEmbedProps) {
   if (!showEmbed) {
     return (
       <div
-        className="my-4 relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-gray-800 group cursor-pointer max-w-full shadow-lg hover:shadow-xl transition-shadow duration-300"
+        className="relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-gray-800 group cursor-pointer max-w-full shadow-lg hover:shadow-xl transition-shadow duration-300"
         onClick={handlePlay}
       >
         <div className="relative aspect-video flex items-center justify-center">
@@ -42,7 +42,7 @@ export function VimeoEmbed({ videoId, url }: VimeoEmbedProps) {
   }
 
   return (
-    <div className="my-4 relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-black max-w-full shadow-lg">
+    <div className="relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-black max-w-full shadow-lg">
       <div className="relative aspect-video">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-900/90">

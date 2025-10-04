@@ -51,7 +51,12 @@ function renderLink(url: string, key: string, seenUrls: Set<string>, suppressUrl
     );
   }
 
-  return <MediaEmbed key={key} url={cleaned} />;
+  // その他のメディア（YouTube、動画など）もブロック要素として適切なマージンで表示
+  return (
+    <div key={key} className="my-3">
+      <MediaEmbed url={cleaned} />
+    </div>
+  );
 }
 
 

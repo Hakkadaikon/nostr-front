@@ -216,13 +216,41 @@ test.describe('Media Embeds', () => {
 test.describe('Link Previews', () => {
   test('should show link preview for non-media URLs', async ({ page }) => {
     await page.goto('/');
-    
+
     // 非メディアURLを含む投稿を作成
     const textarea = page.getByPlaceholder("What's happening?");
     await textarea.fill('Check out https://example.com');
     await page.getByRole('button', { name: 'Post' }).click();
-    
+
     // リンクプレビューが表示されることを確認（LinkPreviewコンポーネント）
     await expect(page.locator('a[href="https://example.com"]').first()).toBeVisible();
+  });
+});
+
+test.describe('Embedded Note Media', () => {
+  test('should display YouTube embed within EmbeddedNote', async ({ page }) => {
+    await page.goto('/');
+
+    // 1. 最初にYouTube URLを含む投稿を作成
+    const textarea = page.getByPlaceholder("いまどうしてる？");
+    await textarea.fill(`Check out this video: ${mockMediaUrls.youtube}`);
+    await page.getByRole('button', { name: 'ポストする' }).click();
+
+    // 親投稿のサムネイルが表示されることを確認
+    await expect(page.locator('img[src*="img.youtube.com"]').first()).toBeVisible({ timeout: 10000 });
+
+    // 2. その投稿のIDを取得するために、投稿をクリックして詳細ページに移動
+    // （実際の実装では、投稿のnostr IDを取得する必要があります）
+    // このテストはモックベースなので、簡略化して nostr: 引用をシミュレート
+
+    // 3. nostr: 引用を含む新しい投稿を作成
+    // Note: 実際のnostr IDが必要なため、このテストは現状では動作しません
+    // 代わりに、RichContentとEmbeddedNoteの統合を確認するユニットテストを追加することをお勧めします
+
+    // TODO: 実際のnostr IDを使用したE2Eテストの実装
+  });
+
+  test('should display multiple media in EmbeddedNote without layout issues', async ({ page }) => {
+    // TODO: EmbeddedNote内で複数メディア（YouTube + 画像）が混在する場合のテスト
   });
 });

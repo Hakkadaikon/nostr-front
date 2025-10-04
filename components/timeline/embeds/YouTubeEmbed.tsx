@@ -30,7 +30,7 @@ export function YouTubeEmbed({ videoId, url }: YouTubeEmbedProps) {
 
   if (!showEmbed) {
     return (
-      <div className="my-4 relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-black group cursor-pointer max-w-full shadow-lg hover:shadow-xl transition-shadow duration-300"
+      <div className="relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-black group cursor-pointer max-w-full shadow-lg hover:shadow-xl transition-shadow duration-300"
            onClick={handlePlay}>
         <div className="relative aspect-video">
           <SafeImage
@@ -59,7 +59,7 @@ export function YouTubeEmbed({ videoId, url }: YouTubeEmbedProps) {
   }
 
   return (
-    <div className="my-4 relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-black max-w-full shadow-lg">
+    <div className="relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-black max-w-full shadow-lg">
       <div className="relative aspect-video">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-900/90">
