@@ -13,6 +13,7 @@ import { type Event as NostrEvent, nip19 } from 'nostr-tools';
 import { KIND_METADATA } from '../../lib/nostr/constants';
 import { isImageUrl } from '../../lib/utils/media-urls';
 import { getProfileImageUrl } from '../../lib/utils/avatar';
+import { RichContent } from './RichContent';
 
 interface QuotedTweetProps {
   quoteId: string;
@@ -193,10 +194,12 @@ export function QuotedTweet({ quoteId, relays = [] }: QuotedTweetProps) {
           </div>
 
           {/* コンテンツ */}
-          <div className="mt-1">
-            <p className="text-gray-900 dark:text-white text-sm line-clamp-3">
-              {displayContent}
-            </p>
+          <div className="mt-1 line-clamp-3">
+            <RichContent
+              content={displayContent}
+              suppressNoteIds={[note.id]}
+              authorPubkey={note.pubkey}
+            />
           </div>
 
           {/* 画像 */}
