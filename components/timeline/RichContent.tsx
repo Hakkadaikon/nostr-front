@@ -15,6 +15,7 @@ interface RichContentProps {
   suppressNoteIds?: string[];
   suppressUrls?: string[];
   authorPubkey?: string; // 投稿者の公開鍵（フォロー判定に使用）
+  actorPubkey?: string; // アクター（いいね・リポスト等をした人）の公開鍵
 }
 
 const TOKEN_REGEX = /(nostr:[^\s]+|https?:\/\/[^\s]+)/gi;
@@ -24,7 +25,7 @@ function renderText(text: string) {
   return text;
 }
 
-function renderLink(url: string, key: string, seenUrls: Set<string>, suppressUrls?: string[], authorPubkey?: string) {
+function renderLink(url: string, key: string, seenUrls: Set<string>, suppressUrls?: string[], authorPubkey?: string, actorPubkey?: string) {
   // 末尾に付与されがちな括弧や句読点を除去（Markdown の ![]() や文章中の括弧閉じ対策）
   const cleaned = url.replace(/[)\]\}>,.;]+$/g, '');
   if (seenUrls.has(cleaned)) {
@@ -45,6 +46,7 @@ function renderLink(url: string, key: string, seenUrls: Set<string>, suppressUrl
           src={cleaned}
           alt="Embedded image"
           authorPubkey={authorPubkey}
+          actorPubkey={actorPubkey}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -161,7 +163,7 @@ function renderNostr(
   );
 }
 
-export function RichContent({ content, tags, suppressNoteIds, suppressUrls, authorPubkey }: RichContentProps) {
+export function RichContent({ content, tags, suppressNoteIds, suppressUrls, authorPubkey, actorPubkey }: RichContentProps) {
   const nodes = useMemo(() => {
     const elements: ReactNode[] = [];
     const seenNoteIds = new Set<string>();
@@ -189,7 +191,7 @@ export function RichContent({ content, tags, suppressNoteIds, suppressUrls, auth
           elements.push(node);
         }
       } else if (token.startsWith('http')) {
-        const node = renderLink(token, `${match.index}-${token}`, seenUrls, suppressUrls, authorPubkey);
+        const node = renderLink(token, `${match.index}-${token}`, seenUrls, suppressUrls, authorPubkey, actorPubkey);
         if (node) {
           elements.push(node);
         }
@@ -203,7 +205,7 @@ export function RichContent({ content, tags, suppressNoteIds, suppressUrls, auth
     }
 
     return elements;
-  }, [content, tags, suppressNoteIds, suppressUrls, authorPubkey]);
+  }, [content, tags, suppressNoteIds, suppressUrls, authorPubkey, actorPubkey]);
 
   return (
     <div className="text-gray-900 dark:text-white whitespace-pre-wrap break-all overflow-hidden">

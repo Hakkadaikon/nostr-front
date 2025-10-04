@@ -274,7 +274,13 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
           {/* コンテンツ */}
           {tweet.content && tweet.content.trim().length > 0 && (
             <div className="mt-2">
-              <RichContent content={tweet.content} tags={tweet.tags} suppressNoteIds={tweet.quote ? [tweet.quote.id] : undefined} authorPubkey={tweet.author.pubkey} />
+              <RichContent
+                content={tweet.content}
+                tags={tweet.tags}
+                suppressNoteIds={tweet.quote ? [tweet.quote.id] : undefined}
+                authorPubkey={tweet.author.pubkey || tweet.author.id}
+                actorPubkey={activity?.actor?.pubkey || activity?.actor?.id}
+              />
             </div>
           )}
 
@@ -299,7 +305,8 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
                     <SensitiveImage
                       src={media.url}
                       alt={media.altText || ''}
-                      authorPubkey={tweet.author.pubkey}
+                      authorPubkey={tweet.author.pubkey || tweet.author.id}
+                      actorPubkey={activity?.actor?.pubkey || activity?.actor?.id}
                     >
                       <SafeImage
                         src={media.url}

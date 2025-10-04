@@ -27,6 +27,7 @@ interface EmbeddedPostProps {
   isQuote?: boolean;
   className?: string;
   authorPubkey?: string; // 投稿者の公開鍵（フォロー判定・ぼかし処理に使用）
+  actorPubkey?: string; // アクター（いいね・リポスト等をした人）の公開鍵
 }
 
 export function EmbeddedPost({
@@ -37,7 +38,8 @@ export function EmbeddedPost({
   media,
   isQuote = false,
   className,
-  authorPubkey
+  authorPubkey,
+  actorPubkey
 }: EmbeddedPostProps) {
   const timeAgo = createdAt ? formatDistanceToNow(createdAt, {
     addSuffix: true,
@@ -96,7 +98,7 @@ export function EmbeddedPost({
 
       {/* 本文 */}
       <div className="text-sm">
-        <RichContent content={content} suppressUrls={mediaUrls} authorPubkey={authorPubkey} />
+        <RichContent content={content} suppressUrls={mediaUrls} authorPubkey={authorPubkey} actorPubkey={actorPubkey} />
       </div>
 
       {/* メディア */}

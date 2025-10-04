@@ -9,6 +9,7 @@ interface SensitiveImageProps {
   src: string;
   alt: string;
   authorPubkey?: string;
+  actorPubkey?: string; // アクター（いいね・リポスト等をした人）の公開鍵
   className?: string;
   children: React.ReactNode; // 実際の画像コンポーネント（img, SafeImage等）
 }
@@ -17,14 +18,15 @@ interface SensitiveImageProps {
  * 非フォロワーの画像にぼかし処理を適用し、クリックで解除できるコンポーネント
  *
  * 動作:
- * - authorPubkey がフォロー中の場合: ぼかしなしで表示
- * - authorPubkey が非フォローの場合: 初回はぼかし、クリックで解除
- * - authorPubkey が未指定またはフォロー情報が取得できない場合: 安全側（ぼかす）
+ * - authorPubkey または actorPubkey がフォロー中の場合: ぼかしなしで表示
+ * - どちらも非フォローの場合: 初回はぼかし、クリックで解除
+ * - 両方未指定またはフォロー情報が取得できない場合: 安全側（ぼかす）
  */
 export function SensitiveImage({
   src,
   alt,
   authorPubkey,
+  actorPubkey,
   className = '',
   children,
 }: SensitiveImageProps) {
@@ -32,11 +34,24 @@ export function SensitiveImage({
   const { isRevealed, revealImage } = useImageRevealStore();
 
   useEffect(() => {
-    // フォロー判定
-    const followStatus = isFollowing(authorPubkey);
+    // 投稿者のフォロー判定
+    const authorFollowStatus = isFollowing(authorPubkey);
 
-    // フォロー中の場合はぼかしなし
-    if (followStatus === true) {
+    // アクター（いいね・リポスト等をした人）のフォロー判定
+    const actorFollowStatus = isFollowing(actorPubkey);
+
+    // デバッグログ
+    console.log('[SensitiveImage] Debug:', {
+      src: src.substring(0, 50),
+      authorPubkey,
+      authorFollowStatus,
+      actorPubkey,
+      actorFollowStatus,
+      isRevealed: isRevealed(src)
+    });
+
+    // 投稿者またはアクターがフォロー中の場合はぼかしなし
+    if (authorFollowStatus === true || actorFollowStatus === true) {
       setShouldBlur(false);
       return;
     }
@@ -49,7 +64,7 @@ export function SensitiveImage({
 
     // 非フォローまたは判定不能の場合はぼかす（安全側）
     setShouldBlur(true);
-  }, [authorPubkey, src, isRevealed]);
+  }, [authorPubkey, actorPubkey, src, isRevealed]);
 
   const handleReveal = () => {
     revealImage(src);
