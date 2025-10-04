@@ -61,26 +61,11 @@ function renderLink(url: string, key: string, seenUrls: Set<string>, suppressUrl
     );
   }
 
-  // 動画・音声URLの場合はMediaEmbedで表示
-  if (isVideoUrl(cleaned) || isAudioUrl(cleaned)) {
-    return (
-      <span key={key} className="block">
-        <MediaEmbed url={cleaned} authorPubkey={authorPubkey} />
-      </span>
-    );
-  }
-
-  // その他のURLは通常のリンクとして表示
+  // その他のURL（動画・音声・OGP等）はMediaEmbedで表示
   return (
-    <a
-      key={key}
-      href={cleaned}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-purple-600 underline hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-200"
-    >
-      {cleaned}
-    </a>
+    <span key={key} className="block">
+      <MediaEmbed url={cleaned} authorPubkey={authorPubkey} />
+    </span>
   );
 }
 
