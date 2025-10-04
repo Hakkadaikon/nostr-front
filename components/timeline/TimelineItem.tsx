@@ -294,6 +294,7 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
                 content={tweet.content}
                 tags={tweet.tags}
                 suppressNoteIds={tweet.quote ? [tweet.quote.id] : undefined}
+                suppressUrls={tweet.media?.map(m => m.url)}
                 authorPubkey={tweet.author.pubkey || tweet.author.id}
                 actorPubkey={activity?.actor?.pubkey || activity?.actor?.id}
               />
