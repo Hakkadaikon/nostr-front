@@ -16,12 +16,14 @@ import { SafeImage } from '../ui/SafeImage';
 import { EmbeddedPost } from './EmbeddedPost';
 import { RichContent } from '../timeline/RichContent';
 import { ensureLiveProfileTracking } from '../../features/notifications/services/live-profile-updater';
+import { useTranslation } from 'react-i18next';
 
 interface NotificationItemProps {
   notification: Notification;
 }
 
 export function NotificationItem({ notification }: NotificationItemProps) {
+  const { t } = useTranslation();
   // ライブで最新プロフィールを追跡（アイコン変更即時反映）
   ensureLiveProfileTracking(notification.user.pubkey);
   if (notification.postAuthor?.id) {
@@ -32,7 +34,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
   const markAsRead = useNotificationStore(s => s.markAsRead);
   const { publicKey: currentUserPubkey } = useAuthStore();
   const { isFollowing, isLoading: isFollowLoading, toggleFollow } = useFollow(notification.user.npub);
-  
+
   // リアクション機能のフック
   const { isLiked, isLoading: isLikeLoading, toggleLike } = useReaction({
     eventId: notification.postId || '',
@@ -71,17 +73,17 @@ export function NotificationItem({ notification }: NotificationItemProps) {
   const getMessage = () => {
     switch (notification.type) {
       case 'like':
-        return 'があなたの投稿にリアクションしました';
+        return t('notifications.actions.reacted');
       case 'reply':
-        return 'があなたの投稿に返信しました';
+        return t('notifications.actions.replied');
       case 'repost':
-        return 'があなたの投稿をリポストしました';
+        return t('notifications.actions.reposted');
       case 'follow':
-        return 'があなたをフォローしました';
+        return t('notifications.actions.followed');
       case 'mention':
-        return 'があなたをメンションしました';
+        return t('notifications.actions.mentioned');
       case 'zap':
-        return 'があなたにZapを送りました';
+        return t('notifications.actions.zapped');
     }
   };
 
@@ -184,7 +186,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
               {notification.postId && (
                 <div>
                   <div className="text-xs font-medium mb-1 text-gray-500 dark:text-gray-400 tracking-wide">
-                    Zap対象の投稿
+                    {t('notifications.zap.targetPost')}
                   </div>
                   <EmbeddedPost
                     postId={notification.postId}
@@ -200,7 +202,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
 
               {!notification.postId && (
                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                  関連する投稿が特定できませんでした（Zap Receipt: {notification.id.split('-')[0].slice(0, 12)}...）
+                  {t('notifications.zap.notFound', { id: notification.id.split('-')[0].slice(0, 12) })}
                 </div>
               )}
             </div>
@@ -281,10 +283,9 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                 )}
               >
                 <Heart size={16} className={clsx(isLiked && 'fill-current')} />
-                リアクション
               </button>
             )}
-            
+
             {/* 返信ボタン - 返信可能な通知タイプの場合のみ表示 */}
             {(notification.type === 'reply' || notification.type === 'mention' || notification.type === 'like' || notification.type === 'repost') && notification.postId && (
               <button
@@ -295,7 +296,6 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                 className="text-sm text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 transition-colors flex items-center gap-1"
               >
                 <MessageCircle size={16} />
-                返信
               </button>
             )}
           </div>
