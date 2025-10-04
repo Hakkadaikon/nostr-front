@@ -29,18 +29,29 @@ function timelineReducer(state: TimelineState, action: TimelineAction): Timeline
       const existingIds = new Set(state.tweets.map(t => t.id));
       const newTweets = action.tweets.filter(t => !existingIds.has(t.id));
 
+      // 新しいツイートがない場合は既存の配列をそのまま使う（再レンダリングを防ぐ）
+      if (newTweets.length === 0) {
+        return {
+          ...state,
+          nextCursor: action.nextCursor,
+          hasMore: action.hasMore,
+          isLoading: false,
+          error: action.error || null,
+        };
+      }
+
       // リフレッシュの場合は新着を先頭に追加、通常のロードは末尾に追加
       const mergedTweets = action.isRefresh
         ? [...newTweets, ...state.tweets]
         : [...state.tweets, ...newTweets];
 
       // activityTimestamp または createdAt でソート（降順）
+      // ソートはマージ時のみ実行し、既存の配列は保持
       const sortedTweets = mergedTweets.sort((a, b) => {
         const aTime = toTimestamp(a.activityTimestamp ?? a.createdAt);
         const bTime = toTimestamp(b.activityTimestamp ?? b.createdAt);
         return bTime - aTime;
       });
-
 
       return {
         ...state,
@@ -170,14 +181,9 @@ export function useTimeline(params: TimelineParams) {
     dispatch({ type: 'FETCH_START' });
 
     try {
-      // プロフィールキャッシュをクリアして最新情報を取得
-      // 既存のツイートに含まれるユーザーのプロフィールを更新
-      const uniqueAuthors = new Set(state.tweets.map(t => t.author.pubkey || t.author.id));
-      uniqueAuthors.forEach(pubkey => {
-        if (pubkey) clearProfileCache(pubkey);
-      });
-
       // 最新のツイートを取得（cursorなし）
+      // プロフィールキャッシュはTTL（1分）で自然に更新されるため、
+      // refresh時に強制クリアするとちらつきの原因になる
       const response = await fetchTimeline({
         ...params,
         cursor: undefined, // 最新から取得
