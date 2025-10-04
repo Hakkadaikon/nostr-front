@@ -11,6 +11,7 @@ interface RichContentProps {
   content: string;
   tags?: string[][];
   suppressNoteIds?: string[];
+  suppressUrls?: string[];
 }
 
 const TOKEN_REGEX = /(nostr:[^\s]+|https?:\/\/[^\s]+)/gi;
@@ -20,13 +21,19 @@ function renderText(text: string) {
   return text;
 }
 
-function renderLink(url: string, key: string, seenUrls: Set<string>) {
+function renderLink(url: string, key: string, seenUrls: Set<string>, suppressUrls?: string[]) {
   // 末尾に付与されがちな括弧や句読点を除去（Markdown の ![]() や文章中の括弧閉じ対策）
   const cleaned = url.replace(/[)\]\}>,.;]+$/g, '');
   if (seenUrls.has(cleaned)) {
     return null;
   }
   seenUrls.add(cleaned);
+
+  // suppressUrlsに含まれる場合は表示しない
+  if (suppressUrls?.some(suppressUrl => cleaned === suppressUrl || cleaned.startsWith(suppressUrl))) {
+    return null;
+  }
+
   return <MediaEmbed key={key} url={cleaned} />;
 }
 
@@ -118,7 +125,7 @@ function renderNostr(
   );
 }
 
-export function RichContent({ content, tags, suppressNoteIds }: RichContentProps) {
+export function RichContent({ content, tags, suppressNoteIds, suppressUrls }: RichContentProps) {
   const nodes = useMemo(() => {
     const elements: ReactNode[] = [];
     const seenNoteIds = new Set<string>();
@@ -146,7 +153,7 @@ export function RichContent({ content, tags, suppressNoteIds }: RichContentProps
           elements.push(node);
         }
       } else if (token.startsWith('http')) {
-        const node = renderLink(token, `${match.index}-${token}`, seenUrls);
+        const node = renderLink(token, `${match.index}-${token}`, seenUrls, suppressUrls);
         if (node) {
           elements.push(node);
         }
@@ -160,7 +167,7 @@ export function RichContent({ content, tags, suppressNoteIds }: RichContentProps
     }
 
     return elements;
-  }, [content, tags, suppressNoteIds]);
+  }, [content, tags, suppressNoteIds, suppressUrls]);
 
   return (
     <div className="text-gray-900 dark:text-white whitespace-pre-wrap break-all overflow-hidden">

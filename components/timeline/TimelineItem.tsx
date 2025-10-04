@@ -7,7 +7,7 @@ import EmbeddedNote from '../notes/EmbeddedNote';
 import { RichContent } from './RichContent';
 import Link from 'next/link';
 import { Tweet } from '../../features/timeline/types';
-import { Heart, MessageCircle, Repeat2, Share, Zap, MoreHorizontal, Trash2, Smile } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share, Zap, MoreHorizontal, Trash2, Smile, CornerUpRight } from 'lucide-react';
 import { IconButton } from '../ui/IconButton';
 import { QuotedTweet } from './QuotedTweet';
 import { ActivityPubBadge } from '../ui/ActivityPubBadge';
@@ -261,8 +261,13 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
 
           {/* 返信元 */}
           {tweet.parentId && (
-            <div className="mb-2">
-              <EmbeddedNote reference={{ id: tweet.parentId }} />
+            <div className="mb-2 flex items-start gap-2">
+              <CornerUpRight
+                size={18}
+                className="mt-1 text-gray-400 dark:text-gray-500"
+                aria-hidden="true"
+              />
+              <EmbeddedNote reference={{ id: tweet.parentId }} className="flex-1 min-w-0" />
             </div>
           )}
           {/* コンテンツ */}

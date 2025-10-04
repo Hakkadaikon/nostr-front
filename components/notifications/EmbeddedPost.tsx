@@ -28,26 +28,29 @@ interface EmbeddedPostProps {
   className?: string;
 }
 
-export function EmbeddedPost({ 
-  postId, 
-  content, 
-  author, 
-  createdAt, 
+export function EmbeddedPost({
+  postId,
+  content,
+  author,
+  createdAt,
   media,
   isQuote = false,
-  className 
+  className
 }: EmbeddedPostProps) {
   const timeAgo = createdAt ? formatDistanceToNow(createdAt, {
     addSuffix: true,
     locale: ja,
   }) : null;
 
+  // メディアのURLリストを作成してRichContentに渡し、インライン表示を抑制
+  const mediaUrls = media?.map(item => item.url) || [];
+
   return (
     <Link
       href={`/note/${postId}` as any}
       className={clsx(
         'block mt-3 p-3 rounded-xl border transition-all duration-200',
-        isQuote 
+        isQuote
           ? 'bg-gray-50/50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-800 hover:bg-gray-100/50 dark:hover:bg-gray-900/50'
           : 'bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-900/70',
         className
@@ -91,7 +94,7 @@ export function EmbeddedPost({
 
       {/* 本文 */}
       <div className="text-sm">
-        <RichContent content={content} />
+        <RichContent content={content} suppressUrls={mediaUrls} />
       </div>
 
       {/* メディア */}

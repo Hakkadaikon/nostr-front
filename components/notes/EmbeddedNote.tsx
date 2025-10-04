@@ -2,9 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { Event as NostrEvent } from 'nostr-tools';
+import { nip19 } from 'nostr-tools';
 import NoteCard from './NoteCard';
 import { fetchNote } from '../../features/notes/fetchNote';
+import { fetchProfileForNotification } from '../../features/profile/services/profile-cache';
 import { Spinner } from '../ui/Spinner';
+import type { NotificationUser } from '../../types/notification';
 
 export type NoteReference = {
   id: string;
@@ -18,6 +21,7 @@ interface EmbeddedNoteProps {
 
 export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps) {
   const [note, setNote] = useState<NostrEvent | null>(null);
+  const [author, setAuthor] = useState<NotificationUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const { relayKey, relays } = useMemo(() => {
@@ -30,22 +34,36 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
     let active = true;
     setIsLoading(true);
     setNote(null);
+    setAuthor(null);
 
     console.log('EmbeddedNote: Fetching note', { id: reference.id, relays });
 
     // Safety timeout: in rare cases fetchNote may hang (relay never sends EOSE)
     const safetyTimeout = setTimeout(() => {
-      if (active && isLoading) {
+      if (active) {
         console.warn('EmbeddedNote: Safety timeout reached, showing error fallback');
         setIsLoading(false);
       }
     }, 5000); // safety window slightly longer than fetchNote timeout
 
     fetchNote(reference.id, relays, 3000)
-      .then(event => {
+      .then(async event => {
         if (!active) return;
         console.log('EmbeddedNote: Fetched event', event);
         setNote(event);
+
+        // Fetch author profile
+        if (event?.pubkey) {
+          try {
+            const profile = await fetchProfileForNotification(event.pubkey);
+            if (active) {
+              setAuthor(profile);
+            }
+          } catch (error) {
+            console.error('EmbeddedNote: Error fetching author profile', error);
+          }
+        }
+
         setIsLoading(false);
       })
       .catch(error => {
@@ -91,7 +109,17 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
 
   return (
     <div className={className}>
-      <NoteCard id={note.id} content={note.content} />
+      <NoteCard
+        id={note.id}
+        content={note.content}
+        author={author ? {
+          pubkey: author.pubkey,
+          npub: author.npub,
+          name: author.name,
+          username: author.username,
+          avatar: author.avatar,
+        } : undefined}
+      />
     </div>
   );
 }
