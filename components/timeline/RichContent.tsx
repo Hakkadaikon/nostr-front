@@ -6,7 +6,7 @@ import { parseNostrUri } from '../../lib/utils/url';
 import EmbeddedNote from '../notes/EmbeddedNote';
 import { useMemo, ReactNode } from 'react';
 import { MediaEmbed } from './MediaEmbed';
-import { isImageUrl } from '../../lib/utils/media-urls';
+import { isImageUrl, isVideoUrl, isAudioUrl } from '../../lib/utils/media-urls';
 import { SensitiveImage } from '../ui/SensitiveImage';
 
 interface RichContentProps {
@@ -57,6 +57,15 @@ function renderLink(url: string, key: string, seenUrls: Set<string>, suppressUrl
             referrerPolicy="no-referrer"
           />
         </SensitiveImage>
+      </span>
+    );
+  }
+
+  // 動画・音声URLの場合はMediaEmbedで表示
+  if (isVideoUrl(cleaned) || isAudioUrl(cleaned)) {
+    return (
+      <span key={key} className="block">
+        <MediaEmbed url={cleaned} authorPubkey={authorPubkey} />
       </span>
     );
   }
