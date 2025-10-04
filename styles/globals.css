@@ -1,4 +1,5 @@
 @import './tailwind.css';
+@import 'react-tweet/theme.css';
 
 :root {
   color-scheme: light dark;
