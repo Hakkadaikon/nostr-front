@@ -41,30 +41,10 @@ export function LanguageToggle() {
         />
       </div>
 
-      {/* 言語表示 */}
-      <div className="flex items-center space-x-2">
-        <span
-          className={clsx(
-            'text-sm font-medium transition-colors duration-200',
-            isJapanese
-              ? 'text-gray-900 dark:text-gray-100'
-              : 'text-gray-400 dark:text-gray-500'
-          )}
-        >
-          JA
-        </span>
-        <span className="text-gray-400 dark:text-gray-500">/</span>
-        <span
-          className={clsx(
-            'text-sm font-medium transition-colors duration-200',
-            !isJapanese
-              ? 'text-gray-900 dark:text-gray-100'
-              : 'text-gray-400 dark:text-gray-500'
-          )}
-        >
-          EN
-        </span>
-      </div>
+      {/* 現在の言語表示 */}
+      <span className="text-sm font-medium text-gray-900 dark:text-gray-100 transition-colors duration-200">
+        {isJapanese ? 'JA' : 'EN'}
+      </span>
 
       <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-pink-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
     </button>
