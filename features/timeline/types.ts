@@ -79,6 +79,7 @@ export interface TimelineResponse {
   tweets: Tweet[];
   nextCursor?: string;
   hasMore: boolean;
+  error?: TimelineError;
 }
 
 // タイムラインのエラー

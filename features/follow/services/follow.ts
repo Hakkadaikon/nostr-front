@@ -2,26 +2,39 @@ import { type Event as NostrEvent } from 'nostr-tools';
 import { subscribeTo, getReadRelays } from '../../relays/services/relayPool';
 import { useRelaysStore } from '../../../stores/relays.store';
 import { useAuthStore } from '../../../stores/auth.store';
+import { useFollowCacheStore } from '../../../stores/follow-cache.store';
 import { KIND_FOLLOW, KIND_PEOPLE_LIST } from '../../../lib/nostr/constants';
 
 /**
  * ユーザーのフォローリスト（kind3イベント）を取得
+ * KIND 3 (Contact List) を優先、KIND 30000 (People List) はフォールバック
+ * キャッシュ対応、計測ログ、onEoseハンドラ付き
  */
 export async function fetchFollowList(pubkey?: string): Promise<string[]> {
+  const startTime = Date.now();
+
   try {
     // 公開鍵を取得（指定されていなければ現在のユーザー）
     const targetPubkey = pubkey || useAuthStore.getState().publicKey;
-    console.log('[fetchFollowList] Target pubkey:', targetPubkey);
-    
+    console.log('[fetchFollowList] Start - Target pubkey:', targetPubkey);
+
     if (!targetPubkey) {
       console.error('[fetchFollowList] No public key available');
       return [];
     }
 
+    // キャッシュをチェック
+    const cached = useFollowCacheStore.getState().getFollowList(targetPubkey);
+    if (cached) {
+      const elapsed = Date.now() - startTime;
+      console.log(`[fetchFollowList] Cache hit - ${cached.followList.length} follows, kind: ${cached.kind}, elapsed: ${elapsed}ms`);
+      return cached.followList;
+    }
+
     // リレー設定を取得
     const relaysStore = useRelaysStore.getState();
     let relays = getReadRelays(relaysStore.relays);
-    
+
     if (relays.length === 0) {
       // 環境変数からデフォルトリレーを取得
       const defaultRelays = process.env.NEXT_PUBLIC_DEFAULT_RELAYS;
@@ -37,44 +50,96 @@ export async function fetchFollowList(pubkey?: string): Promise<string[]> {
       }
     }
 
-    return new Promise((resolve) => {
-      let followList: string[] = [];
-      let latestEvent: NostrEvent | null = null;
-      let timeoutId: NodeJS.Timeout;
+    console.log(`[fetchFollowList] Fetching from ${relays.length} relays:`, relays);
 
-      // フォローリスト候補（NIP-51 People List と NIP-02 Contact List）を購読し、最も新しいものを採用
+    return new Promise((resolve) => {
+      let kind3Event: NostrEvent | null = null; // KIND_FOLLOW (3) 優先
+      let kind30000Event: NostrEvent | null = null; // KIND_PEOPLE_LIST (30000) フォールバック
+      let timeoutId: NodeJS.Timeout;
+      let eventsReceived = 0;
+      // フォローリスト候補を購読：KIND 3 を優先、KIND 30000 はフォールバック
       const sub = subscribeTo(
         relays,
         [
-          { kinds: [KIND_PEOPLE_LIST, KIND_FOLLOW], authors: [targetPubkey], limit: 2 }
+          { kinds: [KIND_FOLLOW, KIND_PEOPLE_LIST], authors: [targetPubkey], limit: 2 }
         ],
         (event: NostrEvent) => {
           try {
-            // 最新の created_at を持つイベントを保持
-            if (!latestEvent || event.created_at >= latestEvent.created_at) {
-              latestEvent = event;
+            eventsReceived++;
+
+            if (event.kind === KIND_FOLLOW) {
+              // KIND 3 は常に優先（最新のもの）
+              if (!kind3Event || event.created_at >= kind3Event.created_at) {
+                kind3Event = event;
+                console.log(`[fetchFollowList] Received KIND 3 event, created_at: ${event.created_at}, p-tags: ${event.tags.filter(t => t[0] === 'p').length}`);
+              }
+            } else if (event.kind === KIND_PEOPLE_LIST) {
+              // KIND 30000 はフォールバック用
+              if (!kind30000Event || event.created_at >= kind30000Event.created_at) {
+                kind30000Event = event;
+                console.log(`[fetchFollowList] Received KIND 30000 event, created_at: ${event.created_at}, p-tags: ${event.tags.filter(t => t[0] === 'p').length}`);
+              }
             }
           } catch (error) {
             console.error('[fetchFollowList] Failed to handle event:', error);
           }
+        },
+        {
+          onEose: () => {
+            // EOSE を受信したらタイムアウトを待たずに早期終了
+            console.log('[fetchFollowList] EOSE received, finalizing early');
+            clearTimeout(timeoutId);
+            sub.close();
+            finalizeAndResolve();
+          }
         }
       );
 
-      // タイムアウト設定（3.5秒）で購読を終了し、最新イベントからpタグを抽出（リレー遅延対策）
-      timeoutId = setTimeout(() => {
-        sub.close();
-        if (latestEvent) {
-          const tags = latestEvent.tags || [];
+      const finalizeAndResolve = () => {
+        const elapsed = Date.now() - startTime;
+        let followList: string[] = [];
+        let selectedKind: number | null = null;
+
+        // KIND 3 を優先、なければ KIND 30000 を使用
+        const selectedEvent = kind3Event || kind30000Event;
+
+        if (selectedEvent) {
+          const tags = selectedEvent.tags || [];
           followList = tags.filter(tag => tag[0] === 'p' && tag[1]).map(tag => tag[1]);
-          console.log('[fetchFollowList] Selected follow list from kind', latestEvent.kind, 'size:', followList.length);
+          selectedKind = selectedEvent.kind;
+
+          // キャッシュに保存
+          useFollowCacheStore.getState().setFollowList(targetPubkey, followList, selectedKind);
+
+          console.log(`[fetchFollowList] Success - kind: ${selectedKind}, size: ${followList.length}, events: ${eventsReceived}, elapsed: ${elapsed}ms`);
         } else {
-          console.log('Follow list fetch timeout (3.5s), no events received');
+          console.log(`[fetchFollowList] No events received - events: ${eventsReceived}, elapsed: ${elapsed}ms`);
         }
+
         resolve(followList);
+      };
+
+      // タイムアウト設定（3.5秒）で購読を終了
+      timeoutId = setTimeout(() => {
+        console.log('[fetchFollowList] Timeout reached (3.5s)');
+        sub.close();
+        finalizeAndResolve();
       }, 3500);
     });
   } catch (error) {
-    console.error('Failed to fetch follow list:', error);
+    const elapsed = Date.now() - startTime;
+    console.error(`[fetchFollowList] Failed after ${elapsed}ms:`, error);
+
+    // エラー時もキャッシュがあれば返す
+    if (pubkey || useAuthStore.getState().publicKey) {
+      const targetPubkey = pubkey || useAuthStore.getState().publicKey!;
+      const cached = useFollowCacheStore.getState().getFollowList(targetPubkey);
+      if (cached) {
+        console.log('[fetchFollowList] Returning cached data after error');
+        return cached.followList;
+      }
+    }
+
     return [];
   }
 }

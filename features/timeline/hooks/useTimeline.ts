@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useReducer } from 'react';
 import { fetchTimeline, likeTweet, unlikeTweet, retweet, undoRetweet } from '../services/timeline';
-import { TimelineParams, TimelineState, Tweet } from '../types';
+import { TimelineParams, TimelineState, Tweet, TimelineError } from '../types';
 import { useAuthStore } from '../../../stores/auth.store';
 
 // Action types
 type TimelineAction =
   | { type: 'FETCH_START' }
-  | { type: 'FETCH_SUCCESS'; tweets: Tweet[]; nextCursor?: string; hasMore: boolean }
+  | { type: 'FETCH_SUCCESS'; tweets: Tweet[]; nextCursor?: string; hasMore: boolean; error?: TimelineError }
   | { type: 'FETCH_ERROR'; error: Error }
   | { type: 'TOGGLE_LIKE'; tweetId: string }
   | { type: 'TOGGLE_RETWEET'; tweetId: string }
@@ -18,8 +18,9 @@ type TimelineAction =
 function timelineReducer(state: TimelineState, action: TimelineAction): TimelineState {
   switch (action.type) {
     case 'FETCH_START':
+      // ローディング中も直前のツイートを保持（空にしない）
       return { ...state, isLoading: true, error: null };
-    
+
     case 'FETCH_SUCCESS':
       return {
         ...state,
@@ -27,9 +28,9 @@ function timelineReducer(state: TimelineState, action: TimelineAction): Timeline
         nextCursor: action.nextCursor,
         hasMore: action.hasMore,
         isLoading: false,
-        error: null,
+        error: action.error || null,
       };
-    
+
     case 'FETCH_ERROR':
       return {
         ...state,
@@ -40,7 +41,7 @@ function timelineReducer(state: TimelineState, action: TimelineAction): Timeline
           details: action.error,
         },
       };
-    
+
     case 'TOGGLE_LIKE':
       return {
         ...state,
@@ -55,7 +56,7 @@ function timelineReducer(state: TimelineState, action: TimelineAction): Timeline
           return tweet;
         }),
       };
-    
+
     case 'TOGGLE_RETWEET':
       return {
         ...state,
@@ -70,7 +71,7 @@ function timelineReducer(state: TimelineState, action: TimelineAction): Timeline
           return tweet;
         }),
       };
-    
+
     case 'RESET':
       return {
         tweets: [],
@@ -79,7 +80,7 @@ function timelineReducer(state: TimelineState, action: TimelineAction): Timeline
         hasMore: true,
         nextCursor: undefined,
       };
-    
+
     default:
       return state;
   }
@@ -113,6 +114,7 @@ export function useTimeline(params: TimelineParams) {
         tweets: response.tweets,
         nextCursor: response.nextCursor,
         hasMore: response.hasMore,
+        error: response.error,
       });
     } catch (error) {
       dispatch({ type: 'FETCH_ERROR', error: error as Error });

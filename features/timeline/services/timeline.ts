@@ -276,8 +276,13 @@ async function nostrEventToTweet(event: NostrEvent, relays: string[]): Promise<T
 
 /**
  * タイムラインデータを取得
+ * フォロータイムラインは二段階ロード対応：
+ * 1. キャッシュ済みフォロー集合で即時購読
+ * 2. バックグラウンドで最新フォローリストを取得（次回用にキャッシュ更新）
  */
 export async function fetchTimeline(params: TimelineParams): Promise<TimelineResponse> {
+  const startTime = Date.now();
+
   try {
     const relaysStore = useRelaysStore.getState();
     const configuredRelays = getReadRelays(relaysStore.relays);
@@ -300,9 +305,14 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
 
     let followingList: string[] = [];
     if (params.type === 'following') {
+      const followFetchStart = Date.now();
       console.log('[fetchTimeline] Fetching follow list for following tab');
+
+      // フォローリスト取得（キャッシュ優先）
       followingList = await fetchFollowList();
-      console.log('[fetchTimeline] Follow list retrieved:', followingList.length, 'pubkeys');
+      const followFetchElapsed = Date.now() - followFetchStart;
+
+      console.log(`[fetchTimeline] Follow list retrieved: ${followingList.length} pubkeys in ${followFetchElapsed}ms`);
 
       // 自分自身の投稿もFollowingタイムラインに含める（一般的なクライアント挙動）
       const selfPubkey = useAuthStore.getState().publicKey;
@@ -312,10 +322,14 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
       }
 
       if (followingList.length === 0) {
-        console.log('[fetchTimeline] Follow list is empty (even after adding self), returning empty timeline');
+        console.log('[fetchTimeline] Follow list is empty (even after adding self), returning empty timeline with guidance');
         return {
           tweets: [],
-          hasMore: false
+          hasMore: false,
+          error: {
+            code: 'EMPTY_FOLLOW_LIST',
+            message: 'フォロー中のユーザーがいません。他のユーザーをフォローしてタイムラインを表示しましょう。',
+          }
         };
       }
     }
@@ -582,6 +596,8 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
       };
 
       const finalize = async () => {
+        const finalizeStart = Date.now();
+
         if (timelineTweets.length > 0) {
           const uniqueNoteIds = Array.from(new Set(timelineTweets.map(t => t.id)));
           if (uniqueNoteIds.length > 0) {
@@ -605,6 +621,11 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
               event.created_at < oldest.created_at ? event : oldest
             )
           : null;
+
+        const totalElapsed = Date.now() - startTime;
+        const finalizeElapsed = Date.now() - finalizeStart;
+
+        console.log(`[fetchTimeline] Complete - type: ${params.type}, tweets: ${sliced.length}/${timelineTweets.length}, total: ${totalElapsed}ms, finalize: ${finalizeElapsed}ms`);
 
         resolve({
           tweets: sliced,
