@@ -6,6 +6,7 @@ import { useNotificationStore } from '../../stores/notification.store';
 import { NotificationList } from '../../components/notifications/NotificationList';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import { useNotifications } from '../../features/notifications/hooks/useNotifications';
+import { useTranslation } from 'react-i18next';
 
 type TabType = 'all' | 'mentions' | 'replies' | 'reposts' | 'likes' | 'zaps' | 'follows';
 const VALID_TABS: TabType[] = ['all', 'mentions', 'replies', 'reposts', 'likes', 'zaps', 'follows'];
@@ -19,21 +20,23 @@ export default function NotificationsPage() {
 }
 
 function NotificationsPageSkeleton() {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-10 border-b border-gray-200 bg-white/80 px-4 py-4 backdrop-blur-md dark:border-gray-800 dark:bg-black/80">
-        <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">通知</h1>
+        <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">{t('page.notifications.title')}</h1>
       </header>
     </div>
   );
 }
 
 function NotificationsPageInner() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { getFilteredNotifications, markAllAsRead, unreadCount } = useNotificationStore();
   const [isMounted, setIsMounted] = useState(false);
-  const [displayLimit, setDisplayLimit] = useState(20); // 最初は20件まで表示
+  const [displayLimit, setDisplayLimit] = useState(20);
 
   const allNotifications = getFilteredNotifications();
   const filteredNotifications = allNotifications.slice(0, displayLimit);
@@ -78,12 +81,11 @@ function NotificationsPageInner() {
 
   return (
     <div className="min-h-screen">
-      {/* ヘッダー */}
       <header className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
         <div className="px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              通知
+              {t('page.notifications.title')}
             </h1>
             {unreadCount > 0 && (
               <span className="px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-full">
@@ -96,44 +98,43 @@ function NotificationsPageInner() {
               onClick={markAllAsRead}
               className="text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 font-medium transition-colors"
             >
-              すべて既読
+              {t('page.notifications.markAllRead')}
             </button>
           )}
         </div>
       </header>
 
-      {/* タブ */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <div className="overflow-x-auto">
           <TabsList className="w-full min-w-fit border-b border-gray-200 dark:border-gray-800 flex">
             <TabsTrigger value="all" className="flex-shrink-0 px-3 sm:px-4">
-              すべて
+              {t('page.notifications.tabs.all')}
             </TabsTrigger>
             <TabsTrigger value="mentions" className="flex-shrink-0 px-3 sm:px-4">
-              <span className="hidden sm:inline">メンション</span>
+              <span className="hidden sm:inline">{t('page.notifications.tabs.mentions')}</span>
               <span className="sm:hidden">@</span>
             </TabsTrigger>
             <TabsTrigger value="replies" className="flex-shrink-0 px-3 sm:px-4">
-              返信
+              {t('page.notifications.tabs.replies')}
             </TabsTrigger>
             <TabsTrigger value="reposts" className="flex-shrink-0 px-3 sm:px-4">
-              <span className="hidden sm:inline">リポスト</span>
+              <span className="hidden sm:inline">{t('page.notifications.tabs.reposts')}</span>
               <span className="sm:hidden">RP</span>
             </TabsTrigger>
             <TabsTrigger value="likes" className="flex-shrink-0 px-3 sm:px-4">
-              <span className="hidden sm:inline">いいね</span>
+              <span className="hidden sm:inline">{t('page.notifications.tabs.likes')}</span>
               <span className="sm:hidden">♥</span>
             </TabsTrigger>
             <TabsTrigger value="zaps" className="flex-shrink-0 px-3 sm:px-4">
-              Zap
+              {t('page.notifications.tabs.zaps')}
             </TabsTrigger>
             <TabsTrigger value="follows" className="flex-shrink-0 px-3 sm:px-4">
-              <span className="hidden sm:inline">フォロー</span>
+              <span className="hidden sm:inline">{t('page.notifications.tabs.follows')}</span>
               <span className="sm:hidden">+</span>
             </TabsTrigger>
           </TabsList>
         </div>
-        
+
         <TabsContent value="all" className="m-0">
           <NotificationList notifications={filteredNotifications} />
           {hasMore && (
@@ -142,7 +143,7 @@ function NotificationsPageInner() {
                 onClick={handleLoadMore}
                 className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full font-medium transition-colors"
               >
-                さらに表示 ({allNotifications.length - displayLimit}件)
+                {t('page.notifications.loadMore', { count: allNotifications.length - displayLimit })}
               </button>
             </div>
           )}

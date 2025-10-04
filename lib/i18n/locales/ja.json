@@ -67,6 +67,85 @@
       "tabsAriaLabel": "ホームタブ",
       "loginRequiredForFollowing": "フォロー中のタイムラインを見るにはログインが必要です。",
       "followingPostsWillAppear": "ログイン後、最新のフォロー投稿がここに表示されます。"
+    },
+    "notifications": {
+      "title": "通知",
+      "markAllRead": "すべて既読",
+      "tabs": {
+        "all": "すべて",
+        "mentions": "メンション",
+        "replies": "返信",
+        "reposts": "リポスト",
+        "likes": "いいね",
+        "zaps": "Zap",
+        "follows": "フォロー"
+      },
+      "loadMore": "さらに表示 ({{count}}件)"
+    },
+    "explore": {
+      "title": "検索",
+      "loading": "検索を読み込んでいます...",
+      "placeholder": "検索",
+      "tabs": {
+        "users": "ユーザー",
+        "posts": "投稿"
+      },
+      "error": "検索エラー",
+      "configureRelays": "設定ページでNIP-50対応リレーを設定してください",
+      "recommendedUsers": "おすすめユーザー",
+      "tryUserSearch": "ユーザー検索で探してみましょう"
+    },
+    "onboarding": {
+      "welcome": "Nostr へようこそ",
+      "subtitle": "分散型ソーシャルネットワークを始めましょう",
+      "generateKey": {
+        "title": "新しい鍵を生成",
+        "description": "初めての方はこちら。新しいNostrアカウントを作成します。",
+        "recommended": "推奨 →",
+        "success": "🎉 新しい鍵を生成しました",
+        "accountCreated": "あなたのNostrアカウントが作成されました",
+        "warning": "重要：秘密鍵を必ずバックアップしてください",
+        "warningItems": {
+          "item1": "• この秘密鍵があなたの唯一のログイン方法です",
+          "item2": "• パスワードリセットはできません",
+          "item3": "• 秘密鍵を失うとアカウントに二度とアクセスできません",
+          "item4": "• 安全な場所（パスワードマネージャー等）に保存してください"
+        },
+        "privateKey": "秘密鍵 (nsec)",
+        "show": "表示",
+        "hide": "非表示",
+        "copy": "秘密鍵をコピー",
+        "copied": "秘密鍵をコピーしました",
+        "publicKey": "公開鍵 (npub)",
+        "saveAndStart": "秘密鍵を保存して開始"
+      },
+      "existingKey": {
+        "title": "既存の鍵でログイン",
+        "description": "すでにNostr鍵をお持ちの方はこちらから。",
+        "prompt": "お持ちの秘密鍵（nsec）を入力してください",
+        "label": "秘密鍵 (nsec)",
+        "hint": "💡 秘密鍵はnsec1で始まる63文字の文字列です",
+        "invalidKey": "無効な秘密鍵です。nsec形式で入力してください。",
+        "login": "ログイン",
+        "back": "戻る"
+      },
+      "nip07": {
+        "title": "NIP-07 拡張機能を使用",
+        "description": "Alby、nos2x等のブラウザ拡張機能で鍵を管理します。",
+        "detected": "拡張機能を検出しました。クリックして接続します。",
+        "notFound": "対応拡張機能が見つかりません。インストール後に再読み込みしてください。",
+        "notInstalled": "NIP-07対応の拡張機能（Alby、nos2x等）がインストールされていません。",
+        "accessFailed": "NIP-07拡張機能へのアクセスに失敗しました。ブラウザの許可設定を確認してください。"
+      },
+      "about": {
+        "title": "Nostrとは？",
+        "items": {
+          "item1": "• 分散型の検閲耐性のあるソーシャルネットワーク",
+          "item2": "• あなたのデータはあなたが管理します",
+          "item3": "• 中央集権的な管理者は存在しません",
+          "item4": "• 秘密鍵が唯一のログイン手段です"
+        }
+      }
     }
   },
   "settings": {

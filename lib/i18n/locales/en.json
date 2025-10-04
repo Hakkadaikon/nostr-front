@@ -67,6 +67,85 @@
       "tabsAriaLabel": "Home tabs",
       "loginRequiredForFollowing": "Login required to view the Following timeline.",
       "followingPostsWillAppear": "After logging in, your latest following posts will appear here."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "markAllRead": "Mark all as read",
+      "tabs": {
+        "all": "All",
+        "mentions": "Mentions",
+        "replies": "Replies",
+        "reposts": "Reposts",
+        "likes": "Likes",
+        "zaps": "Zaps",
+        "follows": "Follows"
+      },
+      "loadMore": "Load more ({{count}})"
+    },
+    "explore": {
+      "title": "Search",
+      "loading": "Loading search...",
+      "placeholder": "Search",
+      "tabs": {
+        "users": "Users",
+        "posts": "Posts"
+      },
+      "error": "Search Error",
+      "configureRelays": "Please configure NIP-50 compatible relays in settings",
+      "recommendedUsers": "Recommended Users",
+      "tryUserSearch": "Try searching for users"
+    },
+    "onboarding": {
+      "welcome": "Welcome to Nostr",
+      "subtitle": "Let's start your decentralized social network",
+      "generateKey": {
+        "title": "Generate New Key",
+        "description": "Start here if you're new. Create a new Nostr account.",
+        "recommended": "Recommended →",
+        "success": "🎉 New Key Generated",
+        "accountCreated": "Your Nostr account has been created",
+        "warning": "Important: Please backup your private key",
+        "warningItems": {
+          "item1": "• This private key is your only login method",
+          "item2": "• Password reset is not available",
+          "item3": "• Losing your private key means losing access forever",
+          "item4": "• Save it in a secure location (password manager, etc.)"
+        },
+        "privateKey": "Private Key (nsec)",
+        "show": "Show",
+        "hide": "Hide",
+        "copy": "Copy Private Key",
+        "copied": "Private key copied",
+        "publicKey": "Public Key (npub)",
+        "saveAndStart": "Save Key and Start"
+      },
+      "existingKey": {
+        "title": "Login with Existing Key",
+        "description": "If you already have a Nostr key, start here.",
+        "prompt": "Enter your private key (nsec)",
+        "label": "Private Key (nsec)",
+        "hint": "💡 Private key is a 63-character string starting with nsec1",
+        "invalidKey": "Invalid private key. Please enter in nsec format.",
+        "login": "Login",
+        "back": "Back"
+      },
+      "nip07": {
+        "title": "Use NIP-07 Extension",
+        "description": "Manage your keys with browser extensions like Alby or nos2x.",
+        "detected": "Extension detected. Click to connect.",
+        "notFound": "Compatible extension not found. Please reload after installing.",
+        "notInstalled": "NIP-07 compatible extension (Alby, nos2x, etc.) is not installed.",
+        "accessFailed": "Failed to access NIP-07 extension. Please check your browser permissions."
+      },
+      "about": {
+        "title": "What is Nostr?",
+        "items": {
+          "item1": "• Decentralized censorship-resistant social network",
+          "item2": "• You control your data",
+          "item3": "• No centralized authority",
+          "item4": "• Private key is the only login method"
+        }
+      }
     }
   },
   "settings": {

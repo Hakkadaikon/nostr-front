@@ -8,18 +8,21 @@ import { SearchBox } from '../../components/search/SearchBox';
 import { SearchResults } from '../../components/search/SearchResults';
 import { likeTweet, unlikeTweet, retweet, undoRetweet } from '../../features/timeline/services/timeline';
 import { useAuthStore } from '../../stores/auth.store';
+import { useTranslation } from 'react-i18next';
 
 const ALLOWED_TYPES: SearchType[] = ['users', 'tweets'];
 
 export default function ExplorePage() {
+  const { t } = useTranslation();
   return (
-    <Suspense fallback={<div className="p-4 text-sm text-gray-500 dark:text-gray-400">検索を読み込んでいます...</div>}>
+    <Suspense fallback={<div className="p-4 text-sm text-gray-500 dark:text-gray-400">{t('page.explore.loading')}</div>}>
       <ExplorePageInner />
     </Suspense>
   );
 }
 
 function ExplorePageInner() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -151,25 +154,22 @@ function ExplorePageInner() {
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-gray-50 dark:bg-black">
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col">
-        {/* ヘッダー */}
         <header className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
           <div className="px-4 py-4 sm:px-6 lg:px-8">
             <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
-              検索
+              {t('page.explore.title')}
             </h1>
 
-            {/* 検索ボックス */}
             <SearchBox
               value={query}
               onChange={setQuery}
               onSubmit={handleSearchSubmit}
-              placeholder="検索"
+              placeholder={t('page.explore.placeholder')}
               autoFocus={false}
               onClear={handleClear}
             />
           </div>
 
-          {/* 検索タイプタブ */}
           {query && (
             <div className="border-t border-gray-200 dark:border-gray-800">
               <div className="grid grid-cols-2 gap-1 sm:flex sm:overflow-x-auto">
@@ -181,7 +181,7 @@ function ExplorePageInner() {
                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/50'
                   }`}
                 >
-                  ユーザー
+                  {t('page.explore.tabs.users')}
                 </button>
                 <button
                   onClick={() => handleSearchTypeChange('tweets')}
@@ -191,30 +191,27 @@ function ExplorePageInner() {
                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/50'
                   }`}
                 >
-                  投稿
+                  {t('page.explore.tabs.posts')}
                 </button>
               </div>
             </div>
           )}
         </header>
 
-        {/* エラーメッセージ */}
         {error && (
           <div className="mx-4 sm:mx-6 lg:mx-8 mt-4 p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg">
-            <p className="font-medium text-sm sm:text-base">検索エラー</p>
+            <p className="font-medium text-sm sm:text-base">{t('page.explore.error')}</p>
             <p className="text-xs sm:text-sm mt-1">{error}</p>
             {error.includes('NIP-50対応リレー') && (
               <a href="/settings" className="text-xs sm:text-sm mt-2 underline block">
-                設定ページでNIP-50対応リレーを設定してください
+                {t('page.explore.configureRelays')}
               </a>
             )}
           </div>
         )}
 
-        {/* コンテンツ */}
         <main className="flex-1 w-full">
           {query ? (
-            // 検索結果
             <div className="w-full max-w-full overflow-hidden">
               <SearchResults
                 results={results}
@@ -225,14 +222,13 @@ function ExplorePageInner() {
               />
             </div>
           ) : (
-            // おすすめユーザー
             <div className="px-4 sm:px-6 lg:px-8 py-4">
               <div className="bg-gray-50 dark:bg-gray-900/50 rounded-2xl p-4 sm:p-6">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
-                  おすすめユーザー
+                  {t('page.explore.recommendedUsers')}
                 </h2>
                 <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-                  ユーザー検索で探してみましょう
+                  {t('page.explore.tryUserSearch')}
                 </p>
               </div>
             </div>
