@@ -8,15 +8,13 @@ interface MediaUploaderProps {
   disabled?: boolean;
   selectedMedia: File[];
   onRemoveMedia: (index: number) => void;
-  hidePreview?: boolean;
 }
 
-export function MediaUploader({ 
-  onMediaSelect, 
-  disabled, 
+export function MediaUploader({
+  onMediaSelect,
+  disabled,
   selectedMedia,
-  onRemoveMedia,
-  hidePreview = false 
+  onRemoveMedia
 }: MediaUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -82,31 +80,6 @@ export function MediaUploader({
     );
   };
 
-  // hidePreviewがtrueの場合はボタンのみ返す
-  if (hidePreview) {
-    return (
-      <>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*,video/*"
-          multiple
-          onChange={handleFileSelect}
-          className="hidden"
-          disabled={disabled}
-        />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={disabled || selectedMedia.length >= 4}
-          className="p-2 rounded-full hover:bg-purple-50 dark:hover:bg-purple-950/20 text-purple-500 transition-all duration-200 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-          title={selectedMedia.length >= 4 ? "最大4つまでです" : "画像・動画を追加"}
-        >
-          <ImageIcon size={20} />
-        </button>
-      </>
-    );
-  }
-
   return (
     <div className="w-full">
       <input
@@ -133,7 +106,7 @@ export function MediaUploader({
       </div>
       
       {/* プレビューエリア */}
-      {!hidePreview && selectedMedia.length > 0 && (
+      {selectedMedia.length > 0 && (
         <div className="mt-3">
           <div className="grid grid-cols-2 gap-2 max-w-full">
             {selectedMedia.map((file) => getMediaPreview(file))}

@@ -7,7 +7,7 @@ import { publishNote } from '../../features/notes/publish';
 import { saveDraft, loadDraft, removeDraft } from '../../lib/storage/draftStore';
 import { useToast } from '../../hooks/useToast';
 import { useUiStore } from '../../stores/ui.store';
-import { X, Image, Smile, Eye } from 'lucide-react';
+import { X, Image, Smile } from 'lucide-react';
 import { MediaUploader } from './MediaUploader';
 import { EmojiPicker } from './EmojiPicker';
 import { useProfileStore } from '../../stores/profile.store';
@@ -23,7 +23,6 @@ export default function ComposeModal() {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<File[]>([]);
-  const [showPreview, setShowPreview] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { show } = useToast();
   const { postTweet, error, clearError } = useTweets();
@@ -62,7 +61,6 @@ export default function ComposeModal() {
   const handleClose = () => {
     closeModal();
     setSelectedMedia([]);
-    setShowPreview(false);
     setShowMentions(false);
   };
 
@@ -243,20 +241,11 @@ export default function ComposeModal() {
                 disabled={loading}
                 selectedMedia={selectedMedia}
                 onRemoveMedia={handleRemoveMedia}
-                hidePreview={true}
               />
               <EmojiPicker
                 onEmojiSelect={handleEmojiSelect}
                 disabled={loading}
               />
-              <button
-                onClick={() => setShowPreview(!showPreview)}
-                className="p-2 rounded-full hover:bg-purple-50 dark:hover:bg-purple-950/20 text-purple-500 transition-all duration-200 hover:scale-110"
-                title="プレビュー"
-                disabled={loading}
-              >
-                <Eye size={20} />
-              </button>
             </div>
 
             <div className="flex items-center gap-3">
@@ -281,28 +270,6 @@ export default function ComposeModal() {
               </div>
             </div>
           </div>
-
-          {/* プレビューエリア */}
-          {showPreview && text.trim() && (
-            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-800">
-              <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">プレビュー</div>
-              <div className="whitespace-pre-wrap break-words">
-                {text.split(/(#[^\s#]+|@[^\s@]+)/g).map((part, i) => {
-                  if (part.startsWith('#')) {
-                    return <span key={i} className="text-purple-600 dark:text-purple-400 font-semibold">{part}</span>;
-                  } else if (part.startsWith('@')) {
-                    return <span key={i} className="text-blue-600 dark:text-blue-400 font-semibold">{part}</span>;
-                  }
-                  return <span key={i}>{part}</span>;
-                })}
-              </div>
-              {selectedMedia.length > 0 && (
-                <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  {selectedMedia.length}個のメディアファイル
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
       {showMentions && (

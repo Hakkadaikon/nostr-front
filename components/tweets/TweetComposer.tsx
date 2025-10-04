@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTweets } from '../../features/tweets/hooks/useTweets';
 import { Tweet } from '../../features/timeline/types';
-import { Image, Smile, X, Hash, AtSign, Eye } from 'lucide-react';
+import { Image, Smile, X, Hash, AtSign } from 'lucide-react';
 import { EmojiPicker } from '../compose/EmojiPicker';
 import { MediaUploader } from '../compose/MediaUploader';
 import { useProfileStore } from '../../stores/profile.store';
@@ -34,7 +34,6 @@ export function TweetComposer({
   const [content, setContent] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<File[]>([]);
-  const [showPreview, setShowPreview] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { postTweet, isPosting, error, clearError } = useTweets();
   const { current: currentProfile, setCurrent } = useProfileStore();
@@ -43,6 +42,7 @@ export function TweetComposer({
   const [showMentions, setShowMentions] = useState(false);
   const [mentionPosition, setMentionPosition] = useState({ top: 0, left: 0 });
   const [cursorPosition, setCursorPosition] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   // ログインユーザーのプロフィール情報を取得
   useEffect(() => {
@@ -160,6 +160,69 @@ export function TweetComposer({
     setSelectedMedia(prev => prev.filter((_, i) => i !== index));
   };
 
+  // ファイル処理（ドラッグ&ドロップとクリップボード共通）
+  const handleFiles = (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    const imageFiles = fileArray.filter(file =>
+      file.type.startsWith('image/') || file.type.startsWith('video/')
+    );
+
+    if (imageFiles.length > 0) {
+      setSelectedMedia(prev => [...prev, ...imageFiles]);
+    }
+  };
+
+  // ドラッグ&ドロップイベントハンドラ
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFiles(e.dataTransfer.files);
+    }
+  };
+
+  // クリップボード貼り付けハンドラ
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    const files: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.kind === 'file') {
+        const file = item.getAsFile();
+        if (file) {
+          files.push(file);
+        }
+      }
+    }
+
+    if (files.length > 0) {
+      e.preventDefault();
+      handleFiles(files);
+    }
+  };
+
   // 投稿処理
   const handleSubmit = async () => {
     if (content.trim() === '' || isPosting) return;
@@ -182,7 +245,6 @@ export function TweetComposer({
       setContent('');
       setSelectedMedia([]);
       setIsExpanded(false);
-      setShowPreview(false);
       if (onTweetCreated) {
         onTweetCreated(tweet);
       }
@@ -200,7 +262,15 @@ export function TweetComposer({
   }, [error, clearError]);
 
   return (
-    <div className="border-b border-gray-200 dark:border-gray-800 p-4 sm:p-6 hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition-colors duration-200">
+    <div
+      className={`border-b border-gray-200 dark:border-gray-800 p-4 sm:p-6 hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition-colors duration-200 ${
+        isDragging ? 'border-purple-500 bg-purple-50/50 dark:bg-purple-900/20' : ''
+      }`}
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <div className="flex gap-3 sm:gap-4">
         {/* アバター */}
         <Avatar 
@@ -222,6 +292,7 @@ export function TweetComposer({
             value={content}
             onChange={handleContentChange}
             onFocus={() => setIsExpanded(true)}
+            onPaste={handlePaste}
             className="w-full p-3 text-lg sm:text-xl bg-transparent text-gray-900 dark:text-white placeholder-gray-500 resize-none focus:outline-none overflow-y-auto"
             placeholder={placeholder}
             style={{ minHeight: isExpanded ? '100px' : '56px' }}
@@ -281,20 +352,11 @@ export function TweetComposer({
                     disabled={isPosting}
                     selectedMedia={selectedMedia}
                     onRemoveMedia={handleRemoveMedia}
-                    hidePreview={true}
                   />
                   <EmojiPicker
                     onEmojiSelect={handleEmojiSelect}
                     disabled={isPosting}
                   />
-                  <button
-                    onClick={() => setShowPreview(!showPreview)}
-                    className="p-2 rounded-full hover:bg-purple-50 dark:hover:bg-purple-950/20 text-purple-500 transition-all duration-200 hover:scale-110"
-                    title="プレビュー"
-                    disabled={isPosting}
-                  >
-                    <Eye size={20} />
-                  </button>
                 </div>
 
               {/* 投稿ボタン */}
@@ -308,28 +370,6 @@ export function TweetComposer({
                 </button>
               </div>
             </div>
-            </div>
-          )}
-
-          {/* プレビューエリア */}
-          {showPreview && content.trim() && (
-            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-800">
-              <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">プレビュー</div>
-              <div className="whitespace-pre-wrap break-words">
-                {content.split(/(#[^\s#]+|@[^\s@]+)/g).map((part, i) => {
-                  if (part.startsWith('#')) {
-                    return <span key={i} className="text-purple-600 dark:text-purple-400 font-semibold">{part}</span>;
-                  } else if (part.startsWith('@')) {
-                    return <span key={i} className="text-blue-600 dark:text-blue-400 font-semibold">{part}</span>;
-                  }
-                  return <span key={i}>{part}</span>;
-                })}
-              </div>
-              {selectedMedia.length > 0 && (
-                <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  {selectedMedia.length}個のメディアファイル
-                </div>
-              )}
             </div>
           )}
         </div>
