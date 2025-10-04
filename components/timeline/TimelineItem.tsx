@@ -217,7 +217,7 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
               )}
               <span className="text-gray-500 dark:text-gray-400">·</span>
               <Link
-                href={`/status/${tweet.id}` as any}
+                href={`/note/${tweet.id}` as any}
                 className="text-gray-500 dark:text-gray-400 hover:underline"
               >
                 {timeAgo}
