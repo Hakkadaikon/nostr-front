@@ -36,7 +36,7 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
     setNote(null);
     setAuthor(null);
 
-    console.log('EmbeddedNote: Fetching note', { id: reference.id, relays });
+    console.log('EmbeddedNote: Fetching note', { id: reference.id, relays: relays.length > 0 ? relays : 'using default relays' });
 
     // Safety timeout: in rare cases fetchNote may hang (relay never sends EOSE)
     const safetyTimeout = setTimeout(() => {
@@ -44,9 +44,10 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
         console.warn('EmbeddedNote: Safety timeout reached, showing error fallback');
         setIsLoading(false);
       }
-    }, 5000); // safety window slightly longer than fetchNote timeout
+    }, 8000); // Extended safety window for slower relays
 
-    fetchNote(reference.id, relays, 3000)
+    // Use longer timeout for fetchNote to accommodate slower relays
+    fetchNote(reference.id, relays.length > 0 ? relays : undefined, 6000)
       .then(async event => {
         if (!active) return;
         console.log('EmbeddedNote: Fetched event', event);
@@ -61,6 +62,7 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
             }
           } catch (error) {
             console.error('EmbeddedNote: Error fetching author profile', error);
+            // プロフィール取得失敗でもノートは表示する
           }
         }
 

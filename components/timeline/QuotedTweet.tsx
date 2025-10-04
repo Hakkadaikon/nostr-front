@@ -23,22 +23,33 @@ export function QuotedTweet({ quoteId, relays = [] }: QuotedTweetProps) {
   const [note, setNote] = useState<NostrEvent | null>(null);
   const [author, setAuthor] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showLoading, setShowLoading] = useState(false);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [displayContent, setDisplayContent] = useState<string>('');
 
   useEffect(() => {
     let active = true;
+    let loadingTimeoutId: NodeJS.Timeout;
+
+    // 最小表示時間（300ms）後にローディング表示を開始
+    // これにより高速レスポンス時のちらつきを防止
+    loadingTimeoutId = setTimeout(() => {
+      if (active && isLoading) {
+        setShowLoading(true);
+      }
+    }, 300);
+
     setIsLoading(true);
-    setNote(null);
-    setAuthor(null);
 
     // リレー設定を取得
     const relaysStore = useRelaysStore.getState();
     const configuredRelays = getReadRelays(relaysStore.relays);
     const allRelays = Array.from(new Set([...relays, ...(configuredRelays || [])]));
 
-    // ノートを取得
-    fetchNote(quoteId, allRelays).then(async (event) => {
+    console.log('QuotedTweet: Fetching note', { quoteId, relays: allRelays.length });
+
+    // ノートを取得（タイムアウトを6秒に延長）
+    fetchNote(quoteId, allRelays.length > 0 ? allRelays : undefined, 6000).then(async (event) => {
       if (!active) return;
       setNote(event);
 
@@ -70,10 +81,12 @@ export function QuotedTweet({ quoteId, relays = [] }: QuotedTweetProps) {
               };
               setAuthor(profile);
               setIsLoading(false);
+              setShowLoading(false);
               authorSub.close();
             } catch (error) {
               console.error('Failed to parse author profile:', error);
               setIsLoading(false);
+              setShowLoading(false);
             }
           }
         );
@@ -94,6 +107,7 @@ export function QuotedTweet({ quoteId, relays = [] }: QuotedTweetProps) {
             return prevAuthor;
           });
           setIsLoading(false);
+          setShowLoading(false);
         }, 2000);
 
         return () => {
@@ -102,15 +116,25 @@ export function QuotedTweet({ quoteId, relays = [] }: QuotedTweetProps) {
         };
       } else {
         setIsLoading(false);
+        setShowLoading(false);
       }
+    }).catch(error => {
+      console.error('QuotedTweet: Error fetching note', error);
+      if (!active) return;
+      setNote(null);
+      setIsLoading(false);
+      setShowLoading(false);
     });
 
     return () => {
       active = false;
+      clearTimeout(loadingTimeoutId);
     };
   }, [quoteId, relays]);
 
-  if (isLoading) {
+  // showLoadingがtrueの場合のみローディング表示
+  // 高速レスポンス時のちらつきを防止
+  if (showLoading && isLoading) {
     return (
       <div className="mt-3 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition-colors">
         <div className="flex items-center gap-2">
