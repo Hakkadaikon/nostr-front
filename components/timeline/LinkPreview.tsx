@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { Spinner } from '../ui/Spinner';
 import { fetchLinkPreview } from '../../lib/services/linkPreview';
+import { isImageUrl } from '../../lib/utils/media-urls';
+import { SensitiveImage } from '../ui/SensitiveImage';
 
 interface LinkPreviewData {
   url?: string;
@@ -16,6 +18,8 @@ interface LinkPreviewData {
 interface LinkPreviewProps {
   url: string;
   suppressUrls?: string[];
+  authorPubkey?: string;
+  actorPubkey?: string;
 }
 
 // ローカルキャッシュ（コンポーネント用）
@@ -29,7 +33,7 @@ function sanitizeUrl(url: string) {
   }
 }
 
-export function LinkPreview({ url, suppressUrls }: LinkPreviewProps) {
+export function LinkPreview({ url, suppressUrls, authorPubkey, actorPubkey }: LinkPreviewProps) {
   const normalizedUrl = useMemo(() => sanitizeUrl(url), [url]);
   const cacheKey = normalizedUrl ?? url;
   const [data, setData] = useState<LinkPreviewData | null | undefined>(localCache.get(cacheKey));
@@ -97,6 +101,29 @@ export function LinkPreview({ url, suppressUrls }: LinkPreviewProps) {
 
   // OGP画像がsuppressUrlsに含まれる場合は非表示
   const shouldShowImage = image && !suppressUrls?.some(suppressUrl => image === suppressUrl || image.startsWith(suppressUrl));
+
+  // OGP画像のURLが画像形式の場合は、インライン画像として表示
+  if (shouldShowImage && isImageUrl(image)) {
+    return (
+      <span className="inline-block my-2">
+        <SensitiveImage
+          src={image}
+          alt={title || 'Embedded image'}
+          authorPubkey={authorPubkey}
+          actorPubkey={actorPubkey}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={image}
+            alt={title || 'Embedded image'}
+            loading="lazy"
+            className="max-w-full h-auto max-h-96 rounded-lg border border-gray-200 dark:border-gray-700"
+            referrerPolicy="no-referrer"
+          />
+        </SensitiveImage>
+      </span>
+    );
+  }
 
   return (
     <a

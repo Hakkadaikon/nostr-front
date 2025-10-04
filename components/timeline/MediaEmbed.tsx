@@ -34,33 +34,33 @@ export function MediaEmbed({ url, authorPubkey, suppressUrls }: MediaEmbedProps)
     case 'youtube':
       return mediaInfo.embedUrl && mediaInfo.mediaId ? (
         <YouTubeEmbed videoId={mediaInfo.mediaId} url={url} />
-      ) : <LinkPreview url={url} suppressUrls={suppressUrls} />;
+      ) : <LinkPreview url={url} suppressUrls={suppressUrls} authorPubkey={authorPubkey} />;
 
     case 'x':
     case 'twitter':
       return mediaInfo.mediaId ? (
         <XEmbed statusId={mediaInfo.mediaId} url={url} />
-      ) : <LinkPreview url={url} suppressUrls={suppressUrls} />;
+      ) : <LinkPreview url={url} suppressUrls={suppressUrls} authorPubkey={authorPubkey} />;
 
     case 'spotify':
       return mediaInfo.embedUrl ? (
         <SpotifyEmbed embedUrl={mediaInfo.embedUrl} url={url} />
-      ) : <LinkPreview url={url} suppressUrls={suppressUrls} />;
+      ) : <LinkPreview url={url} suppressUrls={suppressUrls} authorPubkey={authorPubkey} />;
 
     case 'apple-podcasts':
       return mediaInfo.embedUrl ? (
         <ApplePodcastsEmbed embedUrl={mediaInfo.embedUrl} url={url} />
-      ) : <LinkPreview url={url} suppressUrls={suppressUrls} />;
+      ) : <LinkPreview url={url} suppressUrls={suppressUrls} authorPubkey={authorPubkey} />;
 
     case 'soundcloud':
       return mediaInfo.embedUrl ? (
         <SoundCloudEmbed embedUrl={mediaInfo.embedUrl} url={url} />
-      ) : <LinkPreview url={url} suppressUrls={suppressUrls} />;
+      ) : <LinkPreview url={url} suppressUrls={suppressUrls} authorPubkey={authorPubkey} />;
 
     case 'vimeo':
       return mediaInfo.mediaId ? (
         <VimeoEmbed videoId={mediaInfo.mediaId} url={url} />
-      ) : <LinkPreview url={url} suppressUrls={suppressUrls} />;
+      ) : <LinkPreview url={url} suppressUrls={suppressUrls} authorPubkey={authorPubkey} />;
 
     case 'tiktok':
       return <TikTokEmbed url={url} />;
@@ -68,7 +68,7 @@ export function MediaEmbed({ url, authorPubkey, suppressUrls }: MediaEmbedProps)
     case 'twitch':
       return mediaInfo.embedUrl ? (
         <TwitchEmbed embedUrl={mediaInfo.embedUrl} url={url} type={mediaInfo.embedUrl.includes('clip') ? 'clip' : 'video'} />
-      ) : <LinkPreview url={url} suppressUrls={suppressUrls} />;
+      ) : <LinkPreview url={url} suppressUrls={suppressUrls} authorPubkey={authorPubkey} />;
 
     case 'image':
       return <EmbeddedImage url={url} authorPubkey={authorPubkey} />;
@@ -80,6 +80,6 @@ export function MediaEmbed({ url, authorPubkey, suppressUrls }: MediaEmbedProps)
       return <AudioEmbed url={url} />;
 
     default:
-      return <LinkPreview url={url} suppressUrls={suppressUrls} />;
+      return <LinkPreview url={url} suppressUrls={suppressUrls} authorPubkey={authorPubkey} />;
   }
 }
