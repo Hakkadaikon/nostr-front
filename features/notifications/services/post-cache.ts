@@ -112,8 +112,10 @@ async function fetchPostFromNostr(postId: string): Promise<string | null> {
 
 /**
  * 完全な投稿データを取得
+ * @param postId - 投稿ID
+ * @param additionalRelays - 追加で検索するリレーURL配列（Zap receiptなどから取得したもの）
  */
-export async function fetchPostData(postId: string): Promise<PostData | null> {
+export async function fetchPostData(postId: string, additionalRelays?: string[]): Promise<PostData | null> {
   // キャッシュチェック
   if (postDataCache.has(postId)) {
     return postDataCache.get(postId)!;
@@ -125,7 +127,7 @@ export async function fetchPostData(postId: string): Promise<PostData | null> {
   }
 
   // 投稿取得のPromiseを作成
-  const promise = fetchPostDataFromNostr(postId);
+  const promise = fetchPostDataFromNostr(postId, additionalRelays);
   pendingDataRequests.set(postId, promise);
 
   try {
@@ -141,28 +143,54 @@ export async function fetchPostData(postId: string): Promise<PostData | null> {
 
 /**
  * Nostrから完全な投稿データを取得
+ * @param postId - 投稿ID
+ * @param additionalRelays - 追加で検索するリレーURL配列
  */
-async function fetchPostDataFromNostr(postId: string): Promise<PostData | null> {
+async function fetchPostDataFromNostr(postId: string, additionalRelays?: string[]): Promise<PostData | null> {
+  const startTime = Date.now();
   try {
     // リレーを取得
     const relaysStore = useRelaysStore.getState();
-    const relays = relaysStore.relays
+    const configuredRelays = relaysStore.relays
       .filter(r => r.read)
       .map(r => r.url);
 
+    // 追加リレーとマージ（重複除去）
+    const relays = Array.from(new Set([
+      ...configuredRelays,
+      ...(additionalRelays || [])
+    ]));
+
+    // フォールバック: デフォルトリレーを追加
     if (relays.length === 0) {
-      return null;
+      const envRelays = (process.env.NEXT_PUBLIC_DEFAULT_RELAYS || '')
+        .split(',')
+        .map(u => u.trim())
+        .filter(Boolean);
+
+      const fallbackRelays = envRelays.length > 0 ? envRelays : [
+        'wss://relay.damus.io',
+        'wss://nos.lol',
+        'wss://relay.nostr.band'
+      ];
+
+      relays.push(...fallbackRelays);
     }
+
+    console.log(`[fetchPostData] Fetching post ${postId.slice(0, 8)}... from ${relays.length} relays`);
 
     return new Promise((resolve) => {
       let resolved = false;
+      // Zap対象ノート取得のためタイムアウトを5秒に延長
       const timeoutId = setTimeout(() => {
         if (!resolved) {
           resolved = true;
           sub.close();
+          const elapsed = Date.now() - startTime;
+          console.warn(`[fetchPostData] Timeout fetching post ${postId.slice(0, 8)}... after ${elapsed}ms`);
           resolve(null);
         }
-      }, 3000); // 3秒でタイムアウト
+      }, 5000);
 
       const sub = subscribe(
         relays,
@@ -173,15 +201,18 @@ async function fetchPostDataFromNostr(postId: string): Promise<PostData | null> 
           resolved = true;
           clearTimeout(timeoutId);
           sub.close();
-          
+
+          const elapsed = Date.now() - startTime;
+          console.log(`[fetchPostData] Successfully fetched post ${postId.slice(0, 8)}... in ${elapsed}ms`);
+
           // 著者情報を取得
           const author = await fetchProfileForNotification(event.pubkey);
-          
+
           // メディアURLを抽出
           const imageRegex = /(https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp|svg))/gi;
           const videoRegex = /(https?:\/\/[^\s]+\.(mp4|webm|mov))/gi;
           const media: PostData['media'] = [];
-          
+
           const imageMatches = event.content.match(imageRegex);
           if (imageMatches) {
             imageMatches.forEach(url => {
@@ -191,7 +222,7 @@ async function fetchPostDataFromNostr(postId: string): Promise<PostData | null> 
               });
             });
           }
-          
+
           const videoMatches = event.content.match(videoRegex);
           if (videoMatches) {
             videoMatches.forEach(url => {
@@ -201,7 +232,7 @@ async function fetchPostDataFromNostr(postId: string): Promise<PostData | null> 
               });
             });
           }
-          
+
           const postData: PostData = {
             id: event.id || postId,
             content: event.content,
@@ -209,13 +240,14 @@ async function fetchPostDataFromNostr(postId: string): Promise<PostData | null> 
             createdAt: new Date(event.created_at * 1000),
             media: media.length > 0 ? media : undefined
           };
-          
+
           resolve(postData);
         }
       );
     });
   } catch (error) {
-    console.error('Failed to fetch post data:', error);
+    const elapsed = Date.now() - startTime;
+    console.error(`[fetchPostData] Error fetching post data after ${elapsed}ms:`, error);
     return null;
   }
 }

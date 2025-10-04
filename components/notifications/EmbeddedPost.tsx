@@ -49,6 +49,11 @@ export function EmbeddedPost({
   // メディアのURLリストを作成してRichContentに渡し、インライン表示を抑制
   const mediaUrls = media?.map(item => item.url) || [];
 
+  // 本文またはメディアが存在するか
+  const hasContent = content && content.trim().length > 0;
+  const hasMedia = media && media.length > 0;
+  const hasAuthor = author && (author.npub || author.name || author.username);
+
   return (
     <Link
       href={`/note/${postId}` as any}
@@ -62,7 +67,7 @@ export function EmbeddedPost({
       onClick={(e) => e.stopPropagation()}
     >
       {/* 著者情報がある場合 */}
-      {author && author.npub && (
+      {hasAuthor && (
         <div className="flex items-center gap-2 mb-2">
           {author.avatar ? (
             <SafeImage
@@ -97,9 +102,15 @@ export function EmbeddedPost({
       )}
 
       {/* 本文 */}
-      <div className="text-sm">
-        <RichContent content={content} suppressUrls={mediaUrls} authorPubkey={authorPubkey} actorPubkey={actorPubkey} />
-      </div>
+      {hasContent ? (
+        <div className="text-sm">
+          <RichContent content={content} suppressUrls={mediaUrls} authorPubkey={authorPubkey} actorPubkey={actorPubkey} />
+        </div>
+      ) : !hasMedia && (
+        <div className="text-sm text-gray-500 dark:text-gray-400 italic">
+          投稿内容を取得できませんでした
+        </div>
+      )}
 
       {/* メディア */}
       {media && media.length > 0 && (

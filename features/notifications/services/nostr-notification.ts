@@ -324,6 +324,7 @@ export class NostrNotificationService {
   private async processZap(event: NostrEvent) {
     if (!this.userPubkey) return;
 
+    const zapStartTime = Date.now();
     try {
       // NIP-57 Zap Receipt の基本検証
       // 必須: description(tag)、bolt11(tag) が一般的
@@ -353,6 +354,10 @@ export class NostrNotificationService {
       // 対象ノート取得 (eタグ) - あれば通知に関連付け
       const noteTag = requestTags.find(t => t[0] === 'e' && t[1]);
       const targetNoteId = noteTag ? noteTag[1] : undefined;
+
+      // Zap receipt に含まれる追加リレー情報を取得
+      const relayTags = event.tags.filter(t => t[0] === 'relays' && t[1]);
+      const additionalRelays = relayTags.flatMap(t => t[1].split(',').map(r => r.trim()));
 
       // 金額推定
       // 優先: zap receipt の bolt11 インボイスから抽出（簡易: 金額表記を正規表現で拾う）
@@ -403,15 +408,23 @@ export class NostrNotificationService {
       // メッセージ: zap request の content
       const zapMessage: string | undefined = typeof zapRequestEvent.content === 'string' ? zapRequestEvent.content : undefined;
 
-      // 関連ノートのメタデータ
+      // 関連ノートのメタデータ（追加リレーを渡す）
       let postData = null;
+      let fetchSuccess = false;
       if (targetNoteId) {
         try {
-          postData = await fetchPostData(targetNoteId);
+          postData = await fetchPostData(targetNoteId, additionalRelays);
+          fetchSuccess = !!postData;
+          console.log(`[processZap] Post fetch ${fetchSuccess ? 'succeeded' : 'failed'} for note ${targetNoteId.slice(0, 8)}...`);
         } catch (e) {
-          // 失敗しても無視
+          console.warn(`[processZap] Failed to fetch post data for ${targetNoteId.slice(0, 8)}...`, e);
         }
       }
+
+      // フォールバック: 投稿が取得できなかった場合でもZapメッセージを表示できるように
+      const fallbackContent = !fetchSuccess && zapMessage
+        ? `Zap: ${zapMessage}`
+        : postData?.content;
 
       const zapperPubkey: string | undefined = typeof zapRequestEvent.pubkey === 'string' ? zapRequestEvent.pubkey : undefined;
       let zapperProfile: NotificationUser | undefined;
@@ -423,20 +436,24 @@ export class NostrNotificationService {
         }
       }
 
+      const zapElapsed = Date.now() - zapStartTime;
+      console.log(`[processZap] Zap notification created in ${zapElapsed}ms (fetch: ${fetchSuccess}, amount: ${amountSats} sats)`);
+
       await this.createNotification({
         type: 'zap',
         event,
         amount: amountSats,
         content: zapMessage,
-        postId: postData?.id,
-        postContent: postData?.content,
+        postId: postData?.id ?? targetNoteId,
+        postContent: postData?.content ?? fallbackContent,
         postAuthor: postData?.author,
         postCreatedAt: postData?.createdAt,
         postMedia: postData?.media,
         userOverride: zapperProfile,
       });
     } catch (error) {
-      console.error('Error processing zap event:', error);
+      const zapElapsed = Date.now() - zapStartTime;
+      console.error(`[processZap] Error processing zap event after ${zapElapsed}ms:`, error);
     }
   }
 
