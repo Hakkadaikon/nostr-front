@@ -412,12 +412,38 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
 
       const processRepostEvent = async (event: NostrEvent) => {
         const targetNoteId = event.tags.find(tag => tag[0] === 'e' && tag[1])?.[1];
-        if (!targetNoteId) return;
-        const originalEvent = await getCachedEvent(targetNoteId);
-        if (!originalEvent) return;
+        if (!targetNoteId) {
+          console.warn('[fetchTimeline] Repost event missing target note ID:', event.id);
+          return;
+        }
 
-        const baseTweet = await nostrEventToTweet(originalEvent, relays);
+        const originalEvent = await getCachedEvent(targetNoteId);
         const actorProfile = await fetchProfile(event.pubkey, relays);
+
+        let baseTweet: Tweet;
+
+        if (originalEvent) {
+          // 正常ケース: リポスト元が取得できた
+          baseTweet = await nostrEventToTweet(originalEvent, relays);
+        } else {
+          // フォールバックケース: リポスト元が取得できなかった
+          console.warn('[fetchTimeline] Failed to fetch original note for repost:', targetNoteId);
+
+          // フォールバック用の簡易Tweetを生成
+          baseTweet = {
+            id: targetNoteId,
+            content: '', // 元ノートが取得できないため空
+            author: actorProfile, // リポスターのプロフィールを仮に設定
+            createdAt: new Date(event.created_at * 1000),
+            likesCount: 0,
+            retweetsCount: 0,
+            repliesCount: 0,
+            zapsCount: 0,
+            isLiked: false,
+            isRetweeted: false,
+            tags: event.tags as string[][],
+          };
+        }
 
         baseTweet.activity = {
           type: 'repost',
@@ -565,12 +591,14 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
             return;
           }
 
-          if (!includeActivities) return;
-
+          // リポスト(kind=6)は常に処理する
           if (event.kind === KIND_REPOST) {
             await processRepostEvent(event);
             return;
           }
+
+          // それ以外のアクティビティはincludeActivitiesがtrueの場合のみ処理
+          if (!includeActivities) return;
 
           if (event.kind === KIND_REACTION) {
             await processReactionEvent(event);
