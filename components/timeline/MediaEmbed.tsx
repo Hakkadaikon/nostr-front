@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from 'react';
 import { parseMediaUrl } from '../../lib/utils/media-urls';
 import { EmbeddedImage, EmbeddedVideo } from './EmbeddedMedia';
 import { YouTubeEmbed } from './embeds/YouTubeEmbed';
@@ -19,6 +20,18 @@ interface MediaEmbedProps {
 
 export function MediaEmbed({ url, authorPubkey }: MediaEmbedProps) {
   const mediaInfo = parseMediaUrl(url);
+
+  // 埋め込み処理のログ出力
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('[MediaEmbed]', {
+        url,
+        platform: mediaInfo.platform,
+        mediaId: mediaInfo.mediaId,
+        embedUrl: mediaInfo.embedUrl,
+      });
+    }
+  }, [url, mediaInfo]);
 
   switch (mediaInfo.platform) {
     case 'youtube':

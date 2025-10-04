@@ -171,5 +171,193 @@
     "notFound": "Not found",
     "unauthorized": "Authentication required",
     "forbidden": "Access denied"
+  },
+  "embeds": {
+    "soundcloud": {
+      "loadFailed": "Failed to load SoundCloud",
+      "listenOn": "Listen on SoundCloud"
+    },
+    "spotify": {
+      "loadFailed": "Failed to load Spotify",
+      "listenOn": "Listen on Spotify"
+    },
+    "vimeo": {
+      "loading": "Loading..."
+    }
+  },
+  "notifications": {
+    "empty": "No notifications",
+    "emptyDescription": "New follows, reactions, and replies will appear here",
+    "actions": {
+      "reacted": " reacted to your post",
+      "replied": " replied to your post",
+      "reposted": " reposted your post",
+      "followed": " followed you",
+      "mentioned": " mentioned you",
+      "zapped": " zapped you"
+    },
+    "buttons": {
+      "react": "React",
+      "reply": "Reply",
+      "follow": "Follow",
+      "following": "Following"
+    },
+    "zap": {
+      "targetPost": "Zapped post",
+      "notFound": "Related post not found (Zap Receipt: {{id}}...)"
+    },
+    "errors": {
+      "followFailed": "Follow operation failed. Please try again.",
+      "reactionFailed": "Reaction operation failed. Please try again."
+    }
+  },
+  "zap": {
+    "testMode": "Test Mode",
+    "testModeDescription": "Using test address ({{address}}) as recipient's Lightning Address is not set.",
+    "amountLabel": "Amount (sats)",
+    "messageLabel": "Message (optional)",
+    "messagePlaceholder": "Enter Zap message...",
+    "generateInvoice": "Generate Invoice",
+    "generatingInvoice": "Generating...",
+    "invoiceGenerated": "Scan the QR code below to send Zap",
+    "sendTo": "Send to: {{address}}",
+    "invoiceLabel": "Invoice:",
+    "copyButton": "Copy",
+    "newInvoice": "New Invoice",
+    "errors": {
+      "invoiceFailed": "Failed to generate invoice"
+    }
+  },
+  "keyManager": {
+    "privateKeyTitle": "Your Private Key (nsec)",
+    "show": "Show",
+    "hide": "Hide",
+    "copy": "Copy",
+    "copied": "✓",
+    "warning": "⚠️ Backup this private key in a secure location. Never share it with anyone.",
+    "importPlaceholder": "Import existing nsec",
+    "importButton": "Import",
+    "publicKeyLabel": "Public Key (npub)"
+  },
+  "nip07Login": {
+    "title": "Login with NIP-07",
+    "detected": "Nostr extension detected. Login to post and react.",
+    "mobileWarning": "NIP-07 extension cannot be added on mobile browsers. Instead, share via Nostr mobile apps or login by importing your private key via key management in settings.",
+    "notFound": "Nostr extension not found in browser. Please install a compatible extension (Alby, nos2x, etc.).",
+    "loginButton": "Login with NIP-07",
+    "connecting": "Connecting...",
+    "openKeyManager": "Open Key Manager",
+    "getExtension": "Get Extension"
+  },
+  "notificationSettings": {
+    "follows": {
+      "label": "Follows",
+      "description": "Receive notifications when someone follows you"
+    },
+    "mentions": {
+      "label": "Mentions",
+      "description": "Receive notifications when someone mentions you"
+    },
+    "reposts": {
+      "label": "Reposts",
+      "description": "Receive notifications when your post is reposted"
+    },
+    "zaps": {
+      "description": "Receive notifications when someone sends you a Zap"
+    },
+    "reactions": {
+      "label": "Reactions",
+      "description": "Receive notifications when someone reacts to your post"
+    },
+    "replies": {
+      "label": "Replies",
+      "description": "Receive notifications when someone replies to your post"
+    }
+  },
+  "profileTabs": {
+    "posts": "Notes",
+    "replies": "Replies",
+    "media": "Media",
+    "likes": "Reactions"
+  },
+  "composeModal": {
+    "title": "New Post",
+    "close": "Close",
+    "placeholder": "What's happening?",
+    "characterCount": "{{count}} characters",
+    "cancel": "Cancel",
+    "post": "Post",
+    "posting": "Posting...",
+    "success": "Post completed",
+    "error": "Failed to post: {{message}}"
+  },
+  "relayManager": {
+    "addButton": "Add",
+    "deleteButton": "Delete",
+    "warning": "Warning",
+    "hint": "Hint: Relays with Search checked will be used for search functionality. Multiple relays can be selected.",
+    "deleteConfirm": {
+      "title": "Delete relay?",
+      "message": "Delete \"{{url}}\"?",
+      "capabilities": "({{capabilities}} enabled)",
+      "read": "read",
+      "write": "write",
+      "search": "search",
+      "lastActiveWarning": "Deleting \"{{url}}\" {{capabilities}} will leave no active relays.\n\n⚠️ Danger: This will prevent sending/receiving posts and may cause the application to malfunction.\n\nIt is strongly recommended to add other relays before deletion. Do you really want to delete?",
+      "lowRelayWarning": "\n⚠️ Warning: Active relays will decrease. This may affect connectivity and post visibility.",
+      "normalWarning": "Deleting \"{{url}}\" {{capabilities}} will disconnect from this relay. Posts may not be sent or retrieved.{{lowRelayWarning}}\n\nThis operation cannot be undone. Do you really want to delete?",
+      "confirmText": "Delete",
+      "cancelText": "Cancel"
+    }
+  },
+  "embeddedNote": {
+    "loading": "Loading note...",
+    "notFound": "Could not retrieve this note."
+  },
+  "embeddedPost": {
+    "notFound": "Could not retrieve post content",
+    "moreMedia": "+{{count}}"
+  },
+  "emojiPicker": {
+    "title": "Emoji",
+    "searchPlaceholder": "Search emoji...",
+    "categories": {
+      "recent": "Recent",
+      "smileys": "Smileys",
+      "gestures": "Gestures",
+      "hearts": "Hearts",
+      "animals": "Animals",
+      "food": "Food",
+      "activities": "Activities",
+      "objects": "Objects",
+      "symbols": "Symbols",
+      "flags": "Flags"
+    }
+  },
+  "replyComposer": {
+    "title": "Reply to @{{name}}",
+    "placeholder": "Enter reply...",
+    "cancel": "Cancel",
+    "submit": "Reply",
+    "success": "Reply sent to @{{name}}",
+    "errors": {
+      "failed": "Failed to send reply",
+      "noAuth": "Nostr extension or private key required",
+      "invalidKey": "Invalid private key format",
+      "signatureFailed": "Failed to sign with Nostr extension",
+      "noSecretKey": "Private key not set"
+    }
+  },
+  "profileHeader": {
+    "defaultName": "Nostr User",
+    "following": "Following",
+    "loadingFollow": "Loading...",
+    "follow": "Follow"
+  },
+  "signatures": {
+    "errors": {
+      "invalidKeyFormat": "Invalid private key format. Please use a private key starting with nsec1.",
+      "signatureError": "Signature error: {{message}}"
+    }
   }
 }

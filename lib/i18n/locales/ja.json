@@ -171,5 +171,193 @@
     "notFound": "見つかりませんでした",
     "unauthorized": "認証が必要です",
     "forbidden": "アクセスが拒否されました"
+  },
+  "embeds": {
+    "soundcloud": {
+      "loadFailed": "SoundCloudを読み込めませんでした",
+      "listenOn": "SoundCloudで聴く"
+    },
+    "spotify": {
+      "loadFailed": "Spotifyを読み込めませんでした",
+      "listenOn": "Spotifyで聴く"
+    },
+    "vimeo": {
+      "loading": "読み込み中..."
+    }
+  },
+  "notifications": {
+    "empty": "通知はありません",
+    "emptyDescription": "新しいフォロー、リアクション、返信があるとここに表示されます",
+    "actions": {
+      "reacted": "があなたの投稿にリアクションしました",
+      "replied": "があなたの投稿に返信しました",
+      "reposted": "があなたの投稿をリポストしました",
+      "followed": "があなたをフォローしました",
+      "mentioned": "があなたをメンションしました",
+      "zapped": "があなたにZapを送りました"
+    },
+    "buttons": {
+      "react": "リアクション",
+      "reply": "返信",
+      "follow": "フォローする",
+      "following": "フォロー中"
+    },
+    "zap": {
+      "targetPost": "Zap対象の投稿",
+      "notFound": "関連する投稿が特定できませんでした（Zap Receipt: {{id}}...）"
+    },
+    "errors": {
+      "followFailed": "フォロー操作に失敗しました。もう一度お試しください。",
+      "reactionFailed": "リアクション操作に失敗しました。もう一度お試しください。"
+    }
+  },
+  "zap": {
+    "testMode": "テストモード",
+    "testModeDescription": "受信者のLightning Addressが設定されていないため、テスト用アドレス ({{address}}) を使用します。",
+    "amountLabel": "金額 (sats)",
+    "messageLabel": "メッセージ (任意)",
+    "messagePlaceholder": "Zapメッセージを入力...",
+    "generateInvoice": "インボイスを生成",
+    "generatingInvoice": "生成中...",
+    "invoiceGenerated": "以下のQRコードをスキャンしてZapを送信してください",
+    "sendTo": "送信先: {{address}}",
+    "invoiceLabel": "インボイス:",
+    "copyButton": "コピー",
+    "newInvoice": "新しいインボイス",
+    "errors": {
+      "invoiceFailed": "インボイスの生成に失敗しました"
+    }
+  },
+  "keyManager": {
+    "privateKeyTitle": "あなたの秘密鍵 (nsec)",
+    "show": "表示",
+    "hide": "非表示",
+    "copy": "コピー",
+    "copied": "✓",
+    "warning": "⚠️ この秘密鍵を安全な場所にバックアップしてください。絶対に他人に教えないでください。",
+    "importPlaceholder": "既存のnsecをインポート",
+    "importButton": "インポート",
+    "publicKeyLabel": "公開鍵 (npub)"
+  },
+  "nip07Login": {
+    "title": "NIP-07でログイン",
+    "detected": "Nostr拡張機能が検出されました。ログインして投稿や反応を行えます。",
+    "mobileWarning": "モバイルブラウザではNIP-07拡張機能を追加できません。代わりにモバイル対応のNostrアプリで共有するか、設定内のキー管理から秘密鍵を読み込んでログインしてください。",
+    "notFound": "ブラウザにNostr拡張機能が見つかりません。対応拡張機能（Alby, nos2xなど）をインストールしてください。",
+    "loginButton": "NIP-07でログイン",
+    "connecting": "接続中...",
+    "openKeyManager": "キー管理を開く",
+    "getExtension": "拡張機能を入手"
+  },
+  "notificationSettings": {
+    "follows": {
+      "label": "フォロー",
+      "description": "誰かがあなたをフォローしたときに通知を受け取る"
+    },
+    "mentions": {
+      "label": "メンション",
+      "description": "誰かがあなたをメンションしたときに通知を受け取る"
+    },
+    "reposts": {
+      "label": "リポスト",
+      "description": "あなたの投稿がリポストされたときに通知を受け取る"
+    },
+    "zaps": {
+      "description": "誰かがあなたにZapを送ったときに通知を受け取る"
+    },
+    "reactions": {
+      "label": "リアクション",
+      "description": "あなたの投稿にリアクションされたときに通知を受け取る"
+    },
+    "replies": {
+      "label": "返信",
+      "description": "あなたの投稿に返信があったときに通知を受け取る"
+    }
+  },
+  "profileTabs": {
+    "posts": "ノート",
+    "replies": "返信",
+    "media": "メディア",
+    "likes": "リアクション"
+  },
+  "composeModal": {
+    "title": "新しい投稿",
+    "close": "閉じる",
+    "placeholder": "いまどうしてる？",
+    "characterCount": "{{count}} 文字",
+    "cancel": "キャンセル",
+    "post": "投稿する",
+    "posting": "投稿中...",
+    "success": "投稿が完了しました",
+    "error": "投稿に失敗しました: {{message}}"
+  },
+  "relayManager": {
+    "addButton": "追加",
+    "deleteButton": "削除",
+    "warning": "注意",
+    "hint": "ヒント: Searchにチェックを入れたリレーは検索機能で使用されます。複数のリレーを選択できます。",
+    "deleteConfirm": {
+      "title": "リレーを削除しますか？",
+      "message": "「{{url}}」を削除しますか？",
+      "capabilities": "（{{capabilities}}機能が有効）",
+      "read": "読み取り",
+      "write": "書き込み",
+      "search": "検索",
+      "lastActiveWarning": "「{{url}}」{{capabilities}}を削除すると、アクティブなリレーがなくなります。\n\n⚠️ 危険: これにより投稿の送受信ができなくなり、アプリケーションが正常に動作しなくなる可能性があります。\n\n削除する前に他のリレーを追加することを強く推奨します。本当に削除しますか？",
+      "lowRelayWarning": "\n⚠️ 警告: アクティブなリレーが少なくなります。接続性や投稿の可視性に影響する可能性があります。",
+      "normalWarning": "「{{url}}」{{capabilities}}を削除すると、このリレーとの接続が切断されます。投稿の送信や取得ができなくなる可能性があります。{{lowRelayWarning}}\n\nこの操作は取り消すことができません。本当に削除しますか？",
+      "confirmText": "削除する",
+      "cancelText": "キャンセル"
+    }
+  },
+  "embeddedNote": {
+    "loading": "ノートを読み込んでいます...",
+    "notFound": "このノートを取得できませんでした。"
+  },
+  "embeddedPost": {
+    "notFound": "投稿内容を取得できませんでした",
+    "moreMedia": "+{{count}}"
+  },
+  "emojiPicker": {
+    "title": "絵文字",
+    "searchPlaceholder": "絵文字を検索...",
+    "categories": {
+      "recent": "最近使った",
+      "smileys": "スマイリー",
+      "gestures": "ジェスチャー",
+      "hearts": "ハート",
+      "animals": "動物",
+      "food": "食べ物",
+      "activities": "アクティビティ",
+      "objects": "オブジェクト",
+      "symbols": "シンボル",
+      "flags": "国旗"
+    }
+  },
+  "replyComposer": {
+    "title": "@{{name}} への返信",
+    "placeholder": "返信を入力...",
+    "cancel": "キャンセル",
+    "submit": "返信",
+    "success": "@{{name}} への返信を送信しました",
+    "errors": {
+      "failed": "返信の送信に失敗しました",
+      "noAuth": "Nostr拡張機能または秘密鍵が必要です",
+      "invalidKey": "秘密鍵の形式が正しくありません",
+      "signatureFailed": "Nostr拡張機能での署名に失敗しました",
+      "noSecretKey": "秘密鍵が設定されていません"
+    }
+  },
+  "profileHeader": {
+    "defaultName": "Nostrユーザー",
+    "following": "フォロー中",
+    "loadingFollow": "読み込み中...",
+    "follow": "フォロー"
+  },
+  "signatures": {
+    "errors": {
+      "invalidKeyFormat": "秘密鍵の形式が正しくありません。nsec1で始まる秘密鍵を使用してください。",
+      "signatureError": "署名エラー: {{message}}"
+    }
   }
 }
