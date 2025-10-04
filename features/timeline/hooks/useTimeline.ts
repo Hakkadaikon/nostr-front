@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useReducer } from 'react';
-import { fetchTimeline, likeTweet, unlikeTweet, retweet, undoRetweet } from '../services/timeline';
+import { fetchTimeline, likeTweet, unlikeTweet, retweet, undoRetweet, clearProfileCache } from '../services/timeline';
 import { TimelineParams, TimelineState, Tweet, TimelineError } from '../types';
 import { useAuthStore } from '../../../stores/auth.store';
 import { useTimelineCacheStore } from '../../../stores/timeline-cache.store';
@@ -170,6 +170,13 @@ export function useTimeline(params: TimelineParams) {
     dispatch({ type: 'FETCH_START' });
 
     try {
+      // プロフィールキャッシュをクリアして最新情報を取得
+      // 既存のツイートに含まれるユーザーのプロフィールを更新
+      const uniqueAuthors = new Set(state.tweets.map(t => t.author.pubkey || t.author.id));
+      uniqueAuthors.forEach(pubkey => {
+        if (pubkey) clearProfileCache(pubkey);
+      });
+
       // 最新のツイートを取得（cursorなし）
       const response = await fetchTimeline({
         ...params,

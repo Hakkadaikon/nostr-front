@@ -14,9 +14,24 @@ import { extractReplyTo } from '../../../lib/nostr/nip10';
 const profileCache = new Map<string, any>();
 const profileFetchingPromises = new Map<string, Promise<any>>();
 
-// キャッシュの有効期限（5分）
-const PROFILE_CACHE_TTL = 5 * 60 * 1000;
+// キャッシュの有効期限（1分に短縮してより頻繁に更新）
+const PROFILE_CACHE_TTL = 1 * 60 * 1000;
 const profileCacheTimestamps = new Map<string, number>();
+
+/**
+ * プロフィールキャッシュをクリア（特定のpubkeyまたは全体）
+ */
+export function clearProfileCache(pubkey?: string) {
+  if (pubkey) {
+    profileCache.delete(pubkey);
+    profileCacheTimestamps.delete(pubkey);
+    profileFetchingPromises.delete(pubkey);
+  } else {
+    profileCache.clear();
+    profileCacheTimestamps.clear();
+    profileFetchingPromises.clear();
+  }
+}
 
 
 function decodeNoteIdentifier(identifier: string): { id: string; relays?: string[] } | null {
@@ -65,9 +80,11 @@ function extractQuoteReference(tags: string[][]): { id: string; relays?: string[
 /**
  * Nostrイベントからプロフィール情報を取得
  */
-async function fetchProfile(pubkey: string, relays: string[]): Promise<any> {
-  // キャッシュチェック（有効期限も確認）
-  if (profileCache.has(pubkey)) {
+async function fetchProfile(pubkey: string, relays: string[], options?: { forceRefresh?: boolean }): Promise<any> {
+  const forceRefresh = options?.forceRefresh || false;
+
+  // キャッシュチェック（有効期限も確認、強制更新時はスキップ）
+  if (!forceRefresh && profileCache.has(pubkey)) {
     const cachedTime = profileCacheTimestamps.get(pubkey) || 0;
     if (Date.now() - cachedTime < PROFILE_CACHE_TTL) {
       return profileCache.get(pubkey);
@@ -76,6 +93,11 @@ async function fetchProfile(pubkey: string, relays: string[]): Promise<any> {
       profileCache.delete(pubkey);
       profileCacheTimestamps.delete(pubkey);
     }
+  }
+
+  // 強制更新時は既存のPromiseもクリア
+  if (forceRefresh && profileFetchingPromises.has(pubkey)) {
+    profileFetchingPromises.delete(pubkey);
   }
 
   // すでに取得中の場合は、そのPromiseを返す

@@ -6,8 +6,8 @@ import type { Event as NostrEvent } from 'nostr-tools';
 import type { NotificationUser } from '../../../types/notification';
 import { getProfileImageUrl } from '../../../lib/utils/avatar';
 
-// プロフィールキャッシュ (5分TTL)
-const PROFILE_TTL_MS = 5 * 60 * 1000;
+// プロフィールキャッシュ (1分TTL - より頻繁に更新してプロフィール変更を反映)
+const PROFILE_TTL_MS = 1 * 60 * 1000;
 interface CachedProfile { profile: NotificationUser; fetchedAt: number; }
 const profileCache = new Map<string, CachedProfile>();
 const pendingRequests = new Map<string, Promise<NotificationUser>>();
