@@ -232,7 +232,10 @@ export function MentionSuggestion({ query, onSelect, onClose, position }: Mentio
                   ? 'bg-purple-50 dark:bg-purple-900/20'
                   : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
               }`}
-              onClick={() => onSelect(profile)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect(profile);
+              }}
               onMouseEnter={() => setSelectedIndex(index)}
             >
               <Avatar src={profile.picture} alt={profile.name} />

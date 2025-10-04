@@ -13,9 +13,19 @@ export function getWriteRelays(relays: RelayInfo[]) {
   return relays.filter(r => r.write).map(r => r.url);
 }
 
-export function subscribeTo(relays: string[], filters: Filter[], onEvent: (e: NostrEvent) => void, onEose?: () => void): Subscription {
+export function subscribeTo(
+  relays: string[],
+  filters: Filter[],
+  onEvent: (e: NostrEvent) => void,
+  optionsOrOnEose?: { onEose?: () => void } | (() => void)
+): Subscription {
   const p = getPool();
   console.log('subscribeTo: Creating subscription', { relays, filters });
+
+  // 後方互換性: 4番目の引数が関数の場合は従来の () => void として扱う
+  const options = typeof optionsOrOnEose === 'function'
+    ? { onEose: optionsOrOnEose }
+    : optionsOrOnEose;
 
   const sub = p.subscribeMany(relays, filters, {
     onevent: (event) => {
@@ -24,7 +34,7 @@ export function subscribeTo(relays: string[], filters: Filter[], onEvent: (e: No
     },
     oneose: () => {
       console.log('subscribeTo: End of stored events');
-      if (onEose) onEose();
+      if (options?.onEose) options.onEose();
     }
   });
 
