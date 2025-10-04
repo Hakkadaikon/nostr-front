@@ -6,6 +6,10 @@ import { YouTubeEmbed } from './embeds/YouTubeEmbed';
 import { XEmbed } from './embeds/XEmbed';
 import { SpotifyEmbed } from './embeds/SpotifyEmbed';
 import { ApplePodcastsEmbed } from './embeds/ApplePodcastsEmbed';
+import { SoundCloudEmbed } from './embeds/SoundCloudEmbed';
+import { VimeoEmbed } from './embeds/VimeoEmbed';
+import { TikTokEmbed } from './embeds/TikTokEmbed';
+import { TwitchEmbed } from './embeds/TwitchEmbed';
 import { LinkPreview } from './LinkPreview';
 
 interface MediaEmbedProps {
@@ -35,6 +39,24 @@ export function MediaEmbed({ url }: MediaEmbedProps) {
     case 'apple-podcasts':
       return mediaInfo.embedUrl ? (
         <ApplePodcastsEmbed embedUrl={mediaInfo.embedUrl} url={url} />
+      ) : null;
+
+    case 'soundcloud':
+      return mediaInfo.embedUrl ? (
+        <SoundCloudEmbed embedUrl={mediaInfo.embedUrl} url={url} />
+      ) : null;
+
+    case 'vimeo':
+      return mediaInfo.mediaId ? (
+        <VimeoEmbed videoId={mediaInfo.mediaId} url={url} />
+      ) : null;
+
+    case 'tiktok':
+      return <TikTokEmbed url={url} />;
+
+    case 'twitch':
+      return mediaInfo.embedUrl ? (
+        <TwitchEmbed embedUrl={mediaInfo.embedUrl} url={url} type={mediaInfo.embedUrl.includes('clip') ? 'clip' : 'video'} />
       ) : null;
 
     case 'image':

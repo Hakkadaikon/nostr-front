@@ -1,6 +1,6 @@
 // Media URL detection and parsing utilities
 
-export type MediaPlatform = 'youtube' | 'x' | 'twitter' | 'spotify' | 'apple-podcasts' | 'image' | 'video' | 'unknown';
+export type MediaPlatform = 'youtube' | 'x' | 'twitter' | 'spotify' | 'apple-podcasts' | 'soundcloud' | 'vimeo' | 'tiktok' | 'twitch' | 'image' | 'video' | 'unknown';
 
 export interface MediaInfo {
   platform: MediaPlatform;
@@ -34,6 +34,31 @@ const SPOTIFY_PATTERNS = [
 // Apple Podcasts URL patterns
 const APPLE_PODCASTS_PATTERNS = [
   /podcasts\.apple\.com\/[^\/]+\/podcast\/[^\/]+\/id(\d+)/i,
+];
+
+// SoundCloud URL patterns
+const SOUNDCLOUD_PATTERNS = [
+  /soundcloud\.com\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_-]+)/i,
+];
+
+// Vimeo URL patterns
+const VIMEO_PATTERNS = [
+  /vimeo\.com\/(\d+)/i,
+  /player\.vimeo\.com\/video\/(\d+)/i,
+];
+
+// TikTok URL patterns
+const TIKTOK_PATTERNS = [
+  /tiktok\.com\/@([^\/]+)\/video\/(\d+)/i,
+  /vm\.tiktok\.com\/([a-zA-Z0-9]+)/i,
+  /vt\.tiktok\.com\/([a-zA-Z0-9]+)/i,
+];
+
+// Twitch URL patterns
+const TWITCH_PATTERNS = [
+  /twitch\.tv\/videos\/(\d+)/i,
+  /twitch\.tv\/([a-zA-Z0-9_]+)\/clip\/([a-zA-Z0-9_-]+)/i,
+  /clips\.twitch\.tv\/([a-zA-Z0-9_-]+)/i,
 ];
 
 // Image extensions
@@ -78,6 +103,78 @@ function getSpotifyInfo(url: string): { type: string; id: string } | null {
       return { type: match[1], id: match[2] };
     }
   }
+  return null;
+}
+
+/**
+ * Extract SoundCloud info from URL
+ */
+function getSoundCloudInfo(url: string): { user: string; track: string } | null {
+  for (const pattern of SOUNDCLOUD_PATTERNS) {
+    const match = url.match(pattern);
+    if (match && match[1] && match[2]) {
+      return { user: match[1], track: match[2] };
+    }
+  }
+  return null;
+}
+
+/**
+ * Extract Vimeo video ID from URL
+ */
+function getVimeoId(url: string): string | null {
+  for (const pattern of VIMEO_PATTERNS) {
+    const match = url.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  return null;
+}
+
+/**
+ * Extract TikTok info from URL
+ */
+function getTikTokInfo(url: string): { username?: string; videoId?: string; shortCode?: string } | null {
+  // Full URL with username and video ID
+  const fullMatch = url.match(TIKTOK_PATTERNS[0]);
+  if (fullMatch && fullMatch[1] && fullMatch[2]) {
+    return { username: fullMatch[1], videoId: fullMatch[2] };
+  }
+
+  // Short URL
+  for (let i = 1; i < TIKTOK_PATTERNS.length; i++) {
+    const match = url.match(TIKTOK_PATTERNS[i]);
+    if (match && match[1]) {
+      return { shortCode: match[1] };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Extract Twitch info from URL
+ */
+function getTwitchInfo(url: string): { type: 'video' | 'clip'; videoId?: string; clipId?: string; channel?: string } | null {
+  // Video
+  const videoMatch = url.match(TWITCH_PATTERNS[0]);
+  if (videoMatch && videoMatch[1]) {
+    return { type: 'video', videoId: videoMatch[1] };
+  }
+
+  // Channel clip
+  const channelClipMatch = url.match(TWITCH_PATTERNS[1]);
+  if (channelClipMatch && channelClipMatch[1] && channelClipMatch[2]) {
+    return { type: 'clip', channel: channelClipMatch[1], clipId: channelClipMatch[2] };
+  }
+
+  // Direct clip
+  const clipMatch = url.match(TWITCH_PATTERNS[2]);
+  if (clipMatch && clipMatch[1]) {
+    return { type: 'clip', clipId: clipMatch[1] };
+  }
+
   return null;
 }
 
@@ -171,6 +268,55 @@ export function parseMediaUrl(url: string): MediaInfo {
         originalUrl: url,
       };
     }
+  }
+
+  // Check for SoundCloud
+  const soundcloudInfo = getSoundCloudInfo(url);
+  if (soundcloudInfo) {
+    return {
+      platform: 'soundcloud',
+      embedUrl: `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true`,
+      originalUrl: url,
+    };
+  }
+
+  // Check for Vimeo
+  const vimeoId = getVimeoId(url);
+  if (vimeoId) {
+    return {
+      platform: 'vimeo',
+      mediaId: vimeoId,
+      embedUrl: `https://player.vimeo.com/video/${vimeoId}`,
+      originalUrl: url,
+    };
+  }
+
+  // Check for TikTok
+  const tiktokInfo = getTikTokInfo(url);
+  if (tiktokInfo) {
+    return {
+      platform: 'tiktok',
+      mediaId: tiktokInfo.videoId || tiktokInfo.shortCode,
+      embedUrl: url, // TikTokの埋め込みは元のURLを使用
+      originalUrl: url,
+    };
+  }
+
+  // Check for Twitch
+  const twitchInfo = getTwitchInfo(url);
+  if (twitchInfo) {
+    let embedUrl = '';
+    if (twitchInfo.type === 'video' && twitchInfo.videoId) {
+      embedUrl = `https://player.twitch.tv/?video=${twitchInfo.videoId}&parent=${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}`;
+    } else if (twitchInfo.type === 'clip' && twitchInfo.clipId) {
+      embedUrl = `https://clips.twitch.tv/embed?clip=${twitchInfo.clipId}&parent=${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}`;
+    }
+    return {
+      platform: 'twitch',
+      mediaId: twitchInfo.videoId || twitchInfo.clipId,
+      embedUrl,
+      originalUrl: url,
+    };
   }
 
   // Check for images
