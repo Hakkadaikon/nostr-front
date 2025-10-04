@@ -15,6 +15,7 @@ interface LinkPreviewData {
 
 interface LinkPreviewProps {
   url: string;
+  suppressUrls?: string[];
 }
 
 // ローカルキャッシュ（コンポーネント用）
@@ -28,7 +29,7 @@ function sanitizeUrl(url: string) {
   }
 }
 
-export function LinkPreview({ url }: LinkPreviewProps) {
+export function LinkPreview({ url, suppressUrls }: LinkPreviewProps) {
   const normalizedUrl = useMemo(() => sanitizeUrl(url), [url]);
   const cacheKey = normalizedUrl ?? url;
   const [data, setData] = useState<LinkPreviewData | null | undefined>(localCache.get(cacheKey));
@@ -94,6 +95,9 @@ export function LinkPreview({ url }: LinkPreviewProps) {
   const image = data?.image;
   const siteName = data?.siteName || new URL(normalizedUrl as string).hostname;
 
+  // OGP画像がsuppressUrlsに含まれる場合は非表示
+  const shouldShowImage = image && !suppressUrls?.some(suppressUrl => image === suppressUrl || image.startsWith(suppressUrl));
+
   return (
     <a
       href={normalizedUrl as string}
@@ -102,7 +106,7 @@ export function LinkPreview({ url }: LinkPreviewProps) {
       className="mt-3 block overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md dark:border-gray-700 dark:bg-gray-900"
     >
       <div className="flex flex-col sm:flex-row">
-        {image ? (
+        {shouldShowImage ? (
           <div className="relative h-40 w-full flex-shrink-0 sm:h-40 sm:w-48">
             <Image
               src={image}

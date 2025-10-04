@@ -88,7 +88,7 @@ function renderLink(url: string, key: string, seenUrls: Set<string>, suppressUrl
   // その他のURL（動画・音声・OGP等）はMediaEmbedで表示
   return (
     <span key={key} className="block">
-      <MediaEmbed url={cleaned} authorPubkey={authorPubkey} />
+      <MediaEmbed url={cleaned} authorPubkey={authorPubkey} suppressUrls={suppressUrls} />
     </span>
   );
 }

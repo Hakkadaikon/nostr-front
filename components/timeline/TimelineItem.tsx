@@ -290,8 +290,9 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
           )}
           {/* コンテンツ */}
           {tweet.content && tweet.content.trim().length > 0 && (() => {
-            // 本文中の画像URLを抽出してsuppressUrlsに追加
+            // 本文中の画像URLを抽出
             const contentImageUrls = extractImageUrls(tweet.content);
+            // メディアセクションのURLと本文中の画像URLを統合してsuppressUrlsに渡す
             const mediaUrls = tweet.media?.map(m => m.url) || [];
             const allSuppressUrls = [...mediaUrls, ...contentImageUrls];
 
