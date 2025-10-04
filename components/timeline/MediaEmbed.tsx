@@ -22,11 +22,12 @@ interface MediaEmbedProps {
 export function MediaEmbed({ url, authorPubkey }: MediaEmbedProps) {
   const mediaInfo = parseMediaUrl(url);
 
-  // 埋め込み処理のログ出力
+  // 埋め込み処理のログ出力（mediaInfoはオブジェクトなので依存配列から除外）
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
+      // 必要に応じてログを出力
     }
-  }, [url, mediaInfo]);
+  }, [url]); // mediaInfoを依存配列から削除（無限ループ防止）
 
   switch (mediaInfo.platform) {
     case 'youtube':

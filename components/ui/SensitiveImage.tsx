@@ -31,7 +31,8 @@ export function SensitiveImage({
   children,
 }: SensitiveImageProps) {
   const [shouldBlur, setShouldBlur] = useState(true);
-  const revealedImages = useImageRevealStore(state => state.revealedImages);
+  // Setオブジェクトの参照ではなく、特定の画像の解除状態のみ監視
+  const isRevealed = useImageRevealStore(state => state.isRevealed(src));
   const revealImage = useImageRevealStore(state => state.revealImage);
 
   useEffect(() => {
@@ -41,8 +42,6 @@ export function SensitiveImage({
     // アクター（リアクション・リポスト等をした人）のフォロー判定
     const actorFollowStatus = isFollowing(actorPubkey);
 
-    // デバッグログ
-
     // 投稿者またはアクターがフォロー中の場合はぼかしなし
     if (authorFollowStatus === true || actorFollowStatus === true) {
       setShouldBlur(false);
@@ -50,7 +49,7 @@ export function SensitiveImage({
     }
 
     // 既に解除されている場合
-    if (revealedImages.has(src)) {
+    if (isRevealed) {
       setShouldBlur(false);
       return;
     }
@@ -58,7 +57,7 @@ export function SensitiveImage({
     // authorまたはactorのいずれかがフォロー中（true）でない場合はぼかす
     // （判定不能（null）の場合も安全のためぼかす）
     setShouldBlur(true);
-  }, [authorPubkey, actorPubkey, src, revealedImages]);
+  }, [authorPubkey, actorPubkey, src, isRevealed]); // revealedImagesではなくisRevealedを監視
 
   const handleReveal = () => {
     revealImage(src);

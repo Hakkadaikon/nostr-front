@@ -31,15 +31,15 @@ export function TimelineList({
   const [selectedTweetId, setSelectedTweetId] = useState<string>('');
   const [selectedTweet, setSelectedTweet] = useState<Tweet | null>(null);
   const [replyToTweet, setReplyToTweet] = useState<Tweet | null>(null);
-  const [localTweets, setLocalTweets] = useState<Tweet[]>(tweets);
+  const [deletedTweetIds, setDeletedTweetIds] = useState<Set<string>>(new Set());
 
-  // tweetsプロパティが変更されたときにlocalTweetsを更新
-  React.useEffect(() => {
-    setLocalTweets(tweets);
-  }, [tweets]);
+  // 削除されたツイートを除外してフィルタリング（ローカル状態を使わずメモ化）
+  const displayTweets = React.useMemo(() => {
+    return tweets.filter(tweet => !deletedTweetIds.has(tweet.id));
+  }, [tweets, deletedTweetIds]);
 
   const handleZap = (tweetId: string) => {
-    const tweet = localTweets.find(t => t.id === tweetId);
+    const tweet = displayTweets.find(t => t.id === tweetId);
     if (tweet) {
       setSelectedTweetId(tweetId);
       setSelectedTweet(tweet);
@@ -58,8 +58,8 @@ export function TimelineList({
   };
 
   const handleDelete = (tweetId: string) => {
-    // ローカル状態から削除されたツイートを除外
-    setLocalTweets(prevTweets => prevTweets.filter(tweet => tweet.id !== tweetId));
+    // 削除されたツイートIDをSetに追加（不変更新）
+    setDeletedTweetIds(prev => new Set(prev).add(tweetId));
   };
   if (error && tweets.length === 0) {
     return (
@@ -85,7 +85,7 @@ export function TimelineList({
     );
   }
 
-  if (localTweets.length === 0) {
+  if (displayTweets.length === 0) {
     return (
       <div className="p-6 sm:p-8 text-center">
         <p className="text-gray-500 dark:text-gray-400">
@@ -98,7 +98,7 @@ export function TimelineList({
   return (
     <>
       <div className="overflow-hidden divide-y divide-gray-200 dark:divide-gray-800">
-        {localTweets.map((tweet) => {
+        {displayTweets.map((tweet) => {
           const key = tweet.activity?.sourceEventId ?? tweet.id;
           return (
           <TimelineItem

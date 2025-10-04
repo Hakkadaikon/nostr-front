@@ -19,7 +19,8 @@ interface RichContentProps {
   actorPubkey?: string; // アクター（リアクション・リポスト等をした人）の公開鍵
 }
 
-const TOKEN_REGEX = /(nostr:[^\s]+|https?:\/\/[^\s]+)/gi;
+// nostr URIとHTTP(S) URLをマッチ
+const TOKEN_REGEX = /(nostr:[a-z0-9]+|https?:\/\/[^\s]+)/gi;
 
 // メンション表示用コンポーネント
 function MentionLink({ pubkey, npub }: { pubkey: string; npub: string }) {
@@ -102,11 +103,18 @@ function renderNostr(
 ) {
   const parsed = parseNostrUri(token);
   if (!parsed) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[RichContent] Failed to parse nostr URI:', token);
+    }
     return (
       <span key={key} className="text-purple-600">
         {token}
       </span>
     );
+  }
+
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[RichContent] Parsed nostr URI:', token, '→', parsed);
   }
 
   if (parsed.type === 'note') {
@@ -165,6 +173,10 @@ function renderNostr(
 }
 
 export function RichContent({ content, tags, suppressNoteIds, suppressUrls, authorPubkey, actorPubkey }: RichContentProps) {
+  // suppressNoteIdsとsuppressUrlsを安定した値に変換（配列は毎回新しい参照になるため）
+  const suppressNoteIdsKey = useMemo(() => suppressNoteIds?.join(',') || '', [suppressNoteIds]);
+  const suppressUrlsKey = useMemo(() => suppressUrls?.join(',') || '', [suppressUrls]);
+
   const nodes = useMemo(() => {
     const elements: ReactNode[] = [];
     const seenNoteIds = new Set<string>();
@@ -206,7 +218,8 @@ export function RichContent({ content, tags, suppressNoteIds, suppressUrls, auth
     }
 
     return elements;
-  }, [content, tags, suppressNoteIds, suppressUrls, authorPubkey, actorPubkey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [content, tags, suppressNoteIdsKey, suppressUrlsKey, authorPubkey, actorPubkey]); // 配列そのものではなくキー文字列で比較（suppressNoteIds/Urlsは意図的に除外）
 
   return (
     <div className="text-gray-900 dark:text-white whitespace-pre-wrap break-all overflow-hidden">
