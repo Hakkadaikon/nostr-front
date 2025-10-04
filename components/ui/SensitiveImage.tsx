@@ -31,7 +31,8 @@ export function SensitiveImage({
   children,
 }: SensitiveImageProps) {
   const [shouldBlur, setShouldBlur] = useState(true);
-  const { isRevealed, revealImage } = useImageRevealStore();
+  const revealedImages = useImageRevealStore(state => state.revealedImages);
+  const revealImage = useImageRevealStore(state => state.revealImage);
 
   useEffect(() => {
     // 投稿者のフォロー判定
@@ -49,7 +50,7 @@ export function SensitiveImage({
     }
 
     // 既に解除されている場合
-    if (isRevealed(src)) {
+    if (revealedImages.has(src)) {
       setShouldBlur(false);
       return;
     }
@@ -62,7 +63,7 @@ export function SensitiveImage({
 
     // 明確に非フォロー（false）の場合のみぼかす
     setShouldBlur(true);
-  }, [authorPubkey, actorPubkey, src, isRevealed]);
+  }, [authorPubkey, actorPubkey, src, revealedImages]);
 
   const handleReveal = () => {
     revealImage(src);
