@@ -5,13 +5,10 @@ import Header from './Header';
 import ThemeToggle from './ThemeToggle';
 import { Toast } from '../ui/Toast';
 import { useToast } from '../../hooks/useToast';
-import { setupI18n } from '../../lib/i18n';
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const { toast, clear } = useToast();
   useEffect(() => {
-    const lang = (navigator?.language?.startsWith('ja') ? 'ja' : 'en') as 'ja' | 'en';
-    setupI18n(lang);
     let timer: any;
     const reset = () => {
       clearTimeout(timer);

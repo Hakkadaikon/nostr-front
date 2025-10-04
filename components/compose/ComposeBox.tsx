@@ -10,6 +10,7 @@ import { Avatar } from '../ui/Avatar';
 import { MentionSuggestion } from './MentionSuggestion';
 import { MediaUploader } from './MediaUploader';
 import { X } from 'lucide-react';
+import { useTranslation } from '../../lib/i18n';
 
 const DRAFT_KEY = 'compose:main';
 
@@ -25,6 +26,7 @@ export default function ComposeBox() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [selectedMedia, setSelectedMedia] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     (async () => {
@@ -173,15 +175,15 @@ export default function ComposeBox() {
       if (r.ok) {
         setText('');
         await removeDraft(DRAFT_KEY);
-        show(`Posted to ${r.results.length - failed.length}/${r.results.length} relays`);
+        show(t('compose.postSuccess', { success: r.results.length - failed.length, total: r.results.length }));
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new Event('timeline:refresh'));
         }
       } else {
-        show(`Failed to post. Failed relays: ${failed.join(', ')}`);
+        show(t('compose.postFailed', { relays: failed.join(', ') }));
       }
     } catch (e: any) {
-      show(`Post failed: ${e?.message || e}`);
+      show(t('compose.postError', { message: e?.message || e }));
     } finally {
       setLoading(false);
     }
@@ -203,7 +205,7 @@ export default function ComposeBox() {
           value={text}
           onChange={handleTextChange}
           onPaste={handlePaste}
-          placeholder="いまどうしてる？"
+          placeholder={t('compose.placeholder')}
           rows={3}
         />
       </div>
@@ -248,11 +250,11 @@ export default function ComposeBox() {
             onRemoveMedia={handleRemoveMedia}
           />
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            {text.length} 文字
+            {t('compose.characterCount', { count: text.length })}
           </span>
         </div>
         <Button variant="primary" disabled={!text.trim() || loading} onClick={onPost}>
-          {loading ? '投稿中...' : '投稿する'}
+          {loading ? t('common.posting') : t('common.post')}
         </Button>
       </div>
       {showMentions && (

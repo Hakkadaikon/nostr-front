@@ -1,0 +1,77 @@
+{
+  "common": {
+    "home": "Home",
+    "notifications": "Notifications",
+    "messages": "Messages",
+    "profile": "Profile",
+    "settings": "Settings",
+    "explore": "Explore",
+    "search": "Search",
+    "post": "Post",
+    "posting": "Posting...",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "reply": "Reply",
+    "retweet": "Retweet",
+    "like": "Like",
+    "share": "Share",
+    "follow": "Follow",
+    "following": "Following",
+    "followers": "Followers",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "compose": {
+    "placeholder": "What's happening?",
+    "characterCount": "{{count}} characters",
+    "postSuccess": "Posted to {{success}}/{{total}} relays",
+    "postFailed": "Failed to post. Failed relays: {{relays}}",
+    "postError": "Post error: {{message}}"
+  },
+  "mention": {
+    "searching": "Searching...",
+    "noResults": "No users found",
+    "followingBadge": "Following"
+  },
+  "timeline": {
+    "forYou": "For You",
+    "following": "Following",
+    "noTweets": "No tweets yet",
+    "loadMore": "Load more",
+    "refresh": "Refresh"
+  },
+  "profile": {
+    "editProfile": "Edit Profile",
+    "followersCount": "{{count}} Followers",
+    "followingCount": "{{count}} Following",
+    "postsCount": "{{count}} Posts",
+    "joined": "Joined: {{date}}"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "signup": "Sign Up",
+    "welcome": "Welcome",
+    "loginRequired": "Login required to use this feature"
+  },
+  "settings": {
+    "general": "General",
+    "appearance": "Appearance",
+    "privacy": "Privacy",
+    "notifications": "Notification Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "darkMode": "Dark Mode",
+    "lightMode": "Light Mode"
+  },
+  "errors": {
+    "network": "Network error occurred",
+    "unknown": "Unknown error occurred",
+    "notFound": "Not found",
+    "unauthorized": "Authentication required",
+    "forbidden": "Access denied"
+  }
+}

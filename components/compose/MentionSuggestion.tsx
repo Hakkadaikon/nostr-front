@@ -10,6 +10,7 @@ import { useMentionStore, type MentionProfile } from '../../stores/mention.store
 import { KIND_METADATA } from '../../lib/nostr/constants';
 import { Avatar } from '../ui/Avatar';
 import { getProfileImageUrl } from '../../lib/utils/avatar';
+import { useTranslation } from '../../lib/i18n';
 
 interface Profile {
   pubkey: string;
@@ -54,6 +55,7 @@ export function MentionSuggestion({ query, onSelect, onClose, position }: Mentio
   const containerRef = useRef<HTMLDivElement>(null);
   const { publicKey } = useAuthStore();
   const { followingProfiles, followList, prefetchFollowingProfiles } = useMentionStore();
+  const { t } = useTranslation();
 
   // フォロー中プロフィールを先読み
   useEffect(() => {
@@ -216,11 +218,11 @@ export function MentionSuggestion({ query, onSelect, onClose, position }: Mentio
     >
       {isLoading && profiles.length === 0 ? (
         <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
-          検索中...
+          {t('mention.searching')}
         </div>
       ) : profiles.length === 0 ? (
         <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
-          ユーザーが見つかりませんでした
+          {t('mention.noResults')}
         </div>
       ) : (
         <ul>
@@ -246,7 +248,7 @@ export function MentionSuggestion({ query, onSelect, onClose, position }: Mentio
                   </div>
                   {profile.isFollowing && (
                     <span className="text-xs px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded">
-                      フォロー中
+                      {t('mention.followingBadge')}
                     </span>
                   )}
                 </div>

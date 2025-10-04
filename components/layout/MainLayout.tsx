@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import NavSidebar from './NavSidebar';
 import ComposeModal from '../compose/ComposeModal';
 import { MobileNav } from './MobileNav';
@@ -9,6 +9,8 @@ import { ThemeProvider } from '../providers/ThemeProvider';
 import Nip07LoginPrompt from '../auth/Nip07LoginPrompt';
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import { useLoadNip65Relays } from '../../features/relays/hooks/useLoadNip65Relays';
+import { I18nProvider, defaultLocale } from '../../lib/i18n';
+
 interface MainLayoutProps {
   children: ReactNode;
 }
@@ -19,10 +21,25 @@ export function MainLayout({ children }: MainLayoutProps) {
   // Load relays from NIP-65 (kind:10002) when pubkey is ready
   useLoadNip65Relays();
 
+  const [locale, setLocale] = useState(defaultLocale);
+
+  useEffect(() => {
+    // クライアント側でロケールを取得
+    const cookieLocale = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('NEXT_LOCALE='))
+      ?.split('=')[1];
+
+    if (cookieLocale) {
+      setLocale(cookieLocale);
+    }
+  }, []);
+
   const innerContainerClass = 'w-full min-h-screen max-w-full lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl lg:mx-auto md:border-x border-gray-200 dark:border-gray-800';
 
   return (
-    <ThemeProvider>
+    <I18nProvider locale={locale}>
+      <ThemeProvider>
       {/* モバイルヘッダー */}
       <MobileHeader />
       
@@ -57,5 +74,6 @@ export function MainLayout({ children }: MainLayoutProps) {
       {/* グローバルモーダル */}
       <ComposeModal />
     </ThemeProvider>
+    </I18nProvider>
   );
 }

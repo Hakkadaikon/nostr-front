@@ -8,6 +8,7 @@ import { useAuthStore } from '../../stores/auth.store';
 import { SafeImage } from '../ui/SafeImage';
 import { useUiStore } from '../../stores/ui.store';
 import { getProfileImageUrl } from '../../lib/utils/avatar';
+import { useTranslation } from '../../lib/i18n';
 
 interface NavItem {
   label: string;
@@ -20,31 +21,32 @@ export function Sidebar() {
   const pathname = usePathname();
   const { npub, publicKey } = useAuthStore();
   const openComposeModal = useUiStore(state => state.openComposeModal);
-  
+  const { t } = useTranslation();
+
   const navItems: NavItem[] = [
     {
-      label: 'ホーム',
+      label: t('common.home'),
       href: '/',
       icon: <Home size={24} />,
     },
     {
-      label: '通知',
+      label: t('common.notifications'),
       href: '/notifications',
       icon: <Bell size={24} />,
       badge: 3, // 未読通知数の例
     },
     {
-      label: 'メッセージ',
+      label: t('common.messages'),
       href: '/messages',
       icon: <Mail size={24} />,
     },
     {
-      label: 'プロフィール',
+      label: t('common.profile'),
       href: npub ? `/profile/${npub}` : '/onboarding',
       icon: <User size={24} />,
     },
     {
-      label: '設定',
+      label: t('common.settings'),
       href: '/settings',
       icon: <Settings size={24} />,
     },
@@ -101,12 +103,12 @@ export function Sidebar() {
 
       {/* 投稿ボタン */}
       <div className="p-4">
-        <button 
+        <button
           onClick={openComposeModal}
           className="w-full py-3 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 shadow-md shadow-purple-500/20 hover:shadow-lg hover:shadow-purple-500/30 transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2"
         >
           <Edit size={20} />
-          <span>ポストする</span>
+          <span>{t('common.post')}</span>
         </button>
       </div>
 
