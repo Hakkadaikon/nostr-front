@@ -129,14 +129,10 @@ export function useNotifications() {
 }
 
 export function useNotificationActions() {
-  const { markAsRead, markAllAsRead, clearNotifications } = useNotificationStore();
+  const { markAsRead, clearNotifications } = useNotificationStore();
 
   const handleNotificationClick = (notificationId: string) => {
     markAsRead(notificationId);
-  };
-
-  const handleMarkAllAsRead = () => {
-    markAllAsRead();
   };
 
   const handleClearAll = () => {
@@ -147,7 +143,6 @@ export function useNotificationActions() {
 
   return {
     handleNotificationClick,
-    handleMarkAllAsRead,
     handleClearAll,
   };
 }

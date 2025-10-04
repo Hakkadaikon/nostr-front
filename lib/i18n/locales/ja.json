@@ -74,7 +74,6 @@
     },
     "notifications": {
       "title": "通知",
-      "markAllRead": "すべて既読",
       "tabs": {
         "all": "すべて",
         "mentions": "メンション",

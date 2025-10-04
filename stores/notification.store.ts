@@ -9,7 +9,6 @@ interface NotificationStore {
   unreadCount: number;
   addNotification: (notification: Notification) => void;
   markAsRead: (id: string) => void;
-  markAllAsRead: () => void;
   clearNotifications: () => void;
   getFilteredNotifications: (limit?: number) => Notification[];
   updateUserProfile: (pubkey: string, data: { name?: string; username?: string; avatar?: string }) => void;
@@ -88,12 +87,7 @@ export const useNotificationStore = create<NotificationStore>()(
         const unreadCount = notifications.filter(n => !n.isRead).length;
         return { notifications, unreadCount };
       }),
-      
-      markAllAsRead: () => set((state) => ({
-        notifications: state.notifications.map(n => ({ ...n, isRead: true })),
-        unreadCount: 0,
-      })),
-      
+
       clearNotifications: () => set(() => ({
         notifications: [],
         unreadCount: 0,

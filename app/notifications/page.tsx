@@ -34,7 +34,7 @@ function NotificationsPageInner() {
   const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { getFilteredNotifications, markAllAsRead, unreadCount } = useNotificationStore();
+  const { getFilteredNotifications, unreadCount } = useNotificationStore();
   const [isMounted, setIsMounted] = useState(false);
   const [displayLimit, setDisplayLimit] = useState(20);
 
@@ -93,14 +93,6 @@ function NotificationsPageInner() {
               </span>
             )}
           </div>
-          {unreadCount > 0 && (
-            <button
-              onClick={markAllAsRead}
-              className="text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 font-medium transition-colors"
-            >
-              {t('page.notifications.markAllRead')}
-            </button>
-          )}
         </div>
       </header>
 
