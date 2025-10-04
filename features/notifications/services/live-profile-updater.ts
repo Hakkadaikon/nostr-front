@@ -34,7 +34,6 @@ function flushSubscribe() {
         avatar: getProfileImageUrl(meta.picture, event.pubkey)
       });
     } catch (e) {
-      console.warn('live-profile-updater: failed to parse metadata', e);
     }
   });
 }

@@ -67,7 +67,6 @@ export async function followUser(targetNpubOrPubkey: string): Promise<void> {
       throw new Error('Nostr extension not found');
     }
   } catch (error) {
-    console.error('[followUser] Failed to follow user:', error);
     throw error;
   }
 }
@@ -126,7 +125,6 @@ export async function unfollowUser(targetNpubOrPubkey: string): Promise<void> {
       throw new Error('Nostr extension not found');
     }
   } catch (error) {
-    console.error('[unfollowUser] Failed to unfollow user:', error);
     throw error;
   }
 }
@@ -149,7 +147,6 @@ export async function isFollowing(targetNpubOrPubkey: string): Promise<boolean> 
     const currentFollowList = await fetchFollowList();
     return currentFollowList.includes(targetPubkey);
   } catch (error) {
-    console.error('[isFollowing] Failed to check follow status:', error);
     return false;
   }
 }
@@ -207,7 +204,6 @@ export async function fetchUserFollowList(pubkey: string, type: 'following' | 'f
                     };
                     userMap.set(profileEvent.pubkey, user);
                   } catch (error) {
-                    console.error('Failed to parse profile:', error);
                   }
                 }
               );
@@ -260,14 +256,12 @@ export async function fetchUserFollowList(pubkey: string, type: 'following' | 'f
               };
               userMap.set(followerPubkey, user);
             } catch (error) {
-              console.error('Failed to fetch follower profile:', error);
             }
           }
         );
       });
     }
   } catch (error) {
-    console.error('Failed to fetch follow list:', error);
     return [];
   }
 }

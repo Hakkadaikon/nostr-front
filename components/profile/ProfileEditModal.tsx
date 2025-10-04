@@ -50,7 +50,6 @@ export function ProfileEditModal({ isOpen, onClose, currentProfile, onSave }: Pr
       onSave({ ...currentProfile, ...formData });
       onClose();
     } catch (error) {
-      console.error('Failed to update profile:', error);
     } finally {
       setIsSaving(false);
     }

@@ -83,7 +83,6 @@ export function QuotedTweet({ quoteId, relays = [] }: QuotedTweetProps) {
               setShowLoading(false);
               authorSub.close();
             } catch (error) {
-              console.error('Failed to parse author profile:', error);
               setIsLoading(false);
               setShowLoading(false);
             }
@@ -118,7 +117,6 @@ export function QuotedTweet({ quoteId, relays = [] }: QuotedTweetProps) {
         setShowLoading(false);
       }
     }).catch(error => {
-      console.error('QuotedTweet: Error fetching note', error);
       if (!active) return;
       setNote(null);
       setIsLoading(false);

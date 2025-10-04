@@ -64,7 +64,6 @@ export default function OnboardingPage() {
         router.push('/');
       }
     } catch (error) {
-      console.error('Failed to use NIP-07 extension:', error);
       alert(t('page.onboarding.nip07.accessFailed'));
     }
   };

@@ -95,7 +95,6 @@ async function fetchProfileFromNostr(pubkey: string): Promise<NotificationUser> 
             avatar: getProfileImageUrl(metadata.picture, pubkey),
           });
         } catch (e) {
-          console.error('Failed to parse profile metadata:', e);
           resolve(defaultProfile);
         }
       };
@@ -119,7 +118,6 @@ async function fetchProfileFromNostr(pubkey: string): Promise<NotificationUser> 
       );
     });
   } catch (error) {
-    console.error('Failed to fetch profile:', error);
     return defaultProfile;
   }
 }

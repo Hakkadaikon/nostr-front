@@ -64,7 +64,6 @@ export function ProfileHeader({
           ensureTimelineLiveProfileTracking(pubkey);
         }
       } catch (error) {
-        console.warn('Failed to decode npub for profile tracking:', error);
       }
     };
     getPubkeyFromNpub();
@@ -121,7 +120,6 @@ export function ProfileHeader({
         return;
       }
     } catch (error) {
-      console.error('Share failed:', error);
     }
 
     try {
@@ -129,7 +127,6 @@ export function ProfileHeader({
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2000);
     } catch (error) {
-      console.error('Failed to copy profile link:', error);
     }
   };
 

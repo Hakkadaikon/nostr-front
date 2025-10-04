@@ -78,7 +78,6 @@ export class NostrNotificationService {
           isMention = true;
         }
       } catch (error) {
-        console.error('Error encoding npub:', error);
       }
     }
 
@@ -336,7 +335,6 @@ export class NostrNotificationService {
       try {
         zapRequestEvent = JSON.parse(descriptionTag[1]);
       } catch (e) {
-        console.warn('[zap] invalid description JSON');
         return;
       }
 
@@ -415,9 +413,7 @@ export class NostrNotificationService {
         try {
           postData = await fetchPostData(targetNoteId, additionalRelays);
           fetchSuccess = !!postData;
-          console.log(`[processZap] Post fetch ${fetchSuccess ? 'succeeded' : 'failed'} for note ${targetNoteId.slice(0, 8)}...`);
         } catch (e) {
-          console.warn(`[processZap] Failed to fetch post data for ${targetNoteId.slice(0, 8)}...`, e);
         }
       }
 
@@ -432,12 +428,10 @@ export class NostrNotificationService {
         try {
           zapperProfile = await fetchProfileForNotification(zapperPubkey);
         } catch (profileError) {
-          console.warn('[zap] failed to fetch zapper profile', profileError);
         }
       }
 
       const zapElapsed = Date.now() - zapStartTime;
-      console.log(`[processZap] Zap notification created in ${zapElapsed}ms (fetch: ${fetchSuccess}, amount: ${amountSats} sats)`);
 
       await this.createNotification({
         type: 'zap',
@@ -453,7 +447,6 @@ export class NostrNotificationService {
       });
     } catch (error) {
       const zapElapsed = Date.now() - zapStartTime;
-      console.error(`[processZap] Error processing zap event after ${zapElapsed}ms:`, error);
     }
   }
 

@@ -30,14 +30,12 @@ function getSecretKey(): string | Uint8Array {
         }
         return '';
       } catch (e) {
-        console.error('[getSecretKey] Failed to decode nsec:', e);
         return '';
       }
     }
 
     return secret;
   } catch (e) {
-    console.error('[getSecretKey] Error:', e);
     return '';
   }
 }
@@ -91,7 +89,6 @@ export async function deleteNote(
     await Promise.all(promises);
 
   } catch (error) {
-    console.error('[deleteNote] Failed to delete note:', error);
     throw error;
   } finally {
     const relayUrls = getWriteRelays();

@@ -18,7 +18,6 @@ export async function fetchFollowList(pubkey?: string): Promise<string[]> {
     const targetPubkey = pubkey || useAuthStore.getState().publicKey;
 
     if (!targetPubkey) {
-      console.error('[fetchFollowList] No public key available');
       return [];
     }
 
@@ -76,7 +75,6 @@ export async function fetchFollowList(pubkey?: string): Promise<string[]> {
               }
             }
           } catch (error) {
-            console.error('[fetchFollowList] Failed to handle event:', error);
           }
         },
         {
@@ -119,7 +117,6 @@ export async function fetchFollowList(pubkey?: string): Promise<string[]> {
     });
   } catch (error) {
     const elapsed = Date.now() - startTime;
-    console.error(`[fetchFollowList] Failed after ${elapsed}ms:`, error);
 
     // エラー時もキャッシュがあれば返す
     if (pubkey || useAuthStore.getState().publicKey) {
@@ -180,7 +177,6 @@ export async function fetchFollowLists(pubkeys: string[]): Promise<Map<string, s
               latestEventByAuthor.set(event.pubkey, event);
             }
           } catch (error) {
-            console.error('Failed to handle follow list event:', error);
           }
         }
       );
@@ -197,7 +193,6 @@ export async function fetchFollowLists(pubkeys: string[]): Promise<Map<string, s
       }, 3000);
     });
   } catch (error) {
-    console.error('Failed to fetch follow lists:', error);
     return new Map();
   }
 }

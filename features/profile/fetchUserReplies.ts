@@ -68,11 +68,9 @@ export async function fetchUserReplies(npub: string, limit: number = 20): Promis
       if (decoded.type === 'npub') {
         pubkey = decoded.data as string;
       } else {
-        console.error('Invalid npub format');
         return [];
       }
     } catch (error) {
-      console.error('Failed to decode npub:', error);
       return [];
     }
 
@@ -195,7 +193,6 @@ export async function fetchUserReplies(npub: string, limit: number = 20): Promis
       }, 3000);
     });
   } catch (error) {
-    console.error('Failed to fetch user replies:', error);
     return [];
   }
 }

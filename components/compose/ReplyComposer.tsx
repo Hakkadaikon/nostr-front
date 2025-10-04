@@ -37,7 +37,6 @@ export function ReplyComposer({ replyTo, replyToUser, onClose, onSuccess }: Repl
       setContent('');
       onSuccess?.();
     } catch (error) {
-      console.error('Failed to publish reply:', error);
       let errorMessage = '返信の送信に失敗しました';
 
       if (error instanceof Error) {

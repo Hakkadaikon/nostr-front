@@ -107,13 +107,11 @@ export async function publishNote(content: string, extra?: {
     // 秘密鍵がない場合はNIP-07を試す（signEvent内で自動的に処理される）
     signed = await signEvent(unsigned, secretKey ? () => secretKey : undefined);
   } catch (e) {
-    console.error('[publishNote] Failed to sign event:', e);
     try { require('../../lib/utils/logger').recordSignError(e); } catch {}
     throw e;
   }
 
   if (!verify(signed)) {
-    console.error('[publishNote] Invalid signature');
     throw new Error('Invalid signature');
   }
 

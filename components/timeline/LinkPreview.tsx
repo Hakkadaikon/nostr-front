@@ -58,7 +58,6 @@ export function LinkPreview({ url }: LinkPreviewProps) {
           setData(previewData);
         }
       } catch (error) {
-        console.error('Failed to load preview:', error);
         if (!cancelled) {
           localCache.set(cacheKey, null);
           setData(null);

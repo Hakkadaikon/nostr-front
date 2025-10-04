@@ -63,7 +63,6 @@ export function TikTokEmbed({ url }: TikTokEmbedProps) {
           setIsLoading(false);
         }
       } catch (error) {
-        console.error('[TikTokEmbed] Error loading embed:', error);
         if (isMounted) {
           setHasError(true);
           setIsLoading(false);

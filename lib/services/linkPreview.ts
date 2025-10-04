@@ -64,7 +64,6 @@ export async function fetchLinkPreview(url: string): Promise<LinkPreviewData | n
     return metadata;
   } catch (error) {
     clearTimeout(timeout);
-    console.error('Failed to fetch link preview:', error);
     // エラーの場合もキャッシュ（nullとして）
     previewCache.set(normalizedUrl, null);
     cacheTimestamps.set(normalizedUrl, Date.now());

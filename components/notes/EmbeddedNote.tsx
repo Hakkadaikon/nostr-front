@@ -58,7 +58,6 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
     // Safety timeout: in rare cases fetchNote may hang (relay never sends EOSE)
     const safetyTimeout = setTimeout(() => {
       if (active) {
-        console.warn('EmbeddedNote: Safety timeout reached, showing error fallback');
         setIsLoading(false);
       }
     }, 8000); // Extended safety window for slower relays
@@ -79,7 +78,6 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
               authorProfile = profile;
             }
           } catch (error) {
-            console.error('EmbeddedNote: Error fetching author profile', error);
             // プロフィール取得失敗でもノートは表示する
           }
         }
@@ -89,7 +87,6 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
         setIsLoading(false);
       })
       .catch(error => {
-        console.error('EmbeddedNote: Error fetching note', error);
         if (!active) return;
         setNote(null);
         setIsLoading(false);

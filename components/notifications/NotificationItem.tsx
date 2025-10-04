@@ -238,7 +238,6 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                   try {
                     await toggleFollow();
                   } catch (error) {
-                    console.error('Failed to toggle follow:', error);
                     alert(t('notifications.errors.followFailed'));
                   }
                 }}
@@ -269,7 +268,6 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                   try {
                     await toggleLike();
                   } catch (error) {
-                    console.error('Failed to toggle like:', error);
                     alert(t('notifications.errors.reactionFailed'));
                   }
                 }}

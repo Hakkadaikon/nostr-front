@@ -105,7 +105,6 @@ async function fetchPostFromNostr(postId: string): Promise<string | null> {
       );
     });
   } catch (error) {
-    console.error('Failed to fetch post:', error);
     return null;
   }
 }
@@ -177,7 +176,6 @@ async function fetchPostDataFromNostr(postId: string, additionalRelays?: string[
       relays.push(...fallbackRelays);
     }
 
-    console.log(`[fetchPostData] Fetching post ${postId.slice(0, 8)}... from ${relays.length} relays`);
 
     return new Promise((resolve) => {
       let resolved = false;
@@ -187,7 +185,6 @@ async function fetchPostDataFromNostr(postId: string, additionalRelays?: string[
           resolved = true;
           sub.close();
           const elapsed = Date.now() - startTime;
-          console.warn(`[fetchPostData] Timeout fetching post ${postId.slice(0, 8)}... after ${elapsed}ms`);
           resolve(null);
         }
       }, 5000);
@@ -203,7 +200,6 @@ async function fetchPostDataFromNostr(postId: string, additionalRelays?: string[
           sub.close();
 
           const elapsed = Date.now() - startTime;
-          console.log(`[fetchPostData] Successfully fetched post ${postId.slice(0, 8)}... in ${elapsed}ms`);
 
           // 著者情報を取得
           const author = await fetchProfileForNotification(event.pubkey);
@@ -247,7 +243,6 @@ async function fetchPostDataFromNostr(postId: string, additionalRelays?: string[
     });
   } catch (error) {
     const elapsed = Date.now() - startTime;
-    console.error(`[fetchPostData] Error fetching post data after ${elapsed}ms:`, error);
     return null;
   }
 }

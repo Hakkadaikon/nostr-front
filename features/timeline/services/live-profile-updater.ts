@@ -33,7 +33,6 @@ function flushSubscribe() {
       const avatarUrl = getProfileImageUrl(meta.picture, event.pubkey);
       useProfileStore.getState().updateProfilePicture(event.pubkey, avatarUrl);
     } catch (e) {
-      console.warn('timeline-live-profile-updater: failed to parse metadata', e);
     }
   });
 

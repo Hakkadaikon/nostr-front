@@ -77,7 +77,6 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
       onDelete?.(tweet.id);
       setShowDeleteConfirm(false);
     } catch (error) {
-      console.error('Failed to delete tweet:', error);
       alert('投稿の削除に失敗しました');
     } finally {
       setIsDeleting(false);
@@ -89,7 +88,6 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
     try {
       await createReaction(targetNoteId, noteAuthorPubkey, emoji);
     } catch (error) {
-      console.error('Failed to send emoji reaction:', error);
       alert('リアクションの送信に失敗しました');
     } finally {
       setShowEmojiPicker(false);
@@ -339,7 +337,7 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
           )}
 
           {/* アクションバー */}
-          <div className="mt-3 flex items-center justify-between sm:max-w-lg lg:max-w-xl">
+          <div className="mt-3 flex items-center justify-between gap-1 sm:gap-2">
             {/* 返信 */}
             <IconButton
               onClick={() => canInteractWithNote && onReply?.(tweet)}
@@ -349,7 +347,7 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
               count={tweet.repliesCount}
               aria-label="返信"
             >
-              <MessageCircle size={18} />
+              <MessageCircle className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
             </IconButton>
 
             {/* リツイート */}
@@ -362,7 +360,7 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
               disabled={!canInteractWithNote}
               aria-label="リツイート"
             >
-              <Repeat2 size={18} />
+              <Repeat2 className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
             </IconButton>
 
             {/* リアクション */}
@@ -373,7 +371,6 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
                   await createReaction(targetNoteId, noteAuthorPubkey);
                   onLike(targetNoteId);
                 } catch (error) {
-                  console.error('Failed to send reaction:', error);
                   alert('リアクションの送信に失敗しました');
                 }
               }}
@@ -385,7 +382,7 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
               aria-label="リアクション"
             >
               <Heart
-                size={18}
+                className="w-4 h-4 sm:w-[18px] sm:h-[18px]"
                 fill={tweet.isLiked ? 'currentColor' : 'none'}
               />
             </IconButton>
@@ -401,7 +398,7 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
               aria-label="リアクション"
               disabled={!canInteractWithNote}
             >
-              <Smile size={18} />
+              <Smile className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
             </IconButton>
 
             {/* Zap */}
@@ -416,7 +413,7 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
               disabled={!canInteractWithNote}
               aria-label="Zap"
             >
-              <Zap size={18} />
+              <Zap className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
             </IconButton>
 
             {/* 共有 */}
@@ -425,7 +422,7 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
               size="small"
               aria-label="共有"
             >
-              <Share size={18} />
+              <Share className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
             </IconButton>
           </div>
 

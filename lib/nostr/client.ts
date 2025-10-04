@@ -44,7 +44,6 @@ export async function publish(relays: string[], event: NostrEvent, retries = 1):
       } catch (err) {
         if (!results[index]) {
           results[index] = { relay: relays[index], ok: false, error: err };
-          console.warn(`[publish] Failed on relay: ${relays[index]}`, err);
         }
       }
     }));

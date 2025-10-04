@@ -180,7 +180,6 @@ export function MentionSuggestion({ query, onSelect, onClose, position }: Mentio
                 foundProfiles.set(event.pubkey, profile);
               }
             } catch (error) {
-              console.error('Failed to parse profile:', error);
             }
           }
         );

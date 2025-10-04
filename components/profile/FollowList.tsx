@@ -37,7 +37,6 @@ export function FollowList({ npub, type }: FollowListProps) {
         const followList = await fetchUserFollowList(pubkey, type);
         setUsers(followList);
       } catch (err) {
-        console.error('Failed to load follow list:', err);
         setError('フォロー一覧の読み込みに失敗しました');
       } finally {
         setIsLoading(false);

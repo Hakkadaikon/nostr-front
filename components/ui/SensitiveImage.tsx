@@ -41,14 +41,6 @@ export function SensitiveImage({
     const actorFollowStatus = isFollowing(actorPubkey);
 
     // デバッグログ
-    console.log('[SensitiveImage] Debug:', {
-      src: src.substring(0, 50),
-      authorPubkey,
-      authorFollowStatus,
-      actorPubkey,
-      actorFollowStatus,
-      isRevealed: isRevealed(src)
-    });
 
     // 投稿者またはアクターがフォロー中の場合はぼかしなし
     if (authorFollowStatus === true || actorFollowStatus === true) {

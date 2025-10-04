@@ -60,7 +60,6 @@ export function useTweets(): UseTweetsReturn {
       const response = await createTweet(request);
       return response.tweet;
     } catch (err) {
-      console.error('Failed to post tweet:', err);
       let errorMessage = 'ツイートの投稿に失敗しました';
 
       if (err instanceof Error) {

@@ -29,7 +29,6 @@ export function useFollow(targetUserNpubOrPubkey: string | undefined): UseFollow
         const following = await isFollowing(targetUserNpubOrPubkey);
         setIsFollowingState(following);
       } catch (err) {
-        console.error('Failed to check follow status:', err);
         setError('フォロー状態の確認に失敗しました');
       } finally {
         setIsLoading(false);
@@ -48,7 +47,6 @@ export function useFollow(targetUserNpubOrPubkey: string | undefined): UseFollow
       await followUser(targetUserNpubOrPubkey);
       setIsFollowingState(true);
     } catch (err) {
-      console.error('Failed to follow user:', err);
       setError('フォローに失敗しました');
       throw err;
     } finally {
@@ -65,7 +63,6 @@ export function useFollow(targetUserNpubOrPubkey: string | undefined): UseFollow
       await unfollowUser(targetUserNpubOrPubkey);
       setIsFollowingState(false);
     } catch (err) {
-      console.error('Failed to unfollow user:', err);
       setError('アンフォローに失敗しました');
       throw err;
     } finally {

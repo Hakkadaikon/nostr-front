@@ -67,11 +67,9 @@ export async function fetchUserPosts(npub: string, limit: number = 20): Promise<
       if (decoded.type === 'npub') {
         pubkey = decoded.data as string;
       } else {
-        console.error('Invalid npub format');
         return [];
       }
     } catch (error) {
-      console.error('Failed to decode npub:', error);
       return [];
     }
 
@@ -187,7 +185,6 @@ export async function fetchUserPosts(npub: string, limit: number = 20): Promise<
       }, 3000);
     });
   } catch (error) {
-    console.error('Failed to fetch user posts:', error);
     return [];
   }
 }

@@ -40,7 +40,6 @@ export async function createRepost(targetEventId: string, targetPubkey: string):
       throw new Error('Nostr extension not found');
     }
   } catch (error) {
-    console.error('[createRepost] Failed to create repost:', error);
     throw error;
   }
 }
@@ -82,7 +81,6 @@ export async function deleteRepost(repostEventId: string): Promise<void> {
       throw new Error('Nostr extension not found');
     }
   } catch (error) {
-    console.error('[deleteRepost] Failed to delete repost:', error);
     throw error;
   }
 }

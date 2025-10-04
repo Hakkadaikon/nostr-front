@@ -22,7 +22,6 @@ export function useReaction({ eventId, authorPubkey }: UseReactionOptions) {
           setReactionEventId(reaction.id);
         }
       } catch (error) {
-        console.error('Failed to check existing reaction:', error);
       }
     };
 
@@ -50,7 +49,6 @@ export function useReaction({ eventId, authorPubkey }: UseReactionOptions) {
         setReactionEventId(reaction.id);
       }
     } catch (error) {
-      console.error('Failed to toggle like:', error);
       show('リアクションの処理に失敗しました');
       setIsLiked(!isLiked);
     } finally {

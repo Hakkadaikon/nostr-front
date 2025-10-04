@@ -68,7 +68,6 @@ export function useNotifications() {
     if (!publicKey) return;
 
     void useNotificationStore.getState().refreshAllProfiles().catch((error) => {
-      console.warn('[notifications] Failed to refresh profiles on mount', error);
     });
 
     // 通知サービスにpubkeyを設定

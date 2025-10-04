@@ -3,8 +3,8 @@ import localforage from 'localforage';
 const ANALYTICS_ENABLED = (process.env.NEXT_PUBLIC_ENABLE_ANALYTICS || 'false') === 'true';
 
 export const logger = {
-  warn: (...args: unknown[]) => console.warn('[warn]', ...args),
-  error: (...args: unknown[]) => console.error('[error]', ...args),
+  warn: (...args: unknown[]) => {},
+  error: (...args: unknown[]) => {},
 };
 
 type Metric = { ts: number; type: 'publish' | 'sign_error'; payload: any };

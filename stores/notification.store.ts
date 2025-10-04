@@ -153,7 +153,6 @@ export const useNotificationStore = create<NotificationStore>()(
                 const profile = await fetchProfileForNotification(pubkey, { forceRefresh: true });
                 return { pubkey, profile };
               } catch (error) {
-                console.warn('[notifications] Failed to refresh profile for', pubkey, error);
                 return null;
               }
             }));
@@ -252,7 +251,6 @@ if (typeof window !== 'undefined') {
   schedule(() => {
     if (needsInitialRefresh) {
       void useNotificationStore.getState().refreshAllProfiles().catch((error) => {
-        console.warn('[notifications] Failed to refresh profiles after rehydrate', error);
       });
       needsInitialRefresh = false;
     }

@@ -10,7 +10,6 @@ export async function fetchProfile(npubOrHex: string) {
       const d = decode(npubOrHex); 
       authorHex = d.data as string; 
     } catch (err) {
-      console.error('Failed to decode npub:', err);
       return {};
     }
   }
@@ -18,7 +17,6 @@ export async function fetchProfile(npubOrHex: string) {
   const relays = require('../../stores/relays.store').useRelaysStore.getState().relays.filter((r: any) => r.read).map((r: any) => r.url);
   
   if (relays.length === 0) {
-    console.warn('No relays configured for reading');
     return {};
   }
   

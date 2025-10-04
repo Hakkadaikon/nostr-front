@@ -119,7 +119,6 @@ export const useMentionStore = create<MentionState>()(
 
                   profiles.set(event.pubkey, profile);
                 } catch (error) {
-                  console.error('[MentionStore] Failed to parse profile:', error);
                 }
               }
             );
@@ -135,7 +134,6 @@ export const useMentionStore = create<MentionState>()(
             }, 2000);
           });
         } catch (error) {
-          console.error('[MentionStore] Failed to prefetch following profiles:', error);
           set({ lastUpdated: now });
         }
       },

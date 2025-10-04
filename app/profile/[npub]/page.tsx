@@ -61,7 +61,6 @@ export default function ProfilePage({ params }: Props) {
       pubkey = decoded.data as string;
     }
   } catch (err) {
-    console.error('Failed to decode npub:', err);
     pubkey = undefined;
   }
 
@@ -86,7 +85,6 @@ export default function ProfilePage({ params }: Props) {
             pubkey = decoded.data as string;
           }
         } catch (error) {
-          console.error('Failed to decode npub:', error);
           // npubのデコードに失敗した場合はnpubをそのまま使用
           pubkey = params.npub;
         }
@@ -119,14 +117,12 @@ export default function ProfilePage({ params }: Props) {
             setFollowingCount(stats.followingCount);
             setHasLoadedFollowingCount(true);
           }).catch(error => {
-            console.error('Failed to load following count:', error);
             setFollowingCount(0);
           }).finally(() => {
             setIsLoadingFollowingCount(false);
           });
         }
       } catch (error) {
-        console.error('Failed to load profile:', error);
         // エラー時にもデフォルト値を設定
         const defaultName = params.npub.slice(0, 8) + '...';
         
@@ -185,7 +181,6 @@ export default function ProfilePage({ params }: Props) {
         const userPosts = await fetchUserPosts(params.npub);
         setTweets(updateAuthorInfo(userPosts));
       } catch (error) {
-        console.error('Failed to load tweets:', error);
       } finally {
         setTweetsLoading(false);
       }
@@ -197,7 +192,6 @@ export default function ProfilePage({ params }: Props) {
         const userReplies = await fetchUserReplies(params.npub);
         setReplies(updateAuthorInfo(userReplies));
       } catch (error) {
-        console.error('Failed to load replies:', error);
       } finally {
         setRepliesLoading(false);
       }
@@ -209,7 +203,6 @@ export default function ProfilePage({ params }: Props) {
         const userMedia = await fetchUserMedia(params.npub);
         setMediaPosts(updateAuthorInfo(userMedia));
       } catch (error) {
-        console.error('Failed to load media posts:', error);
       } finally {
         setMediaLoading(false);
       }
@@ -221,7 +214,6 @@ export default function ProfilePage({ params }: Props) {
         const userLikes = await fetchUserLikes(params.npub);
         setLikedPosts(userLikes); // いいねした投稿は他のユーザーの投稿なので author 情報は更新しない
       } catch (error) {
-        console.error('Failed to load liked posts:', error);
       } finally {
         setLikesLoading(false);
       }
@@ -261,7 +253,6 @@ export default function ProfilePage({ params }: Props) {
     } catch (error) {
       // エラー時は元に戻す
       setIsFollowing(isFollowing);
-      console.error('Failed to follow/unfollow:', error);
       // TODO: エラートーストを表示
     }
   };
@@ -300,7 +291,6 @@ export default function ProfilePage({ params }: Props) {
 
     // 認証チェック
     if (!publicKey) {
-      console.warn('Cannot like: User is not authenticated');
       return;
     }
 
@@ -334,7 +324,6 @@ export default function ProfilePage({ params }: Props) {
         }
         return t;
       }));
-      console.error('Failed to toggle like:', error);
     }
   };
 
@@ -347,7 +336,6 @@ export default function ProfilePage({ params }: Props) {
       setFollowingCount(stats.followingCount);
       setHasLoadedFollowingCount(true);
     } catch (error) {
-      console.error('Failed to load following count:', error);
       setFollowingCount(0);
     } finally {
       setIsLoadingFollowingCount(false);
@@ -368,7 +356,6 @@ export default function ProfilePage({ params }: Props) {
       setFollowerCount(stats.followerCount);
       setHasLoadedFollowerCount(true);
     } catch (error) {
-      console.error('Failed to load follower count:', error);
       setFollowerCount(0);
     } finally {
       setIsLoadingFollowerCount(false);
@@ -402,7 +389,6 @@ export default function ProfilePage({ params }: Props) {
 
     // 認証チェック
     if (!publicKey) {
-      console.warn('Cannot retweet: User is not authenticated');
       return;
     }
 
@@ -436,7 +422,6 @@ export default function ProfilePage({ params }: Props) {
         }
         return t;
       }));
-      console.error('Failed to toggle retweet:', error);
     }
   };
 

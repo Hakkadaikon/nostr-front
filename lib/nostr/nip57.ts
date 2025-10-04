@@ -38,7 +38,6 @@ export async function getLnurlPayEndpoint(lightningAddress: string): Promise<Lnu
     const data = await response.json();
     return data as LnurlResponse;
   } catch (error) {
-    console.error('Error fetching LNURL endpoint:', error);
     return null;
   }
 }
@@ -98,7 +97,6 @@ export async function requestZapInvoice(
     const data = await response.json();
     return data.pr; // payment request (invoice)
   } catch (error) {
-    console.error('Error requesting zap invoice:', error);
     return null;
   }
 }
@@ -123,7 +121,6 @@ export function parseMetadata(metadata: string): { name?: string; description?: 
 
     return result;
   } catch (error) {
-    console.error('Error parsing metadata:', error);
     return {};
   }
 }

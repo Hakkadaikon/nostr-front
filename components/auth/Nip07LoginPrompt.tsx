@@ -37,7 +37,6 @@ export default function Nip07LoginPrompt() {
         useAuthStore.setState({ npub, publicKey: pubkey, locked: false });
       }
     } catch (e) {
-      console.error('NIP-07 login failed:', e);
     } finally {
       setLoading(false);
     }

@@ -48,7 +48,6 @@ function decodeNoteIdentifier(identifier: string): { id: string; relays?: string
       }
     }
   } catch (error) {
-    console.warn('[timeline] failed to decode identifier', identifier, error);
   }
   if (/^[0-9a-fA-F]{64}$/.test(identifier)) {
     return { id: identifier };
@@ -151,7 +150,6 @@ async function fetchProfile(pubkey: string, relays: string[], options?: { forceR
           profileFetchingPromises.delete(pubkey);
           resolve(profile);
         } catch (error) {
-          console.error('Failed to parse profile for', pubkey, error);
         }
       }
     }, 1000);
@@ -176,7 +174,6 @@ async function fetchProfile(pubkey: string, relays: string[], options?: { forceR
               npub: nip19.npubEncode(pubkey)
             };
           } catch (error) {
-            console.error('Failed to parse profile for', pubkey, error);
           }
         }
 
@@ -435,7 +432,6 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
       const processRepostEvent = async (event: NostrEvent) => {
         const targetNoteId = event.tags.find(tag => tag[0] === 'e' && tag[1])?.[1];
         if (!targetNoteId) {
-          console.warn('[fetchTimeline] Repost event missing target note ID:', event.id);
           return;
         }
 
@@ -449,7 +445,6 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
           baseTweet = await nostrEventToTweet(originalEvent, relays);
         } else {
           // フォールバックケース: リポスト元が取得できなかった
-          console.warn('[fetchTimeline] Failed to fetch original note for repost:', targetNoteId);
 
           // フォールバック用の簡易Tweetを生成
           baseTweet = {
@@ -531,7 +526,6 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
         try {
           zapRequestEvent = JSON.parse(descriptionTag[1]);
         } catch (error) {
-          console.warn('[fetchTimeline] invalid zap description JSON');
           return;
         }
 
@@ -614,7 +608,6 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
         baseTweet.activityTimestamp = new Date(event.created_at * 1000);
 
         const zapProcessElapsed = Date.now() - zapProcessStart;
-        console.log(`[processZapEvent] Zap activity processed in ${zapProcessElapsed}ms (fetch: ${fetchSuccess}, amount: ${amountSats ?? 0} sats)`);
 
         pushTweet(event, baseTweet);
       };
@@ -645,7 +638,6 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
             return;
           }
         } catch (conversionError) {
-          console.error('[fetchTimeline] Failed to convert event', conversionError);
         }
       };
 
@@ -691,7 +683,6 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
         [filters],
         (event: NostrEvent) => {
           processEvent(event).catch(error => {
-            console.error('[fetchTimeline] Failed to process event:', error);
           });
         }
       );
@@ -702,7 +693,6 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
       }, includeActivities ? 7000 : 5000);
     });
   } catch (error) {
-    console.error('Failed to fetch timeline:', error);
     throw error;
   }
 }
@@ -714,7 +704,6 @@ export async function likeTweet(tweetId: string, authorPubkey?: string): Promise
   try {
     const authStore = useAuthStore.getState();
     if (!authStore.publicKey && !authStore.npub) {
-      console.warn('Cannot like: User is not authenticated');
       throw new Error('Authentication required to like posts');
     }
 
@@ -751,7 +740,6 @@ export async function likeTweet(tweetId: string, authorPubkey?: string): Promise
       throw new Error('Nostr extension not found');
     }
   } catch (error) {
-    console.error('Failed to like tweet:', error);
     throw error;
   }
 }
@@ -763,13 +751,11 @@ export async function unlikeTweet(tweetId: string): Promise<void> {
   try {
     const authStore = useAuthStore.getState();
     if (!authStore.publicKey && !authStore.npub) {
-      console.warn('Cannot unlike: User is not authenticated');
       throw new Error('Authentication required to unlike posts');
     }
 
     await new Promise(resolve => setTimeout(resolve, 200));
   } catch (error) {
-    console.error('Failed to unlike tweet:', error);
     throw error;
   }
 }
@@ -781,7 +767,6 @@ export async function retweet(tweetId: string, authorPubkey?: string): Promise<v
   try {
     const authStore = useAuthStore.getState();
     if (!authStore.publicKey && !authStore.npub) {
-      console.warn('Cannot retweet: User is not authenticated');
       throw new Error('Authentication required to retweet posts');
     }
 
@@ -791,7 +776,6 @@ export async function retweet(tweetId: string, authorPubkey?: string): Promise<v
 
     await createRepost(tweetId, authorPubkey);
   } catch (error) {
-    console.error('Failed to retweet:', error);
     throw error;
   }
 }
@@ -803,13 +787,11 @@ export async function undoRetweet(repostEventId: string): Promise<void> {
   try {
     const authStore = useAuthStore.getState();
     if (!authStore.publicKey && !authStore.npub) {
-      console.warn('Cannot undo retweet: User is not authenticated');
       throw new Error('Authentication required to undo retweet');
     }
 
     await deleteRepost(repostEventId);
   } catch (error) {
-    console.error('Failed to undo retweet:', error);
     throw error;
   }
 }

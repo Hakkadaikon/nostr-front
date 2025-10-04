@@ -45,7 +45,7 @@ export function ZapModal({ isOpen, onClose, tweetId, recipientNpub, recipientLnA
         errorCorrectionLevel: 'L'
       })
       .then(url => setQrCodeDataUrl(url))
-      .catch(err => console.error('Error generating QR code:', err));
+      .catch(err => {});
     }
   }, [invoice]);
 
@@ -69,7 +69,6 @@ export function ZapModal({ isOpen, onClose, tweetId, recipientNpub, recipientLnA
       
       setInvoice(generatedInvoice);
     } catch (err: any) {
-      console.error('Failed to generate invoice:', err);
       setError(err.message || t('zap.errors.invoiceFailed'));
     } finally {
       setIsGenerating(false);

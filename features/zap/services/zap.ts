@@ -22,7 +22,6 @@ export async function generateZapInvoice(params: GenerateZapInvoiceParams): Prom
     }
     recipientPubkey = decoded.data as string;
   } catch (error) {
-    console.error('Failed to decode npub:', error);
     throw new Error('無効なnpubです');
   }
 

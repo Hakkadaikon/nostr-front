@@ -30,7 +30,6 @@ if (typeof window !== 'undefined') {
 
         // デバッグモードでのみログ出力
         if (process.env.NODE_ENV === 'development') {
-          console.debug('[relayPool] WebSocket error suppressed:', event.message);
         }
       }
     }, true); // キャプチャフェーズで処理
@@ -65,7 +64,6 @@ export function subscribeTo(
         try {
           onEvent(event);
         } catch (error) {
-          console.error('[relayPool] Error processing event:', error);
         }
       },
       oneose: () => {
@@ -73,7 +71,6 @@ export function subscribeTo(
           try {
             options.onEose();
           } catch (error) {
-            console.error('[relayPool] Error in onEose callback:', error);
           }
         }
       }
@@ -87,7 +84,6 @@ export function subscribeTo(
       }
     }};
   } catch (error) {
-    console.warn('[relayPool] Failed to create subscription:', error);
     // Return a dummy subscription that does nothing
     return { close: () => {} };
   }

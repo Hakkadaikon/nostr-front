@@ -73,7 +73,6 @@ export function TimelineList({
 
   // エラーがあるが既存のツイートがある場合（フォールバック表示）
   if (error && tweets.length > 0) {
-    console.warn('[TimelineList] Showing cached tweets after error:', error.message);
   }
 
   if (isLoading && tweets.length === 0) {

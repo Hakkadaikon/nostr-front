@@ -132,7 +132,6 @@ export function eventToUser(event: NostrEvent): User | null {
       website: content.website,
     };
   } catch (e) {
-    console.error('Failed to parse user profile:', e);
     return null;
   }
 }
@@ -177,7 +176,6 @@ export async function searchNostr(
   const relayStore = useRelaysStore.getState();
   const searchRelays = relayStore.getSearchRelays();
 
-  console.log('[NIP-50 Search] Starting search', { query, type, searchRelays });
 
   if (searchRelays.length === 0) {
     throw new Error('検索用のNIP-50対応リレーが設定されていません。設定ページで検索リレーを指定してください。');
@@ -204,7 +202,6 @@ export async function searchNostr(
       if (type === 'tweets' && tweetPubkeys.size > 0) {
         const missingPubkeys = Array.from(tweetPubkeys).filter(pk => !userCache.has(pk));
         if (missingPubkeys.length > 0) {
-          console.log('[NIP-50 Search] Fetching missing profiles', { count: missingPubkeys.length });
           const profiles = await fetchUserProfiles(missingPubkeys);
           profiles.forEach((user, pubkey) => userCache.set(pubkey, user));
 
@@ -232,17 +229,6 @@ export async function searchNostr(
       );
 
       const duration = Date.now() - startTime;
-      console.log('[NIP-50 Search] Search completed', {
-        query,
-        type,
-        users: usersArray.length,
-        tweets: tweetsWithStats.length,
-        totalEvents: eventCount,
-        kind0Events: kind0Count,
-        kind1Events: kind1Count,
-        duration: `${duration}ms`,
-        eoseReceived
-      });
 
       resolve({ users: usersArray, tweets: tweetsWithStats });
     };
@@ -251,7 +237,6 @@ export async function searchNostr(
     const handleEose = () => {
       if (!eoseReceived) {
         eoseReceived = true;
-        console.log('[NIP-50 Search] EOSE received');
         finalize();
       }
     };
@@ -259,7 +244,6 @@ export async function searchNostr(
     // タイムアウト: 5秒経過しても完了しない場合
     timeout = setTimeout(() => {
       if (!eoseReceived) {
-        console.warn('[NIP-50 Search] Timeout reached (5s)');
         finalize();
       }
     }, 5000);
@@ -276,7 +260,6 @@ export async function searchNostr(
 
         // イベントIDの重複チェック
         if (receivedEventIds.has(event.id || '')) {
-          console.warn('[NIP-50 Search] Duplicate event ID received:', event.id);
           return;
         }
         receivedEventIds.add(event.id || '');
@@ -296,11 +279,6 @@ export async function searchNostr(
         } else if (event.kind === 1) {
           // テキストノート
           kind1Count++;
-          console.log('[NIP-50 Search] Received kind:1 event', {
-            id: event.id?.slice(0, 8),
-            content: event.content.slice(0, 50),
-            pubkey: event.pubkey.slice(0, 8)
-          });
           tweetPubkeys.add(event.pubkey);
           const author = userCache.get(event.pubkey);
           const tweet = eventToTweet(event, author);
@@ -308,7 +286,6 @@ export async function searchNostr(
             tweets.push(tweet);
           }
         } else {
-          console.warn('[NIP-50 Search] Unexpected event kind:', event.kind);
         }
       },
       handleEose
@@ -317,7 +294,6 @@ export async function searchNostr(
     // 早期終了チェック: 1秒経過してもイベントが0件の場合
     setTimeout(() => {
       if (userCache.size === 0 && tweets.length === 0 && eventCount === 0) {
-        console.log('[NIP-50 Search] No events received after 1s, closing');
         finalize();
       }
     }, 1000);
@@ -360,7 +336,6 @@ export async function fetchUserProfiles(pubkeys: string[]): Promise<Map<string, 
           userMap.set(event.pubkey, user);
           eventCache.set(event.pubkey, event);
         }
-      } else {
       }
     });
   });

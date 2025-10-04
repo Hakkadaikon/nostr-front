@@ -93,11 +93,9 @@ export async function searchContent(params: SearchParams): Promise<SearchResult>
       hasMore: false,
     };
   } catch (error) {
-    console.error('Failed to search:', error);
 
     // 開発環境の場合のみモックデータにフォールバック
     if (process.env.NODE_ENV === 'development') {
-      console.warn('[Search] Using mock data fallback in development mode');
       const query = params.query.toLowerCase();
 
       // ユーザー検索

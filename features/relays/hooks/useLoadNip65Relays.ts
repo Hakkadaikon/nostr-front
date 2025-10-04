@@ -30,7 +30,6 @@ export function useLoadNip65Relays() {
         // If some existing URLs are not in fetched list, keep them? Requirement says to set from kind:10002, so replace.
         useRelaysStore.setState({ relays: next });
       } catch (e) {
-        console.warn('[useLoadNip65Relays] failed to load NIP-65 relays', e);
       }
     })();
   }, [pubkey]);

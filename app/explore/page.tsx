@@ -115,7 +115,6 @@ function ExplorePageInner() {
 
     // 認証チェック
     if (!publicKey) {
-      console.warn('Cannot like: User is not authenticated');
       return;
     }
 
@@ -126,7 +125,6 @@ function ExplorePageInner() {
         await likeTweet(tweetId, tweet.author.id);
       }
     } catch (error) {
-      console.error('Failed to toggle like:', error);
     }
   }, [results, publicKey]);
 
@@ -136,7 +134,6 @@ function ExplorePageInner() {
 
     // 認証チェック
     if (!publicKey) {
-      console.warn('Cannot retweet: User is not authenticated');
       return;
     }
 
@@ -147,7 +144,6 @@ function ExplorePageInner() {
         await retweet(tweetId, tweet.author.id);
       }
     } catch (error) {
-      console.error('Failed to toggle retweet:', error);
     }
   }, [results, publicKey]);
 

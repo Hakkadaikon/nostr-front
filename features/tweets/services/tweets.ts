@@ -44,7 +44,6 @@ export async function createTweet(request: CreateTweetRequest): Promise<CreateTw
     try {
       imageUrls = await uploadMultipleImages(request.media);
     } catch (uploadError) {
-      console.error('Failed to upload images:', uploadError);
       throw new Error('画像のアップロードに失敗しました');
     }
   }

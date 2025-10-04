@@ -88,7 +88,6 @@ export async function decrypt(encryptedData: string, password: string): Promise<
     
     return decoder.decode(decrypted);
   } catch (error) {
-    console.error('[decrypt] Decryption failed:', error);
     throw new Error('Decryption failed - invalid password or corrupted data');
   }
 }

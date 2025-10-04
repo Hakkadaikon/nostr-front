@@ -16,7 +16,6 @@ export function useFollowCount(pubkey?: string) {
         const followList = await fetchFollowList(pubkey);
         setFollowCount(followList.length);
       } catch (error) {
-        console.error('Failed to fetch follow count:', error);
         setFollowCount(null);
       } finally {
         setIsLoading(false);

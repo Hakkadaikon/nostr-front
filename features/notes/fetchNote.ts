@@ -31,7 +31,6 @@ export async function fetchNote(eventId: string, relays?: string[], timeoutMs = 
   const relayList = buildRelayList(relays);
 
   if (relayList.length === 0) {
-    console.warn('fetchNote: No relays available');
     return null;
   }
 
@@ -40,7 +39,6 @@ export async function fetchNote(eventId: string, relays?: string[], timeoutMs = 
     const timer = setTimeout(() => {
       if (!resolved) {
         resolved = true;
-        console.warn('fetchNote: Timeout reached for event', eventId);
         sub.close();
         resolve(null);
       }
