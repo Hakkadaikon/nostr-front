@@ -97,27 +97,23 @@ function ensureTwitterWidgets(): Promise<void> {
         console.log('[XEmbed] Widgets already available on existing script');
         resolve();
       } else {
-        // 既存スクリプトが読み込み済みかどうか不明なので、load イベントとwidgets のチェックの両方を試す
-        console.log('[XEmbed] Checking if existing script is already loaded');
-        // まずwidgetsがすでに利用可能になっているかチェック
-        if (window.twttr?.widgets) {
+        // 既存スクリプトのloadイベントを待つ、またはすでにロード済みならonReadyを実行
+        console.log('[XEmbed] Waiting for existing script to complete loading');
+        existingScript.addEventListener('load', onReady, { once: true });
+        existingScript.addEventListener('error', () => {
           clearTimeout(timeout);
-          resolve();
-        } else {
-          // widgetsがまだない場合は onReady を呼び出してポーリング開始
-          // すでに読み込まれている場合でもポーリングで検出できる
-          onReady();
-          // 念のため load イベントも登録（まだ読み込まれていない場合のため）
-          existingScript.addEventListener('load', () => {
-            console.log('[XEmbed] Existing script load event fired');
-          }, { once: true });
-          existingScript.addEventListener('error', () => {
+          console.error('[XEmbed] Failed to load existing Twitter script');
+          twitterScriptPromise = null;
+          reject(new Error('Failed to load Twitter script (existing)'));
+        }, { once: true });
+
+        // スクリプトがすでに読み込まれている可能性もあるので、即座にチェック開始
+        setTimeout(() => {
+          if (window.twttr?.widgets) {
             clearTimeout(timeout);
-            console.error('[XEmbed] Failed to load existing Twitter script');
-            twitterScriptPromise = null;
-            reject(new Error('Failed to load Twitter script (existing)'));
-          }, { once: true });
-        }
+            resolve();
+          }
+        }, 100);
       }
       return;
     }
