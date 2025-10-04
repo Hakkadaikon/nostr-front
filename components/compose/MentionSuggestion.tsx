@@ -81,7 +81,7 @@ export function MentionSuggestion({ query, onSelect, onClose, position }: Mentio
       return;
     }
 
-    // デバウンス: 300ms待ってから検索開始
+    // デバウンス: 100ms待ってから検索開始
     const debounceTimeout = setTimeout(() => {
       setIsLoading(true);
       setSelectedIndex(0);
