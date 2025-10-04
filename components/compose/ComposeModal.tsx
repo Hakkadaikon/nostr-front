@@ -173,10 +173,11 @@ export default function ComposeModal() {
                   setCursorPosition(newCursor);
 
                   const textBeforeCursor = newText.slice(0, newCursor);
-                  const match = textBeforeCursor.match(/@(\w*)$/);
+                  // @の直後から候補を表示するため、空文字も許容
+                  const match = textBeforeCursor.match(/@([^\s@]*)$/);
 
                   if (match) {
-                    const query = match[1];
+                    const query = match[1]; // 空文字列の場合もある
                     setMentionQuery(query);
                     setShowMentions(true);
 
