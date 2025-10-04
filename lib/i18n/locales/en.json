@@ -52,7 +52,11 @@
     "followersCount": "{{count}} Followers",
     "followingCount": "{{count}} Following",
     "postsCount": "{{count}} Posts",
-    "joined": "Joined: {{date}}"
+    "joined": "Joined: {{date}}",
+    "notFound": "Profile not found",
+    "noReplies": "No replies yet",
+    "noMedia": "No media posts yet",
+    "noLikes": "No liked posts yet"
   },
   "auth": {
     "login": "Login",
@@ -156,7 +160,11 @@
     "language": "Language",
     "theme": "Theme",
     "darkMode": "Dark Mode",
-    "lightMode": "Light Mode"
+    "lightMode": "Light Mode",
+    "title": "Settings",
+    "notificationSection": "Notifications",
+    "relaySection": "Relays",
+    "keyManagement": "Key Management"
   },
   "errors": {
     "network": "Network error occurred",

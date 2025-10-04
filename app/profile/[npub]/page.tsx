@@ -23,10 +23,12 @@ import { nip19 } from 'nostr-tools';
 import { likeTweet, unlikeTweet, retweet, undoRetweet } from '../../../features/timeline/services/timeline';
 import { decode } from '../../../lib/nostr/nip19';
 import { fetchProfileStats } from '../../../features/profile/services/profileStats';
+import { useTranslation } from 'react-i18next';
 
 type Props = { params: { npub: string } };
 
 export default function ProfilePage({ params }: Props) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -439,7 +441,7 @@ export default function ProfilePage({ params }: Props) {
   if (!profile) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500 dark:text-gray-400">プロフィールが見つかりません</p>
+        <p className="text-gray-500 dark:text-gray-400">{t('profile.notFound')}</p>
       </div>
     );
   }
@@ -492,7 +494,7 @@ export default function ProfilePage({ params }: Props) {
                   isLoading={repliesLoading}
                   onLike={handleLike}
                   onRetweet={handleRetweet}
-                  emptyMessage="返信はまだありません"
+                  emptyMessage={t('profile.noReplies')}
                 />
               )}
 
@@ -502,7 +504,7 @@ export default function ProfilePage({ params }: Props) {
                   isLoading={mediaLoading}
                   onLike={handleLike}
                   onRetweet={handleRetweet}
-                  emptyMessage="メディア付き投稿はまだありません"
+                  emptyMessage={t('profile.noMedia')}
                 />
               )}
 
@@ -512,7 +514,7 @@ export default function ProfilePage({ params }: Props) {
                   isLoading={likesLoading}
                   onLike={handleLike}
                   onRetweet={handleRetweet}
-                  emptyMessage="いいねした投稿はまだありません"
+                  emptyMessage={t('profile.noLikes')}
                 />
               )}
             </div>

@@ -52,7 +52,11 @@
     "followersCount": "{{count}} フォロワー",
     "followingCount": "{{count}} フォロー中",
     "postsCount": "{{count}} 投稿",
-    "joined": "登録日: {{date}}"
+    "joined": "登録日: {{date}}",
+    "notFound": "プロフィールが見つかりません",
+    "noReplies": "返信はまだありません",
+    "noMedia": "メディア付き投稿はまだありません",
+    "noLikes": "いいねした投稿はまだありません"
   },
   "auth": {
     "login": "ログイン",
@@ -156,7 +160,11 @@
     "language": "言語",
     "theme": "テーマ",
     "darkMode": "ダークモード",
-    "lightMode": "ライトモード"
+    "lightMode": "ライトモード",
+    "title": "設定",
+    "notificationSection": "通知",
+    "relaySection": "リレー",
+    "keyManagement": "鍵管理"
   },
   "errors": {
     "network": "ネットワークエラーが発生しました",
