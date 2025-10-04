@@ -13,10 +13,12 @@ import { IconButton } from '../ui/IconButton';
 import { QuotedTweet } from './QuotedTweet';
 import { ActivityPubBadge } from '../ui/ActivityPubBadge';
 import { isActivityPubUser } from '../../lib/utils/activitypub';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import { deleteNote } from '../../features/notes/delete';
 import { createReaction } from '../../features/reactions/services/reaction';
+import { ensureTimelineLiveProfileTracking } from '../../features/timeline/services/live-profile-updater';
+import { useProfileStore } from '../../stores/profile.store';
 
 interface TimelineItemProps {
   tweet: Tweet;
@@ -35,10 +37,25 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const getProfilePicture = useProfileStore(state => state.getProfilePicture);
 
   const activity = tweet.activity;
   const actor = activity?.actor;
   const timelineTimestamp = tweet.activityTimestamp ?? tweet.createdAt;
+
+  // ライブで最新プロフィールを追跡（アイコン変更即時反映）
+  useEffect(() => {
+    if (tweet.author.pubkey || tweet.author.id) {
+      ensureTimelineLiveProfileTracking(tweet.author.pubkey || tweet.author.id);
+    }
+    if (actor?.pubkey || actor?.id) {
+      ensureTimelineLiveProfileTracking(actor.pubkey || actor.id);
+    }
+  }, [tweet.author.pubkey, tweet.author.id, actor?.pubkey, actor?.id]);
+
+  // 最新のアバターURLを取得（ストアに更新があれば上書き）
+  const authorAvatar = getProfilePicture(tweet.author.pubkey || tweet.author.id) || tweet.author.avatar;
+  const actorAvatar = actor ? (getProfilePicture(actor.pubkey || actor.id) || actor.avatar) : undefined;
 
   const timeAgo = formatDistanceToNow(new Date(timelineTimestamp), {
     addSuffix: true,
@@ -155,9 +172,9 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
       <div className="flex gap-3 sm:gap-4 w-full">
         {/* アバター */}
         <Link href={`/profile/${tweet.author.npub || tweet.author.id}` as any} className="flex-shrink-0">
-          {tweet.author.avatar ? (
+          {authorAvatar ? (
             <SafeImage
-              src={tweet.author.avatar}
+              src={authorAvatar}
               alt={tweet.author.name}
               width={48}
               height={48}
@@ -175,9 +192,9 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
                 href={`/profile/${actor.npub || actor.id}` as any}
                 className="flex-shrink-0"
               >
-                {actor.avatar ? (
+                {actorAvatar ? (
                   <SafeImage
-                    src={actor.avatar}
+                    src={actorAvatar}
                     alt={actor.name}
                     width={28}
                     height={28}
@@ -350,7 +367,16 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
 
             {/* リアクション */}
             <IconButton
-              onClick={() => canInteractWithNote && onLike(targetNoteId)}
+              onClick={async () => {
+                if (!canInteractWithNote || !targetNoteId || !noteAuthorPubkey) return;
+                try {
+                  await createReaction(targetNoteId, noteAuthorPubkey);
+                  onLike(targetNoteId);
+                } catch (error) {
+                  console.error('Failed to send reaction:', error);
+                  alert('リアクションの送信に失敗しました');
+                }
+              }}
               variant="like"
               size="small"
               active={tweet.isLiked}
