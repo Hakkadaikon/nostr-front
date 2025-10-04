@@ -1,13 +1,33 @@
 "use client";
 
 import Link from 'next/link';
-import { Zap } from 'lucide-react';
+import { Zap, Globe } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '../../stores/auth.store';
+import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 export function MobileHeader() {
   const pathname = usePathname();
   const npub = useAuthStore((state) => state.npub);
+  const router = useRouter();
+  const [currentLocale, setCurrentLocale] = useState<string>('ja');
+
+  // 現在のロケールを取得
+  useEffect(() => {
+    const locale = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('NEXT_LOCALE='))
+      ?.split('=')[1] || 'ja';
+    setCurrentLocale(locale);
+  }, []);
+
+  // 言語切り替え関数
+  const toggleLocale = () => {
+    const newLocale = currentLocale === 'ja' ? 'en' : 'ja';
+    document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=${365 * 24 * 60 * 60}`;
+    router.refresh();
+  };
 
   // ページタイトルの取得
   const getPageTitle = () => {
@@ -38,8 +58,19 @@ export function MobileHeader() {
           hamnoster
         </h1>
 
-        {/* 空のスペース（レイアウト調整用） */}
-        <div className="w-8" />
+        {/* 言語切り替えトグル */}
+        <button
+          onClick={toggleLocale}
+          className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
+          aria-label="言語を切り替え"
+        >
+          <div className="flex items-center gap-1">
+            <Globe className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+              {currentLocale.toUpperCase()}
+            </span>
+          </div>
+        </button>
       </div>
     </header>
   );
