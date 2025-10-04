@@ -129,6 +129,7 @@ export function QuotedTweet({ quoteId, relays = [] }: QuotedTweetProps) {
       active = false;
       clearTimeout(loadingTimeoutId);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quoteId, relays]);
 
   // showLoadingがtrueの場合のみローディング表示

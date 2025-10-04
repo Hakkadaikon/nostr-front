@@ -4,8 +4,10 @@ import { useAuthStore } from '../../stores/auth.store';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Spinner } from '../../components/ui/Spinner';
+import { useTranslation } from 'react-i18next';
 
 export default function ProfilePage() {
+  const { t } = useTranslation();
   const { npub, locked } = useAuthStore();
   const router = useRouter();
 
@@ -25,11 +27,11 @@ export default function ProfilePage() {
   }, [npub, locked, router]);
 
   return (
-    <div className="flex h-screen items-center justify-center">
+    <div className="flex min-h-screen w-full items-center justify-center overflow-x-hidden bg-gray-50 px-4 dark:bg-black">
       <div className="text-center">
         <Spinner className="mb-4" />
-        <p className="text-gray-600 dark:text-gray-400">
-          プロフィールを読み込んでいます...
+        <p className="text-sm text-gray-600 dark:text-gray-400 sm:text-base">
+          {t('common.loading')}
         </p>
       </div>
     </div>

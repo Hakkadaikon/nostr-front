@@ -113,8 +113,17 @@ export default function ProfilePage({ params }: Props) {
         }
 
         // フォロー数は初期表示時に取得、フォロワー数はクリック時に取得
-        if (pubkey) {
-          loadFollowingCount(pubkey);
+        if (pubkey && !hasLoadedFollowingCount && !isLoadingFollowingCount) {
+          setIsLoadingFollowingCount(true);
+          fetchProfileStats(pubkey).then(stats => {
+            setFollowingCount(stats.followingCount);
+            setHasLoadedFollowingCount(true);
+          }).catch(error => {
+            console.error('Failed to load following count:', error);
+            setFollowingCount(0);
+          }).finally(() => {
+            setIsLoadingFollowingCount(false);
+          });
         }
       } catch (error) {
         console.error('Failed to load profile:', error);
@@ -147,8 +156,9 @@ export default function ProfilePage({ params }: Props) {
         setIsLoading(false);
       }
     };
-    
+
     loadProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.npub, isOwnProfile, publicKey, pubkey]);
 
   // タブに応じたデータを取得
