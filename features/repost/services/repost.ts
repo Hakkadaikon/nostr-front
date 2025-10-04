@@ -8,7 +8,6 @@ import { KIND_REPOST, KIND_TEXT_NOTE } from '../../../lib/nostr/constants';
  */
 export async function createRepost(targetEventId: string, targetPubkey: string): Promise<void> {
   try {
-    console.log('[createRepost] Creating repost for event:', targetEventId);
     
     // リレーの設定を取得
     let relays = useRelaysStore.getState().relays.filter(r => r.write).map(r => r.url);
@@ -37,7 +36,6 @@ export async function createRepost(targetEventId: string, targetPubkey: string):
     if (window.nostr) {
       const signedEvent = await window.nostr.signEvent(unsignedEvent);
       await publish(relays, signedEvent as NostrEvent);
-      console.log('[createRepost] Successfully created repost');
     } else {
       throw new Error('Nostr extension not found');
     }
@@ -53,7 +51,6 @@ export async function createRepost(targetEventId: string, targetPubkey: string):
  */
 export async function deleteRepost(repostEventId: string): Promise<void> {
   try {
-    console.log('[deleteRepost] Creating delete event for repost:', repostEventId);
     
     // リレーの設定を取得
     let relays = useRelaysStore.getState().relays.filter(r => r.write).map(r => r.url);
@@ -81,7 +78,6 @@ export async function deleteRepost(repostEventId: string): Promise<void> {
     if (window.nostr) {
       const signedEvent = await window.nostr.signEvent(unsignedEvent);
       await publish(relays, signedEvent as NostrEvent);
-      console.log('[deleteRepost] Successfully sent delete request');
     } else {
       throw new Error('Nostr extension not found');
     }

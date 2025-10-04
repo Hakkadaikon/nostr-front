@@ -16,7 +16,6 @@ export async function fetchFollowList(pubkey?: string): Promise<string[]> {
   try {
     // 公開鍵を取得（指定されていなければ現在のユーザー）
     const targetPubkey = pubkey || useAuthStore.getState().publicKey;
-    console.log('[fetchFollowList] Start - Target pubkey:', targetPubkey);
 
     if (!targetPubkey) {
       console.error('[fetchFollowList] No public key available');
@@ -27,7 +26,6 @@ export async function fetchFollowList(pubkey?: string): Promise<string[]> {
     const cached = useFollowCacheStore.getState().getFollowList(targetPubkey);
     if (cached) {
       const elapsed = Date.now() - startTime;
-      console.log(`[fetchFollowList] Cache hit - ${cached.followList.length} follows, kind: ${cached.kind}, elapsed: ${elapsed}ms`);
       return cached.followList;
     }
 
@@ -50,7 +48,6 @@ export async function fetchFollowList(pubkey?: string): Promise<string[]> {
       }
     }
 
-    console.log(`[fetchFollowList] Fetching from ${relays.length} relays:`, relays);
 
     return new Promise((resolve) => {
       let kind3Event: NostrEvent | null = null; // KIND_FOLLOW (3) 優先
@@ -71,13 +68,11 @@ export async function fetchFollowList(pubkey?: string): Promise<string[]> {
               // KIND 3 は常に優先（最新のもの）
               if (!kind3Event || event.created_at >= kind3Event.created_at) {
                 kind3Event = event;
-                console.log(`[fetchFollowList] Received KIND 3 event, created_at: ${event.created_at}, p-tags: ${event.tags.filter(t => t[0] === 'p').length}`);
               }
             } else if (event.kind === KIND_PEOPLE_LIST) {
               // KIND 30000 はフォールバック用
               if (!kind30000Event || event.created_at >= kind30000Event.created_at) {
                 kind30000Event = event;
-                console.log(`[fetchFollowList] Received KIND 30000 event, created_at: ${event.created_at}, p-tags: ${event.tags.filter(t => t[0] === 'p').length}`);
               }
             }
           } catch (error) {
@@ -87,7 +82,6 @@ export async function fetchFollowList(pubkey?: string): Promise<string[]> {
         {
           onEose: () => {
             // EOSE を受信したらタイムアウトを待たずに早期終了
-            console.log('[fetchFollowList] EOSE received, finalizing early');
             clearTimeout(timeoutId);
             sub.close();
             finalizeAndResolve();
@@ -111,9 +105,7 @@ export async function fetchFollowList(pubkey?: string): Promise<string[]> {
           // キャッシュに保存
           useFollowCacheStore.getState().setFollowList(targetPubkey, followList, selectedKind);
 
-          console.log(`[fetchFollowList] Success - kind: ${selectedKind}, size: ${followList.length}, events: ${eventsReceived}, elapsed: ${elapsed}ms`);
         } else {
-          console.log(`[fetchFollowList] No events received - events: ${eventsReceived}, elapsed: ${elapsed}ms`);
         }
 
         resolve(followList);
@@ -121,7 +113,6 @@ export async function fetchFollowList(pubkey?: string): Promise<string[]> {
 
       // タイムアウト設定（3.5秒）で購読を終了
       timeoutId = setTimeout(() => {
-        console.log('[fetchFollowList] Timeout reached (3.5s)');
         sub.close();
         finalizeAndResolve();
       }, 3500);
@@ -135,7 +126,6 @@ export async function fetchFollowList(pubkey?: string): Promise<string[]> {
       const targetPubkey = pubkey || useAuthStore.getState().publicKey!;
       const cached = useFollowCacheStore.getState().getFollowList(targetPubkey);
       if (cached) {
-        console.log('[fetchFollowList] Returning cached data after error');
         return cached.followList;
       }
     }
@@ -203,7 +193,6 @@ export async function fetchFollowLists(pubkeys: string[]): Promise<Map<string, s
           const followList = tags.filter(tag => tag[0] === 'p' && tag[1]).map(tag => tag[1]);
           followListMap.set(author, followList);
         }
-        console.log(`Follow lists fetch timeout, got ${followListMap.size}/${pubkeys.length} lists (latest kinds per author)`);
         resolve(followListMap);
       }, 3000);
     });

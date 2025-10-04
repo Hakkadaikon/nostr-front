@@ -29,11 +29,9 @@ export async function followUser(targetNpubOrPubkey: string): Promise<void> {
 
     // 現在のフォローリストを取得
     const currentFollowList = await fetchFollowList();
-    console.log('[followUser] Current follow list:', currentFollowList.length, 'users');
     
     // すでにフォローしているかチェック
     if (currentFollowList.includes(targetPubkey)) {
-      console.log('[followUser] Already following:', targetPubkey);
       return;
     }
     
@@ -65,7 +63,6 @@ export async function followUser(targetNpubOrPubkey: string): Promise<void> {
     if (window.nostr) {
       const signedEvent = await window.nostr.signEvent(unsignedEvent);
       await publish(relays, signedEvent as NostrEvent);
-      console.log('[followUser] Successfully followed:', targetPubkey);
     } else {
       throw new Error('Nostr extension not found');
     }
@@ -91,11 +88,9 @@ export async function unfollowUser(targetNpubOrPubkey: string): Promise<void> {
 
     // 現在のフォローリストを取得
     const currentFollowList = await fetchFollowList();
-    console.log('[unfollowUser] Current follow list:', currentFollowList.length, 'users');
     
     // フォローしていないかチェック
     if (!currentFollowList.includes(targetPubkey)) {
-      console.log('[unfollowUser] Not following:', targetPubkey);
       return;
     }
     
@@ -127,7 +122,6 @@ export async function unfollowUser(targetNpubOrPubkey: string): Promise<void> {
     if (window.nostr) {
       const signedEvent = await window.nostr.signEvent(unsignedEvent);
       await publish(relays, signedEvent as NostrEvent);
-      console.log('[unfollowUser] Successfully unfollowed:', targetPubkey);
     } else {
       throw new Error('Nostr extension not found');
     }

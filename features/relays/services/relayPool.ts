@@ -20,7 +20,6 @@ export function subscribeTo(
   optionsOrOnEose?: { onEose?: () => void } | (() => void)
 ): Subscription {
   const p = getPool();
-  console.log('subscribeTo: Creating subscription', { relays, filters });
 
   // 後方互換性: 4番目の引数が関数の場合は従来の () => void として扱う
   const options = typeof optionsOrOnEose === 'function'
@@ -29,11 +28,9 @@ export function subscribeTo(
 
   const sub = p.subscribeMany(relays, filters, {
     onevent: (event) => {
-      console.log('subscribeTo: Received event', { id: event.id, kind: event.kind });
       onEvent(event);
     },
     oneose: () => {
-      console.log('subscribeTo: End of stored events');
       if (options?.onEose) options.onEose();
     }
   });

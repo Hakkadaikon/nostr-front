@@ -305,24 +305,16 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
 
     let followingList: string[] = [];
     if (params.type === 'following') {
-      const followFetchStart = Date.now();
-      console.log('[fetchTimeline] Fetching follow list for following tab');
-
       // フォローリスト取得（キャッシュ優先）
       followingList = await fetchFollowList();
-      const followFetchElapsed = Date.now() - followFetchStart;
-
-      console.log(`[fetchTimeline] Follow list retrieved: ${followingList.length} pubkeys in ${followFetchElapsed}ms`);
 
       // 自分自身の投稿もFollowingタイムラインに含める（一般的なクライアント挙動）
       const selfPubkey = useAuthStore.getState().publicKey;
       if (selfPubkey && !followingList.includes(selfPubkey)) {
         followingList.push(selfPubkey);
-        console.log('[fetchTimeline] Added self pubkey to follow list');
       }
 
       if (followingList.length === 0) {
-        console.log('[fetchTimeline] Follow list is empty (even after adding self), returning empty timeline with guidance');
         return {
           tweets: [],
           hasMore: false,
@@ -356,7 +348,6 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
 
       if (params.type === 'following' && followingList.length > 0) {
         filters.authors = followingList;
-        console.log('[fetchTimeline] Setting authors filter for following tab:', filters.authors.length, 'authors');
       }
 
       const getCachedEvent = async (eventId: string): Promise<NostrEvent | null> => {
@@ -624,16 +615,6 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
             )
           : null;
 
-        const totalElapsed = Date.now() - startTime;
-        const finalizeElapsed = Date.now() - finalizeStart;
-
-        // メトリクスログ
-        const duplicateRate = timelineTweets.length > 0
-          ? ((timelineTweets.length - new Set(timelineTweets.map(t => t.id)).size) / timelineTweets.length * 100).toFixed(2)
-          : 0;
-
-        console.log(`[fetchTimeline] Complete - type: ${params.type}, tweets: ${sliced.length}/${timelineTweets.length}, duplicates: ${duplicateRate}%, total: ${totalElapsed}ms, finalize: ${finalizeElapsed}ms`);
-        console.log(`[fetchTimeline] Metrics - cursor: ${params.cursor || 'none'}, followingList: ${followingList.length}, relays: ${relays.length}`);
 
         resolve({
           tweets: sliced,
@@ -703,7 +684,6 @@ export async function likeTweet(tweetId: string, authorPubkey?: string): Promise
       const signedEvent = await window.nostr.signEvent(unsignedEvent);
       const { publish } = await import('../../../lib/nostr/client');
       await publish(relays, signedEvent as NostrEvent);
-      console.log('Successfully liked tweet:', tweetId);
     } else {
       throw new Error('Nostr extension not found');
     }
@@ -724,7 +704,6 @@ export async function unlikeTweet(tweetId: string): Promise<void> {
       throw new Error('Authentication required to unlike posts');
     }
 
-    console.log('Unlike tweet (not implemented):', tweetId);
     await new Promise(resolve => setTimeout(resolve, 200));
   } catch (error) {
     console.error('Failed to unlike tweet:', error);

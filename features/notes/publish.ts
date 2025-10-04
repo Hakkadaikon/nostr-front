@@ -97,7 +97,6 @@ export async function publishNote(content: string, extra?: {
     tags,
   } as any;
 
-  console.log('[publishNote] Unsigned event created:', { kind: unsigned.kind, contentLength: content.length });
 
   let signed: NostrEvent;
   try {
@@ -107,7 +106,6 @@ export async function publishNote(content: string, extra?: {
 
     // 秘密鍵がない場合はNIP-07を試す（signEvent内で自動的に処理される）
     signed = await signEvent(unsigned, secretKey ? () => secretKey : undefined);
-    console.log('[publishNote] Event signed successfully');
   } catch (e) {
     console.error('[publishNote] Failed to sign event:', e);
     try { require('../../lib/utils/logger').recordSignError(e); } catch {}
@@ -119,18 +117,15 @@ export async function publishNote(content: string, extra?: {
     throw new Error('Invalid signature');
   }
 
-  console.log('[publishNote] Signature verified, publishing to relays...');
   const results = await publishClient(relays, signed);
 
   const successCount = results.filter(r => r.ok).length;
-  console.log(`[publishNote] Published to ${successCount}/${results.length} relays`);
 
   await record(results);
   return { ok: results.some(r => r.ok), results, event: signed };
 }
 
 export async function publishRepost(targetId: string, targetAuthor?: string) {
-  console.log('[publishRepost] Starting repost publication');
   const relays = getWriteRelays();
   const tags = buildRepostTags(targetId, targetAuthor, relays);
   const unsigned: Omit<NostrEvent, 'id' | 'sig'> = {
@@ -151,7 +146,6 @@ export async function publishRepost(targetId: string, targetAuthor?: string) {
 }
 
 export async function publishQuote(targetId: string) {
-  console.log('[publishQuote] Starting quote publication');
   const relays = getWriteRelays();
   const { content, tags } = buildQuote(targetId, relays);
   const unsigned: Omit<NostrEvent, 'id' | 'sig'> = {

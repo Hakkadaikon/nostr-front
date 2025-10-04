@@ -51,9 +51,20 @@ test.describe('Media Embeds', () => {
       const textarea = page.getByPlaceholder("いまどうしてる？");
       await textarea.fill(`Check this tweet: ${mockMediaUrls.x}`);
       await page.getByRole('button', { name: 'ポストする' }).click();
-      
+
+      // Twitter widgets.jsスクリプトがロードされるまで待機
+      await page.waitForFunction(() => {
+        return typeof (window as any).twttr !== 'undefined' &&
+               typeof (window as any).twttr.widgets !== 'undefined';
+      }, { timeout: 30000 });
+
       // Twitter埋め込みコンテナが表示されることを確認
-      await expect(page.locator('.twitter-embed').first()).toBeVisible();
+      await expect(page.locator('.twitter-embed').first()).toBeVisible({ timeout: 30000 });
+
+      // 埋め込みが実際にレンダリングされることを確認（iframe or blockquote）
+      await expect(
+        page.locator('.twitter-embed iframe, .twitter-embed blockquote').first()
+      ).toBeVisible({ timeout: 30000 });
     });
 
     test('should handle legacy twitter.com URLs', async ({ page }) => {
@@ -61,9 +72,31 @@ test.describe('Media Embeds', () => {
       const textarea = page.getByPlaceholder("いまどうしてる？");
       await textarea.fill(`Old tweet: ${mockMediaUrls.twitter}`);
       await page.getByRole('button', { name: 'ポストする' }).click();
-      
+
+      // Twitter widgets.jsスクリプトがロードされるまで待機
+      await page.waitForFunction(() => {
+        return typeof (window as any).twttr !== 'undefined' &&
+               typeof (window as any).twttr.widgets !== 'undefined';
+      }, { timeout: 30000 });
+
       // Twitter埋め込みコンテナが表示されることを確認
-      await expect(page.locator('.twitter-embed').first()).toBeVisible();
+      await expect(page.locator('.twitter-embed').first()).toBeVisible({ timeout: 30000 });
+
+      // 埋め込みが実際にレンダリングされることを確認（iframe or blockquote）
+      await expect(
+        page.locator('.twitter-embed iframe, .twitter-embed blockquote').first()
+      ).toBeVisible({ timeout: 30000 });
+    });
+
+    test('should show fallback when tweet is unavailable', async ({ page }) => {
+      // 存在しないツイートIDを含む投稿を作成
+      const textarea = page.getByPlaceholder("いまどうしてる？");
+      await textarea.fill('Check this: https://x.com/test/status/999999999999999999');
+      await page.getByRole('button', { name: 'ポストする' }).click();
+
+      // フォールバックUIが表示されることを確認
+      await expect(page.locator('text=ポストを読み込めませんでした').first()).toBeVisible({ timeout: 30000 });
+      await expect(page.locator('text=Xで見る').first()).toBeVisible();
     });
   });
 

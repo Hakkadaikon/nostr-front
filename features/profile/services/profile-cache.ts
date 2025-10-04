@@ -130,7 +130,6 @@ async function fetchProfileFromNostr(pubkey: string): Promise<NotificationUser> 
 export function clearProfileCache() {
   profileCache.clear();
   if (typeof window !== 'undefined') {
-    console.log('Profile cache cleared');
   }
   pendingRequests.clear();
 }

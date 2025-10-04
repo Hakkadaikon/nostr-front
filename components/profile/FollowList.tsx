@@ -53,7 +53,6 @@ export function FollowList({ npub, type }: FollowListProps) {
 
   const handleFollow = async (userId: string) => {
     // TODO: フォロー機能の実装
-    console.log('Follow user:', userId);
   };
 
   return (

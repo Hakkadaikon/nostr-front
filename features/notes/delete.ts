@@ -90,7 +90,6 @@ export async function deleteNote(
 
     await Promise.all(promises);
 
-    console.log('[deleteNote] Note deleted successfully:', noteId);
   } catch (error) {
     console.error('[deleteNote] Failed to delete note:', error);
     throw error;

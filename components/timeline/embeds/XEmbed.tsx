@@ -87,15 +87,16 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
     let isMounted = true;
     let timeoutId: NodeJS.Timeout;
+    const abortController = new AbortController();
 
     const loadTweet = async () => {
       if (!containerRef.current || !statusId) return;
-
-      console.log('[XEmbed] Starting to load tweet:', statusId);
+      if (abortController.signal.aborted) return;
 
       try {
         setIsLoading(true);
@@ -103,9 +104,11 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
 
         // Load Twitter widget script if not already loaded (shared promise to avoid duplicate loads)
         if (!window.twttr?.widgets) {
-          console.log('[XEmbed] Ensuring twitter widgets script (shared)...');
           await ensureTwitterWidgets();
         }
+
+        // Check if aborted after async operation
+        if (abortController.signal.aborted || !isMounted) return;
 
         // Clear container
         if (containerRef.current && isMounted) {
@@ -114,12 +117,13 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
 
         // Create tweet embed
         if (window.twttr?.widgets && containerRef.current && isMounted) {
-          console.log('[XEmbed] Creating tweet embed...');
           // Check theme from localStorage or system preference
           const theme = localStorage.getItem('theme') === 'dark' ||
                        (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
                        ? 'dark' : 'light';
-          
+
+          setCurrentTheme(theme);
+
           const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
           const isSmallScreen = viewportWidth < 640;
           const calculatedWidth = isSmallScreen
@@ -140,8 +144,10 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
             }
           );
 
+          // Check if aborted after async operation
+          if (abortController.signal.aborted || !isMounted) return;
+
           if (tweetElement && isMounted) {
-            console.log('[XEmbed] Tweet embed created successfully');
             setIsLoading(false);
             setHasError(false);
           } else if (isMounted) {
@@ -152,6 +158,10 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
           }
         }
       } catch (error) {
+        if (abortController.signal.aborted) {
+          console.log('[XEmbed] Tweet loading aborted:', statusId);
+          return;
+        }
         console.error('[XEmbed] Error loading tweet:', error);
         console.error('[XEmbed] Error details:', {
           statusId,
@@ -173,11 +183,51 @@ export function XEmbed({ statusId, url }: XEmbedProps) {
 
     return () => {
       isMounted = false;
+      abortController.abort();
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
     };
   }, [statusId, url]);
+
+  // テーマ切替の監視
+  useEffect(() => {
+    const handleThemeChange = () => {
+      const newTheme = localStorage.getItem('theme') === 'dark' ||
+                      (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
+                      ? 'dark' : 'light';
+
+      if (newTheme !== currentTheme && containerRef.current) {
+        console.log('[XEmbed] Theme changed, reloading tweet with new theme:', newTheme);
+        setCurrentTheme(newTheme);
+
+        // twttr.widgets.load()を使って既存の埋め込みを更新
+        if (window.twttr?.widgets && containerRef.current) {
+          window.twttr.widgets.load(containerRef.current);
+        }
+      }
+    };
+
+    // storage イベントでテーマ変更を監視
+    window.addEventListener('storage', handleThemeChange);
+
+    // MutationObserver で localStorage 直接変更も監視
+    const observer = new MutationObserver(() => {
+      handleThemeChange();
+    });
+
+    if (document.documentElement) {
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'data-theme'],
+      });
+    }
+
+    return () => {
+      window.removeEventListener('storage', handleThemeChange);
+      observer.disconnect();
+    };
+  }, [currentTheme]);
 
   // Fallback UI
   if (hasError) {

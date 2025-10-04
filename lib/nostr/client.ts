@@ -19,13 +19,11 @@ export function subscribe(relays: string[], filters: Filter[], onEvent: (e: Nost
 }
 
 export async function publish(relays: string[], event: NostrEvent, retries = 1): Promise<PublishResult[]> {
-  console.log(`[publish] Publishing event to ${relays.length} relays`, { eventId: event.id, kind: event.kind });
   const p = getPool();
   const results: PublishResult[] = [];
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     if (attempt > 0) {
-      console.log(`[publish] Retry attempt ${attempt}`);
       await new Promise(r => setTimeout(r, 300 * attempt));
     }
 
@@ -36,7 +34,6 @@ export async function publish(relays: string[], event: NostrEvent, retries = 1):
         await promise;
         if (!results[index] || !results[index].ok) {
           results[index] = { relay: relays[index], ok: true };
-          console.log(`[publish] Success on relay: ${relays[index]}`);
         }
       } catch (err) {
         if (!results[index]) {
@@ -48,7 +45,6 @@ export async function publish(relays: string[], event: NostrEvent, retries = 1):
   }
 
   const successCount = results.filter(r => r.ok).length;
-  console.log(`[publish] Final result: ${successCount}/${results.length} relays succeeded`);
 
   return results;
 }

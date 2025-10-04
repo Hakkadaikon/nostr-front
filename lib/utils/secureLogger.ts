@@ -15,12 +15,10 @@ const isTest = process.env.NODE_ENV === 'test';
 export const secureLog = {
   debug: (message: string, data?: any) => {
     if (isDevelopment || isTest) {
-      console.log(`[DEBUG] ${message}`, data);
     }
   },
   
   info: (message: string, data?: any) => {
-    console.log(`[INFO] ${message}`, data ? sanitizeLogData(data) : '');
   },
   
   warn: (message: string, data?: any) => {
@@ -33,7 +31,6 @@ export const secureLog = {
   
   security: (message: string, data?: any) => {
     // セキュリティ関連のログは常に出力するが、機密情報は除去
-    console.log(`[SECURITY] ${message}`, data ? sanitizeLogData(data) : '');
   }
 };
 
@@ -89,6 +86,5 @@ export function securityLog(event: string, details?: any): void {
  */
 export function devLog(message: string, data?: any): void {
   if (isDevelopment) {
-    console.log(`[DEV] ${message}`, data);
   }
 }

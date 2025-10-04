@@ -34,12 +34,10 @@ export const useFollowCacheStore = create<State & Actions>()(
         // TTLチェック
         const now = Date.now();
         if (now - cached.timestamp > FOLLOW_LIST_CACHE_TTL) {
-          console.log('[FollowCache] Cache expired for', pubkey);
           get().clearFollowList(pubkey);
           return null;
         }
 
-        console.log('[FollowCache] Cache hit for', pubkey, ':', cached.followList.length, 'follows, kind:', cached.kind);
         return { followList: cached.followList, kind: cached.kind };
       },
 
@@ -51,7 +49,6 @@ export const useFollowCacheStore = create<State & Actions>()(
           timestamp: Date.now(),
           kind,
         });
-        console.log('[FollowCache] Cached follow list for', pubkey, ':', followList.length, 'follows, kind:', kind);
         set({ cache });
       },
 
@@ -59,7 +56,6 @@ export const useFollowCacheStore = create<State & Actions>()(
         const cache = new Map(get().cache);
         cache.delete(pubkey);
         set({ cache });
-        console.log('[FollowCache] Cleared cache for', pubkey);
       },
 
       clearExpiredCache: () => {
@@ -75,7 +71,6 @@ export const useFollowCacheStore = create<State & Actions>()(
         }
 
         if (cleared > 0) {
-          console.log('[FollowCache] Cleared', cleared, 'expired entries');
           set({ cache });
         }
       },

@@ -35,12 +35,10 @@ export const useTimelineCacheStore = create<State & Actions>()(
         // TTLチェック
         const now = Date.now();
         if (now - cached.timestamp > TIMELINE_CACHE_TTL) {
-          console.log('[TimelineCache] Cache expired for', type);
           get().clearTimeline(type);
           return null;
         }
 
-        console.log('[TimelineCache] Cache hit for', type, ':', cached.tweets.length, 'tweets');
         return cached;
       },
 
@@ -52,7 +50,6 @@ export const useTimelineCacheStore = create<State & Actions>()(
           timestamp: Date.now(),
           cursor,
         });
-        console.log('[TimelineCache] Cached timeline for', type, ':', tweets.length, 'tweets');
         set({ cache });
       },
 
@@ -60,7 +57,6 @@ export const useTimelineCacheStore = create<State & Actions>()(
         const cache = new Map(get().cache);
         cache.delete(type);
         set({ cache });
-        console.log('[TimelineCache] Cleared cache for', type);
       },
 
       clearExpiredCache: () => {
@@ -76,7 +72,6 @@ export const useTimelineCacheStore = create<State & Actions>()(
         }
 
         if (cleared > 0) {
-          console.log('[TimelineCache] Cleared', cleared, 'expired entries');
           set({ cache });
         }
       },

@@ -22,7 +22,8 @@
     "followers": "Followers",
     "loading": "Loading...",
     "error": "Error",
-    "success": "Success"
+    "success": "Success",
+    "global": "Global"
   },
   "compose": {
     "placeholder": "What's happening?",
@@ -41,7 +42,10 @@
     "following": "Following",
     "noTweets": "No tweets yet",
     "loadMore": "Load more",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "checkLatestPosts": "Check latest posts",
+    "followingUsersPosts": "Posts from users you follow",
+    "allPostsShown": "All posts displayed"
   },
   "profile": {
     "editProfile": "Edit Profile",
@@ -56,6 +60,14 @@
     "signup": "Sign Up",
     "welcome": "Welcome",
     "loginRequired": "Login required to use this feature"
+  },
+  "page": {
+    "home": {
+      "title": "Home",
+      "tabsAriaLabel": "Home tabs",
+      "loginRequiredForFollowing": "Login required to view the Following timeline.",
+      "followingPostsWillAppear": "After logging in, your latest following posts will appear here."
+    }
   },
   "settings": {
     "general": "General",

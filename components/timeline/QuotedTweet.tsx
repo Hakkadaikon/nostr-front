@@ -46,7 +46,6 @@ export function QuotedTweet({ quoteId, relays = [] }: QuotedTweetProps) {
     const configuredRelays = getReadRelays(relaysStore.relays);
     const allRelays = Array.from(new Set([...relays, ...(configuredRelays || [])]));
 
-    console.log('QuotedTweet: Fetching note', { quoteId, relays: allRelays.length });
 
     // ノートを取得（タイムアウトを6秒に延長）
     fetchNote(quoteId, allRelays.length > 0 ? allRelays : undefined, 6000).then(async (event) => {

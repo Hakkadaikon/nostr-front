@@ -36,7 +36,6 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
     setNote(null);
     setAuthor(null);
 
-    console.log('EmbeddedNote: Fetching note', { id: reference.id, relays: relays.length > 0 ? relays : 'using default relays' });
 
     // Safety timeout: in rare cases fetchNote may hang (relay never sends EOSE)
     const safetyTimeout = setTimeout(() => {
@@ -50,7 +49,6 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
     fetchNote(reference.id, relays.length > 0 ? relays : undefined, 6000)
       .then(async event => {
         if (!active) return;
-        console.log('EmbeddedNote: Fetched event', event);
         setNote(event);
 
         // Fetch author profile

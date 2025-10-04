@@ -62,11 +62,9 @@ export const useMentionStore = create<MentionState>()(
 
         // キャッシュが有効な場合はスキップ
         if (state.lastUpdated && now - state.lastUpdated < CACHE_TTL) {
-          console.log('[MentionStore] Using cached following profiles');
           return;
         }
 
-        console.log('[MentionStore] Prefetching following profiles...');
 
         try {
           // フォローリストを取得
@@ -74,12 +72,10 @@ export const useMentionStore = create<MentionState>()(
           const followSet = new Set(followList);
 
           if (followList.length === 0) {
-            console.log('[MentionStore] No following users found');
             set({ followList: followSet, lastUpdated: now });
             return;
           }
 
-          console.log(`[MentionStore] Found ${followList.length} following users`);
           set({ followList: followSet });
 
           // リレー設定を取得
@@ -87,7 +83,6 @@ export const useMentionStore = create<MentionState>()(
           const relays = getReadRelays(relaysStore.relays);
 
           if (!relays || relays.length === 0) {
-            console.log('[MentionStore] No relays configured');
             set({ lastUpdated: now });
             return;
           }
@@ -132,7 +127,6 @@ export const useMentionStore = create<MentionState>()(
             // 2秒後にサブスクリプションを終了
             setTimeout(() => {
               sub.close();
-              console.log(`[MentionStore] Cached ${profiles.size} following profiles`);
               set({
                 followingProfiles: profiles,
                 lastUpdated: now

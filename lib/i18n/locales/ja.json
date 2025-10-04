@@ -22,7 +22,8 @@
     "followers": "フォロワー",
     "loading": "読み込み中...",
     "error": "エラー",
-    "success": "成功"
+    "success": "成功",
+    "global": "グローバル"
   },
   "compose": {
     "placeholder": "いまどうしてる？",
@@ -41,7 +42,10 @@
     "following": "フォロー中",
     "noTweets": "まだツイートがありません",
     "loadMore": "もっと読み込む",
-    "refresh": "更新"
+    "refresh": "更新",
+    "checkLatestPosts": "最新の投稿をチェック",
+    "followingUsersPosts": "フォローしているユーザーの投稿",
+    "allPostsShown": "すべてのポストを表示しました"
   },
   "profile": {
     "editProfile": "プロフィールを編集",
@@ -56,6 +60,14 @@
     "signup": "新規登録",
     "welcome": "ようこそ",
     "loginRequired": "この機能を使用するにはログインが必要です"
+  },
+  "page": {
+    "home": {
+      "title": "ホーム",
+      "tabsAriaLabel": "ホームタブ",
+      "loginRequiredForFollowing": "フォロー中のタイムラインを見るにはログインが必要です。",
+      "followingPostsWillAppear": "ログイン後、最新のフォロー投稿がここに表示されます。"
+    }
   },
   "settings": {
     "general": "一般設定",

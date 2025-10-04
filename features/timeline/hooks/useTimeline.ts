@@ -40,7 +40,6 @@ function timelineReducer(state: TimelineState, action: TimelineAction): Timeline
         return bTime - aTime;
       });
 
-      console.log(`[useTimeline] Merged ${newTweets.length} new tweets (total: ${sortedTweets.length}, refresh: ${action.isRefresh})`);
 
       return {
         ...state,
@@ -103,7 +102,6 @@ function timelineReducer(state: TimelineState, action: TimelineAction): Timeline
       };
 
     case 'RESTORE_FROM_CACHE':
-      console.log('[useTimeline] Restored from cache:', action.tweets.length, 'tweets');
       return {
         tweets: action.tweets,
         isLoading: false,
@@ -159,7 +157,6 @@ export function useTimeline(params: TimelineParams) {
       // エラー時はキャッシュから復元を試みる
       const cached = timelineCache.getTimeline(params.type);
       if (cached && state.tweets.length === 0) {
-        console.log('[useTimeline] Restoring from cache after error');
         dispatch({ type: 'RESTORE_FROM_CACHE', tweets: cached.tweets, cursor: cached.cursor });
       }
     }
@@ -193,7 +190,6 @@ export function useTimeline(params: TimelineParams) {
       const mergedTweets = [...newTweets, ...state.tweets];
       timelineCache.setTimeline(params.type, mergedTweets, response.nextCursor);
 
-      console.log(`[useTimeline] Refreshed: ${newTweets.length} new tweets`);
     } catch (error) {
       dispatch({ type: 'FETCH_ERROR', error: error as Error });
     }
@@ -278,7 +274,6 @@ export function useTimeline(params: TimelineParams) {
     // キャッシュから復元を試みる
     const cached = timelineCache.getTimeline(params.type);
     if (cached && cached.tweets.length > 0) {
-      console.log('[useTimeline] Restoring from cache on init');
       dispatch({ type: 'RESTORE_FROM_CACHE', tweets: cached.tweets, cursor: cached.cursor });
     } else {
       reset();
@@ -290,7 +285,6 @@ export function useTimeline(params: TimelineParams) {
   // リセットではなくリフレッシュを使用（既存投稿を保持）
   useEffect(() => {
     const handler = () => {
-      console.log('[useTimeline] timeline:refresh event received, refreshing...');
       refresh();
     };
     if (typeof window !== 'undefined') {
