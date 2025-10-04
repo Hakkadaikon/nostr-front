@@ -248,6 +248,24 @@ export function isAudioUrl(url: string): boolean {
 }
 
 /**
+ * Extract all image URLs from text content
+ */
+export function extractImageUrls(content: string): string[] {
+  const imageUrls: string[] = [];
+  const urlRegex = /https?:\/\/[^\s]+/gi;
+  const matches = content.matchAll(urlRegex);
+
+  for (const match of matches) {
+    const url = match[0].replace(/[)\]\}>,.;]+$/g, ''); // Remove trailing punctuation
+    if (isImageUrl(url)) {
+      imageUrls.push(url);
+    }
+  }
+
+  return imageUrls;
+}
+
+/**
  * Parse media URL and return platform-specific info
  */
 export function parseMediaUrl(url: string): MediaInfo {

@@ -13,12 +13,13 @@ import { IconButton } from '../ui/IconButton';
 import { QuotedTweet } from './QuotedTweet';
 import { ActivityPubBadge } from '../ui/ActivityPubBadge';
 import { isActivityPubUser } from '../../lib/utils/activitypub';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import { deleteNote } from '../../features/notes/delete';
 import { createReaction } from '../../features/reactions/services/reaction';
 import { ensureTimelineLiveProfileTracking } from '../../features/timeline/services/live-profile-updater';
 import { useProfileStore } from '../../stores/profile.store';
+import { extractImageUrls } from '../../lib/utils/media-urls';
 
 interface TimelineItemProps {
   tweet: Tweet;
@@ -288,18 +289,25 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
             </div>
           )}
           {/* コンテンツ */}
-          {tweet.content && tweet.content.trim().length > 0 && (
-            <div className="mt-2">
-              <RichContent
-                content={tweet.content}
-                tags={tweet.tags}
-                suppressNoteIds={tweet.quote ? [tweet.quote.id] : undefined}
-                suppressUrls={tweet.media?.map(m => m.url)}
-                authorPubkey={tweet.author.pubkey || tweet.author.id}
-                actorPubkey={activity?.actor?.pubkey || activity?.actor?.id}
-              />
-            </div>
-          )}
+          {tweet.content && tweet.content.trim().length > 0 && (() => {
+            // 本文中の画像URLを抽出してsuppressUrlsに追加
+            const contentImageUrls = extractImageUrls(tweet.content);
+            const mediaUrls = tweet.media?.map(m => m.url) || [];
+            const allSuppressUrls = [...mediaUrls, ...contentImageUrls];
+
+            return (
+              <div className="mt-2">
+                <RichContent
+                  content={tweet.content}
+                  tags={tweet.tags}
+                  suppressNoteIds={tweet.quote ? [tweet.quote.id] : undefined}
+                  suppressUrls={allSuppressUrls}
+                  authorPubkey={tweet.author.pubkey || tweet.author.id}
+                  actorPubkey={activity?.actor?.pubkey || activity?.actor?.id}
+                />
+              </div>
+            );
+          })()}
 
           {/* 引用ツイート */}
           {tweet.quote && (
