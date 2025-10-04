@@ -14,7 +14,7 @@ const TAB_CONFIG: { id: ProfileTab; label: string }[] = [
   { id: 'posts', label: 'ノート' },
   { id: 'replies', label: '返信' },
   { id: 'media', label: 'メディア' },
-  { id: 'likes', label: 'いいね' },
+  { id: 'likes', label: 'リアクション' },
 ];
 
 export function ProfileTabs({ activeTab, onTabChange, counts = {} }: ProfileTabsProps) {

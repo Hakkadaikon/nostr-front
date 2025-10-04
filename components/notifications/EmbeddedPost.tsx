@@ -27,7 +27,7 @@ interface EmbeddedPostProps {
   isQuote?: boolean;
   className?: string;
   authorPubkey?: string; // 投稿者の公開鍵（フォロー判定・ぼかし処理に使用）
-  actorPubkey?: string; // アクター（いいね・リポスト等をした人）の公開鍵
+  actorPubkey?: string; // アクター（リアクション・リポスト等をした人）の公開鍵
 }
 
 export function EmbeddedPost({

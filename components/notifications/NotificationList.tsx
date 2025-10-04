@@ -14,7 +14,7 @@ export function NotificationList({ notifications }: NotificationListProps) {
         <div className="text-6xl mb-6 opacity-50">🔔</div>
         <p className="text-lg font-medium mb-2">通知はありません</p>
         <p className="text-sm text-gray-400 dark:text-gray-500">
-          新しいフォロー、いいね、返信があるとここに表示されます
+          新しいフォロー、リアクション、返信があるとここに表示されます
         </p>
       </div>
     );

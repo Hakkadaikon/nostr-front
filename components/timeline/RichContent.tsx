@@ -15,7 +15,7 @@ interface RichContentProps {
   suppressNoteIds?: string[];
   suppressUrls?: string[];
   authorPubkey?: string; // 投稿者の公開鍵（フォロー判定に使用）
-  actorPubkey?: string; // アクター（いいね・リポスト等をした人）の公開鍵
+  actorPubkey?: string; // アクター（リアクション・リポスト等をした人）の公開鍵
 }
 
 const TOKEN_REGEX = /(nostr:[^\s]+|https?:\/\/[^\s]+)/gi;

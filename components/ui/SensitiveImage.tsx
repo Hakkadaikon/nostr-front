@@ -9,7 +9,7 @@ interface SensitiveImageProps {
   src: string;
   alt: string;
   authorPubkey?: string;
-  actorPubkey?: string; // アクター（いいね・リポスト等をした人）の公開鍵
+  actorPubkey?: string; // アクター（リアクション・リポスト等をした人）の公開鍵
   className?: string;
   children: React.ReactNode; // 実際の画像コンポーネント（img, SafeImage等）
 }
@@ -37,7 +37,7 @@ export function SensitiveImage({
     // 投稿者のフォロー判定
     const authorFollowStatus = isFollowing(authorPubkey);
 
-    // アクター（いいね・リポスト等をした人）のフォロー判定
+    // アクター（リアクション・リポスト等をした人）のフォロー判定
     const actorFollowStatus = isFollowing(actorPubkey);
 
     // デバッグログ

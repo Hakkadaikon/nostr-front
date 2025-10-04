@@ -33,7 +33,7 @@ async function fetchPostReactions(postIds: string[], relays: string[]): Promise<
         const counts = reactionCounts.get(targetPostId)!;
 
         if (event.kind === KIND_REACTION) {
-          // リアクション（いいね）をカウント
+          // リアクションをカウント
           if (event.content === '+' || event.content === '🤙' || event.content === '❤️' || event.content === '👍') {
             counts.likes++;
           }

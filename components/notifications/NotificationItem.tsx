@@ -33,7 +33,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
   const { publicKey: currentUserPubkey } = useAuthStore();
   const { isFollowing, isLoading: isFollowLoading, toggleFollow } = useFollow(notification.user.npub);
   
-  // いいね機能のフック
+  // リアクション機能のフック
   const { isLiked, isLoading: isLikeLoading, toggleLike } = useReaction({
     eventId: notification.postId || '',
     authorPubkey: notification.user.pubkey
@@ -71,7 +71,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
   const getMessage = () => {
     switch (notification.type) {
       case 'like':
-        return 'があなたの投稿にいいねしました';
+        return 'があなたの投稿にリアクションしました';
       case 'reply':
         return 'があなたの投稿に返信しました';
       case 'repost':
@@ -259,7 +259,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
               </button>
             )}
 
-            {/* いいねボタン - いいね可能な通知タイプの場合のみ表示 */}
+            {/* リアクションボタン - リアクション可能な通知タイプの場合のみ表示 */}
             {(notification.type === 'reply' || notification.type === 'mention' || notification.type === 'like') && notification.postId && (
               <button
                 onClick={async (e) => {
@@ -268,7 +268,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                     await toggleLike();
                   } catch (error) {
                     console.error('Failed to toggle like:', error);
-                    alert('いいね操作に失敗しました。もう一度お試しください。');
+                    alert('リアクション操作に失敗しました。もう一度お試しください。');
                   }
                 }}
                 disabled={isLikeLoading}
@@ -281,7 +281,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                 )}
               >
                 <Heart size={16} className={clsx(isLiked && 'fill-current')} />
-                いいね
+                リアクション
               </button>
             )}
             

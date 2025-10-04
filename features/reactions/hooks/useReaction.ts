@@ -51,7 +51,7 @@ export function useReaction({ eventId, authorPubkey }: UseReactionOptions) {
       }
     } catch (error) {
       console.error('Failed to toggle like:', error);
-      show('いいねの処理に失敗しました');
+      show('リアクションの処理に失敗しました');
       setIsLiked(!isLiked);
     } finally {
       setIsLoading(false);

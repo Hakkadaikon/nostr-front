@@ -33,8 +33,8 @@ const notificationItems: NotificationItem[] = [
   },
   {
     key: 'like',
-    label: 'いいね',
-    description: 'あなたの投稿にいいねされたときに通知を受け取る',
+    label: 'リアクション',
+    description: 'あなたの投稿にリアクションされたときに通知を受け取る',
   },
   {
     key: 'reply',

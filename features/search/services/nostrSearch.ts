@@ -54,7 +54,7 @@ async function getPostStats(eventId: string): Promise<{ likesCount: number; repo
   let zapsCount = 0;
 
   const filters: Filter[] = [
-    // いいね（リアクション）
+    // リアクション
     {
       kinds: [7],
       '#e': [eventId],

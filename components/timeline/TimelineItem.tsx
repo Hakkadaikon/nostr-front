@@ -104,7 +104,7 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
             >
               {actorName}
             </Link>
-            <span className="ml-2">がこの投稿にいいねしました</span>
+            <span className="ml-2">がこの投稿にリアクションしました</span>
           </span>
         );
       case 'emoji':
@@ -348,7 +348,7 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
               <Repeat2 size={18} />
             </IconButton>
 
-            {/* いいね */}
+            {/* リアクション */}
             <IconButton
               onClick={() => canInteractWithNote && onLike(targetNoteId)}
               variant="like"
@@ -356,7 +356,7 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
               active={tweet.isLiked}
               count={tweet.likesCount}
               disabled={!canInteractWithNote}
-              aria-label="いいね"
+              aria-label="リアクション"
             >
               <Heart
                 size={18}
