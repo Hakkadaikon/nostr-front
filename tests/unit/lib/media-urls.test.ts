@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseMediaUrl, isImageUrl, isVideoUrl } from '../../../lib/utils/media-urls';
+import { parseMediaUrl, isImageUrl, isVideoUrl, isAudioUrl } from '../../../lib/utils/media-urls';
 
 describe('media-urls', () => {
   describe('parseMediaUrl', () => {
@@ -211,6 +211,39 @@ describe('media-urls', () => {
       });
     });
 
+    describe('Audio URLs', () => {
+      it('should detect M4A audio', () => {
+        const result = parseMediaUrl('https://audio.nostr.build/eec00ee6255df1dd9105be8585b976956507a2e3f2068ba46cfb38a77bac43b5.m4a');
+        expect(result.platform).toBe('audio');
+        expect(result.originalUrl).toContain('.m4a');
+      });
+
+      it('should detect MP3 audio', () => {
+        const result = parseMediaUrl('https://example.com/music.mp3');
+        expect(result.platform).toBe('audio');
+      });
+
+      it('should detect WAV audio', () => {
+        const result = parseMediaUrl('https://example.com/sound.wav');
+        expect(result.platform).toBe('audio');
+      });
+
+      it('should detect OGG audio', () => {
+        const result = parseMediaUrl('https://example.com/audio.ogg');
+        expect(result.platform).toBe('audio');
+      });
+
+      it('should detect AAC audio', () => {
+        const result = parseMediaUrl('https://example.com/track.aac');
+        expect(result.platform).toBe('audio');
+      });
+
+      it('should detect FLAC audio', () => {
+        const result = parseMediaUrl('https://example.com/lossless.flac');
+        expect(result.platform).toBe('audio');
+      });
+    });
+
     describe('Unknown URLs', () => {
       it('should return unknown for unrecognized URLs', () => {
         const result = parseMediaUrl('https://example.com/page');
@@ -275,6 +308,29 @@ describe('media-urls', () => {
     it('should return false for non-video URLs', () => {
       expect(isVideoUrl('https://example.com/image.png')).toBe(false);
       expect(isVideoUrl('https://example.com/page')).toBe(false);
+    });
+  });
+
+  describe('isAudioUrl', () => {
+    it('should return true for audio extensions', () => {
+      expect(isAudioUrl('https://example.com/test.mp3')).toBe(true);
+      expect(isAudioUrl('https://example.com/test.m4a')).toBe(true);
+      expect(isAudioUrl('https://example.com/test.wav')).toBe(true);
+      expect(isAudioUrl('https://example.com/test.ogg')).toBe(true);
+      expect(isAudioUrl('https://example.com/test.aac')).toBe(true);
+      expect(isAudioUrl('https://example.com/test.flac')).toBe(true);
+      expect(isAudioUrl('https://example.com/test.opus')).toBe(true);
+    });
+
+    it('should return true for uppercase audio extensions', () => {
+      expect(isAudioUrl('https://example.com/test.MP3')).toBe(true);
+      expect(isAudioUrl('https://example.com/test.M4A')).toBe(true);
+    });
+
+    it('should return false for non-audio URLs', () => {
+      expect(isAudioUrl('https://example.com/video.mp4')).toBe(false);
+      expect(isAudioUrl('https://example.com/image.png')).toBe(false);
+      expect(isAudioUrl('https://example.com/page')).toBe(false);
     });
   });
 });

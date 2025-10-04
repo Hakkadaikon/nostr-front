@@ -1,6 +1,6 @@
 // Media URL detection and parsing utilities
 
-export type MediaPlatform = 'youtube' | 'x' | 'twitter' | 'spotify' | 'apple-podcasts' | 'soundcloud' | 'vimeo' | 'tiktok' | 'twitch' | 'image' | 'video' | 'unknown';
+export type MediaPlatform = 'youtube' | 'x' | 'twitter' | 'spotify' | 'apple-podcasts' | 'soundcloud' | 'vimeo' | 'tiktok' | 'twitch' | 'image' | 'video' | 'audio' | 'unknown';
 
 export interface MediaInfo {
   platform: MediaPlatform;
@@ -68,6 +68,9 @@ const IMAGE_EXTENSIONS = /\.(png|jpe?g|gif|webp|avif|svg)$/i;
 
 // Video extensions
 const VIDEO_EXTENSIONS = /\.(mp4|webm|mov|avi|mkv|flv|wmv|m4v|ogv)$/i;
+
+// Audio extensions
+const AUDIO_EXTENSIONS = /\.(mp3|m4a|wav|ogg|aac|flac|opus|weba)$/i;
 
 /**
  * Extract YouTube video ID from URL
@@ -233,6 +236,18 @@ export function isVideoUrl(url: string): boolean {
 }
 
 /**
+ * Check if URL is an audio file
+ */
+export function isAudioUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return AUDIO_EXTENSIONS.test(parsed.pathname);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Parse media URL and return platform-specific info
  */
 export function parseMediaUrl(url: string): MediaInfo {
@@ -344,6 +359,14 @@ export function parseMediaUrl(url: string): MediaInfo {
   if (isVideoUrl(url)) {
     return {
       platform: 'video',
+      originalUrl: url,
+    };
+  }
+
+  // Check for audio
+  if (isAudioUrl(url)) {
+    return {
+      platform: 'audio',
       originalUrl: url,
     };
   }

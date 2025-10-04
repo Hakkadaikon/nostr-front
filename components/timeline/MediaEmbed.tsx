@@ -11,6 +11,7 @@ import { SoundCloudEmbed } from './embeds/SoundCloudEmbed';
 import { VimeoEmbed } from './embeds/VimeoEmbed';
 import { TikTokEmbed } from './embeds/TikTokEmbed';
 import { TwitchEmbed } from './embeds/TwitchEmbed';
+import { AudioEmbed } from './embeds/AudioEmbed';
 import { LinkPreview } from './LinkPreview';
 
 interface MediaEmbedProps {
@@ -78,6 +79,9 @@ export function MediaEmbed({ url, authorPubkey }: MediaEmbedProps) {
 
     case 'video':
       return <EmbeddedVideo url={url} />;
+
+    case 'audio':
+      return <AudioEmbed url={url} />;
 
     default:
       return <LinkPreview url={url} />;
