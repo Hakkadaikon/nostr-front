@@ -45,3 +45,28 @@ export function extractMarkers(tags: Tag[]) {
   }
   return out;
 }
+
+/**
+ * NIP-10準拠で直接の返信先（親投稿）のIDを取得
+ *
+ * ルール:
+ * 1. 'reply'マーカーのあるeタグがあればそれを返す
+ * 2. なければ、最後のeタグを返す（deprecated形式への対応）
+ * 3. eタグがなければundefined
+ */
+export function extractReplyTo(tags: Tag[]): string | undefined {
+  const eTags = tags.filter(t => t[0] === 'e' && t[1]);
+
+  if (eTags.length === 0) {
+    return undefined;
+  }
+
+  // 'reply'マーカーのあるタグを探す
+  const replyTag = eTags.find(t => t[3] === 'reply');
+  if (replyTag) {
+    return replyTag[1];
+  }
+
+  // deprecated形式: 最後のeタグが返信先
+  return eTags[eTags.length - 1][1];
+}

@@ -4,6 +4,7 @@ import { useRelaysStore } from '../../stores/relays.store';
 import { KIND_TEXT_NOTE, KIND_REACTION, KIND_REPOST, KIND_ZAP_RECEIPT } from '../../lib/nostr/constants';
 import { Tweet } from '../timeline/types';
 import { getProfileImageUrl } from '../../lib/utils/avatar';
+import { extractReplyTo } from '../../lib/nostr/nip10';
 
 /**
  * 投稿のリアクション数を取得
@@ -124,7 +125,7 @@ export async function fetchUserReplies(npub: string, limit: number = 20): Promis
             createdAt: new Date()
           };
 
-          const parentId = event.tags.find(tag => tag[0] === 'e')?.[1];
+          const parentId = extractReplyTo(event.tags);
           const reply: Tweet = {
             id: event.id,
             content: event.content,

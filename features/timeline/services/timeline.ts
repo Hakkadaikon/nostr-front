@@ -8,6 +8,7 @@ import { fetchFollowList } from '../../follow/services/follow';
 import { KIND_TEXT_NOTE, KIND_METADATA, KIND_REACTION, KIND_REPOST, KIND_ZAP_RECEIPT, KIND_ZAP_REQUEST } from '../../../lib/nostr/constants';
 import { createRepost, deleteRepost } from '../../repost/services/repost';
 import { getProfileImageUrl } from '../../../lib/utils/avatar';
+import { extractReplyTo } from '../../../lib/nostr/nip10';
 
 // プロフィール情報のキャッシュと取得中のPromiseを管理
 const profileCache = new Map<string, any>();
@@ -251,12 +252,11 @@ async function fetchEventById(eventId: string, relays: string[]): Promise<NostrE
  */
 async function nostrEventToTweet(event: NostrEvent, relays: string[]): Promise<Tweet> {
   const profile = await fetchProfile(event.pubkey, relays);
-  
+
   const tags = event.tags as string[][];
   const quote = extractQuoteReference(tags);
-  const replyTag = tags.find(tag => tag[0] === 'e' && (tag[3] === 'reply' || !tag[3]));
-  const parentId = replyTag && replyTag[1] !== event.id ? replyTag[1] : undefined;
-  
+  const parentId = extractReplyTo(tags);
+
   return {
     id: event.id,
     content: event.content,
@@ -332,7 +332,7 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
 
       const kinds = includeActivities
         ? [KIND_TEXT_NOTE, KIND_REPOST, KIND_REACTION, KIND_ZAP_RECEIPT]
-        : [KIND_TEXT_NOTE];
+        : [KIND_TEXT_NOTE, KIND_REPOST];
 
       const filters: any = {
         kinds,
