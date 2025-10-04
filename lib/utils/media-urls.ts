@@ -12,9 +12,12 @@ export interface MediaInfo {
 // YouTube URL patterns
 const YOUTUBE_PATTERNS = [
   /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/i,
+  /(?:m\.youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/i,
   /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/i,
+  /m\.youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/i,
   /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/i,
   /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/i,
+  /m\.youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/i,
 ];
 
 // X/Twitter URL patterns  

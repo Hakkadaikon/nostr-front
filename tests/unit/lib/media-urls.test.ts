@@ -76,6 +76,31 @@ describe('media-urls', () => {
         expect(result.platform).toBe('youtube');
         expect(result.mediaId).toBe('dQw4w9WgXcQ');
       });
+
+      it('should parse mobile youtube.com URLs (m.youtube.com)', () => {
+        const result = parseMediaUrl('https://m.youtube.com/watch?v=dQw4w9WgXcQ');
+        expect(result.platform).toBe('youtube');
+        expect(result.mediaId).toBe('dQw4w9WgXcQ');
+        expect(result.embedUrl).toBe('https://www.youtube.com/embed/dQw4w9WgXcQ');
+      });
+
+      it('should parse mobile youtube shorts URLs', () => {
+        const result = parseMediaUrl('https://m.youtube.com/shorts/abc123XYZ_-');
+        expect(result.platform).toBe('youtube');
+        expect(result.mediaId).toBe('abc123XYZ_-');
+      });
+
+      it('should handle mobile youtube URLs with query parameters', () => {
+        const result = parseMediaUrl('https://m.youtube.com/watch?v=dQw4w9WgXcQ&feature=share');
+        expect(result.platform).toBe('youtube');
+        expect(result.mediaId).toBe('dQw4w9WgXcQ');
+      });
+
+      it('should handle youtube URLs with feature parameter', () => {
+        const result = parseMediaUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ&feature=share');
+        expect(result.platform).toBe('youtube');
+        expect(result.mediaId).toBe('dQw4w9WgXcQ');
+      });
     });
 
     describe('Spotify URLs', () => {
