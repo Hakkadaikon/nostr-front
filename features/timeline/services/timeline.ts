@@ -489,6 +489,11 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
         const content = (event.content || '').trim();
         const emojiReaction = content && content !== '+' && content !== '❤️' && content !== '♥';
 
+        // followタイムラインでは通常のいいねを除外（絵文字リアクションは残す）
+        if (!emojiReaction && params.type === 'following') {
+          return;
+        }
+
         baseTweet.activity = {
           type: emojiReaction ? 'emoji' : 'like',
           actor: actorProfile,
@@ -518,6 +523,7 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
       };
 
       const processZapEvent = async (event: NostrEvent) => {
+        const zapProcessStart = Date.now();
         const descriptionTag = event.tags.find(tag => tag[0] === 'description');
         if (!descriptionTag || !descriptionTag[1]) return;
 
@@ -568,19 +574,22 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
           : await fetchProfile(event.pubkey, relays);
 
         let baseTweet: Tweet | null = null;
+        let fetchSuccess = false;
         if (targetNoteId) {
           const originalEvent = await getCachedEvent(targetNoteId);
           if (originalEvent) {
             baseTweet = await nostrEventToTweet(originalEvent, relays);
+            fetchSuccess = true;
           }
         }
 
         if (!baseTweet) {
           const recipientProfile = await fetchProfile(event.pubkey, relays);
+          // フォールバック: 投稿が取得できなかった場合でもZapメッセージを表示できるように
+          const fallbackContent = zapMessage || '';
           baseTweet = {
             id: targetNoteId || event.id,
-            // 元の投稿イベントを取得できなかった場合は本文は空。Zapメッセージは activity.message として表示する
-            content: '',
+            content: fallbackContent,
             author: recipientProfile,
             createdAt: new Date(event.created_at * 1000),
             likesCount: 0,
@@ -603,6 +612,10 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
         };
         baseTweet.zapsCount = (baseTweet.zapsCount || 0) + 1;
         baseTweet.activityTimestamp = new Date(event.created_at * 1000);
+
+        const zapProcessElapsed = Date.now() - zapProcessStart;
+        console.log(`[processZapEvent] Zap activity processed in ${zapProcessElapsed}ms (fetch: ${fetchSuccess}, amount: ${amountSats ?? 0} sats)`);
+
         pushTweet(event, baseTweet);
       };
 
