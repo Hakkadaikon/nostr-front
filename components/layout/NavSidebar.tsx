@@ -11,6 +11,7 @@ import { fetchProfile } from '../../features/profile/fetchProfile';
 import type { Profile } from '../../features/profile/types';
 import { useUiStore } from '../../stores/ui.store';
 import { SafeImage } from '../ui/SafeImage';
+import { LanguageToggle } from '../ui/LanguageToggle';
 
 const navItems = [
   { href: '/', label: 'ホーム', icon: Home },
@@ -161,14 +162,19 @@ export default function NavSidebar() {
         })}
       </nav>
 
-      <div className="mt-auto px-4 space-y-4">
-        <button 
-          onClick={openComposeModal}
-          className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-3 px-6 rounded-xl hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
-          aria-label="新しい投稿を作成"
-        >
-          投稿する
-        </button>
+      <div className="mt-auto space-y-4">
+        {/* Language Toggle */}
+        <LanguageToggle />
+
+        <div className="px-4">
+          <button
+            onClick={openComposeModal}
+            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-3 px-6 rounded-xl hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+            aria-label="新しい投稿を作成"
+          >
+            投稿する
+          </button>
+        </div>
       </div>
     </aside>
   );
