@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ProfileHeader } from '../../../components/profile/ProfileHeader';
 import { ProfileTabs, ProfileTab } from '../../../components/profile/ProfileTabs';
 import { ProfileEditModal } from '../../../components/profile/ProfileEditModal';
@@ -30,6 +30,7 @@ type Props = { params: { npub: string } };
 export default function ProfilePage({ params }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ProfileTab>('posts');
@@ -63,6 +64,14 @@ export default function ProfilePage({ params }: Props) {
   } catch (err) {
     pubkey = undefined;
   }
+
+  // クエリパラメーターからタブ状態を復元
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['posts', 'replies', 'media', 'likes'].includes(tabParam)) {
+      setActiveTab(tabParam as ProfileTab);
+    }
+  }, [searchParams]);
 
   // プロフィール情報の取得
   useEffect(() => {

@@ -1,6 +1,7 @@
 "use client";
 
 import clsx from 'clsx';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export type ProfileTab = 'posts' | 'replies' | 'media' | 'likes';
 
@@ -18,6 +19,19 @@ const TAB_CONFIG: { id: ProfileTab; label: string }[] = [
 ];
 
 export function ProfileTabs({ activeTab, onTabChange, counts = {} }: ProfileTabsProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const handleTabClick = (tab: ProfileTab) => {
+    // クエリパラメーターを更新
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', tab);
+    router.push(`?${params.toString()}`, { scroll: false });
+
+    // 親コンポーネントのハンドラーを呼び出し
+    onTabChange(tab);
+  };
+
   return (
     <nav className="flex items-center border-b border-gray-200 dark:border-gray-800">
       <div className="flex w-full overflow-x-auto scrollbar-hide">
@@ -29,7 +43,7 @@ export function ProfileTabs({ activeTab, onTabChange, counts = {} }: ProfileTabs
             <button
               key={tab.id}
               type="button"
-              onClick={() => onTabChange(tab.id)}
+              onClick={() => handleTabClick(tab.id)}
               className={clsx(
                 'relative flex min-w-max flex-1 items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium transition-all duration-200',
                 isActive
@@ -38,7 +52,7 @@ export function ProfileTabs({ activeTab, onTabChange, counts = {} }: ProfileTabs
               )}
             >
               <span className="whitespace-nowrap">{tab.label}</span>
-              
+
               {isActive && (
                 <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-gray-900 dark:bg-white" />
               )}
