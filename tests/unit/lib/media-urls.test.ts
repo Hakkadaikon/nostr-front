@@ -43,6 +43,12 @@ describe('media-urls', () => {
         expect(result.platform).toBe('twitter');
         expect(result.mediaId).toBe('1234567890');
       });
+
+      it('should handle mobile.twitter.com URLs with query parameters', () => {
+        const result = parseMediaUrl('https://mobile.twitter.com/user/status/1234567890?ref=share');
+        expect(result.platform).toBe('twitter');
+        expect(result.mediaId).toBe('1234567890');
+      });
     });
 
     describe('YouTube URLs', () => {
@@ -130,6 +136,44 @@ describe('media-urls', () => {
         expect(result.platform).toBe('apple-podcasts');
         expect(result.mediaId).toBe('1200361736');
         expect(result.embedUrl).toContain('embed/podcast');
+      });
+    });
+
+    describe('TikTok URLs', () => {
+      it('should parse standard tiktok.com URLs', () => {
+        const result = parseMediaUrl('https://tiktok.com/@user/video/1234567890');
+        expect(result.platform).toBe('tiktok');
+        expect(result.mediaId).toBe('1234567890');
+      });
+
+      it('should parse www.tiktok.com URLs', () => {
+        const result = parseMediaUrl('https://www.tiktok.com/@user/video/1234567890');
+        expect(result.platform).toBe('tiktok');
+        expect(result.mediaId).toBe('1234567890');
+      });
+
+      it('should parse m.tiktok.com URLs with username', () => {
+        const result = parseMediaUrl('https://m.tiktok.com/@user/video/1234567890');
+        expect(result.platform).toBe('tiktok');
+        expect(result.mediaId).toBe('1234567890');
+      });
+
+      it('should parse m.tiktok.com/v/ URLs', () => {
+        const result = parseMediaUrl('https://m.tiktok.com/v/1234567890');
+        expect(result.platform).toBe('tiktok');
+        expect(result.mediaId).toBe('1234567890');
+      });
+
+      it('should parse vm.tiktok.com short URLs', () => {
+        const result = parseMediaUrl('https://vm.tiktok.com/ZMabcdefg');
+        expect(result.platform).toBe('tiktok');
+        expect(result.mediaId).toBe('ZMabcdefg');
+      });
+
+      it('should parse vt.tiktok.com short URLs', () => {
+        const result = parseMediaUrl('https://vt.tiktok.com/ZSabcdefg');
+        expect(result.platform).toBe('tiktok');
+        expect(result.mediaId).toBe('ZSabcdefg');
       });
     });
 

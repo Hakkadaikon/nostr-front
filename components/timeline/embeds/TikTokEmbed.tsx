@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ExternalLink } from 'lucide-react';
+import { loadTikTokScript } from '../../../lib/utils/external-scripts';
 
 interface TikTokEmbedProps {
   url: string;
@@ -15,75 +16,6 @@ declare global {
       };
     };
   }
-}
-
-// グローバルでTikTokスクリプトのロード状態を管理
-let tiktokScriptPromise: Promise<void> | null = null;
-
-function ensureTikTokScript(): Promise<void> {
-  if (typeof window === 'undefined') return Promise.resolve();
-
-  // すでに読み込み済み
-  if (window.tiktokEmbed?.lib) {
-    return Promise.resolve();
-  }
-
-  // 読み込み中
-  if (tiktokScriptPromise) {
-    return tiktokScriptPromise;
-  }
-
-  tiktokScriptPromise = new Promise<void>((resolve, reject) => {
-    const existingScript = document.querySelector('script[src="https://www.tiktok.com/embed.js"]');
-
-    const timeout = setTimeout(() => {
-      tiktokScriptPromise = null;
-      reject(new Error('TikTok script load timeout'));
-    }, 15000);
-
-    const onReady = () => {
-      clearTimeout(timeout);
-      // スクリプト読み込み後、少し待ってからチェック
-      let retry = 0;
-      const maxRetries = 20;
-
-      const check = () => {
-        if (window.tiktokEmbed?.lib) {
-          resolve();
-        } else if (retry < maxRetries) {
-          retry++;
-          setTimeout(check, 100);
-        } else {
-          tiktokScriptPromise = null;
-          reject(new Error('TikTok embed library not available'));
-        }
-      };
-      check();
-    };
-
-    if (existingScript) {
-      if (window.tiktokEmbed?.lib) {
-        clearTimeout(timeout);
-        resolve();
-      } else {
-        onReady();
-      }
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://www.tiktok.com/embed.js';
-    script.async = true;
-    script.onload = onReady;
-    script.onerror = () => {
-      clearTimeout(timeout);
-      tiktokScriptPromise = null;
-      reject(new Error('Failed to load TikTok script'));
-    };
-    document.head.appendChild(script);
-  });
-
-  return tiktokScriptPromise;
 }
 
 export function TikTokEmbed({ url }: TikTokEmbedProps) {
@@ -101,7 +33,7 @@ export function TikTokEmbed({ url }: TikTokEmbedProps) {
         setIsLoading(true);
         setHasError(false);
 
-        await ensureTikTokScript();
+        await loadTikTokScript();
 
         if (!isMounted) return;
 

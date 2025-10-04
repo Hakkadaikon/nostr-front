@@ -20,10 +20,10 @@ const YOUTUBE_PATTERNS = [
   /m\.youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/i,
 ];
 
-// X/Twitter URL patterns  
+// X/Twitter URL patterns
 const X_PATTERNS = [
-  /(?:twitter\.com|x\.com)\/(?:#!\/)?([A-Za-z0-9_]+)\/status(?:es)?\/(\d+)/i,
-  /(?:twitter\.com|x\.com)\/([A-Za-z0-9_]+)\/status\/(\d+)/i,
+  /(?:twitter\.com|x\.com|mobile\.twitter\.com)\/(?:#!\/)?([A-Za-z0-9_]+)\/status(?:es)?\/(\d+)/i,
+  /(?:twitter\.com|x\.com|mobile\.twitter\.com)\/([A-Za-z0-9_]+)\/status\/(\d+)/i,
 ];
 
 // Spotify URL patterns
@@ -49,9 +49,11 @@ const VIMEO_PATTERNS = [
 
 // TikTok URL patterns
 const TIKTOK_PATTERNS = [
-  /tiktok\.com\/@([^\/]+)\/video\/(\d+)/i,
+  /(?:www\.)?tiktok\.com\/@([^\/]+)\/video\/(\d+)/i,
   /vm\.tiktok\.com\/([a-zA-Z0-9]+)/i,
   /vt\.tiktok\.com\/([a-zA-Z0-9]+)/i,
+  /m\.tiktok\.com\/@([^\/]+)\/video\/(\d+)/i,
+  /m\.tiktok\.com\/v\/(\d+)/i,
 ];
 
 // Twitch URL patterns
@@ -136,17 +138,28 @@ function getVimeoId(url: string): string | null {
  * Extract TikTok info from URL
  */
 function getTikTokInfo(url: string): { username?: string; videoId?: string; shortCode?: string } | null {
-  // Full URL with username and video ID
-  const fullMatch = url.match(TIKTOK_PATTERNS[0]);
-  if (fullMatch && fullMatch[1] && fullMatch[2]) {
-    return { username: fullMatch[1], videoId: fullMatch[2] };
+  // Full URL with username and video ID (www.tiktok.com, tiktok.com, m.tiktok.com)
+  for (let i = 0; i < 2; i++) { // Check first 2 patterns for full URLs
+    const match = url.match(TIKTOK_PATTERNS[i]);
+    if (match && match[1] && match[2]) {
+      return { username: match[1], videoId: match[2] };
+    }
   }
 
-  // Short URL
-  for (let i = 1; i < TIKTOK_PATTERNS.length; i++) {
+  // Mobile URL with video ID only (m.tiktok.com/v/...)
+  const mobileMatch = url.match(TIKTOK_PATTERNS[4]);
+  if (mobileMatch && mobileMatch[1]) {
+    return { videoId: mobileMatch[1] };
+  }
+
+  // Short URL (vm.tiktok.com, vt.tiktok.com)
+  for (let i = 1; i < 4; i++) {
     const match = url.match(TIKTOK_PATTERNS[i]);
     if (match && match[1]) {
-      return { shortCode: match[1] };
+      // For patterns 1-2, it's a short code
+      if (i < 3) {
+        return { shortCode: match[1] };
+      }
     }
   }
 
