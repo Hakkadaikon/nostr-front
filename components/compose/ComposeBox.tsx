@@ -35,7 +35,11 @@ export default function ComposeBox() {
 
   useEffect(() => {
     const h = setTimeout(() => {
-      if (text.trim()) saveDraft(DRAFT_KEY, text);
+      if (text.trim()) {
+        saveDraft(DRAFT_KEY, text);
+      } else {
+        removeDraft(DRAFT_KEY);
+      }
     }, 500);
     return () => clearTimeout(h);
   }, [text]);
