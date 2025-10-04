@@ -100,7 +100,7 @@ export function FollowList({ npub, type }: FollowListProps) {
               <UserCard
                 key={user.id}
                 user={user}
-                onFollow={handleFollow}
+                onFollow={type === 'following' ? undefined : handleFollow}
               />
             ))}
           </div>
