@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { nip19 } from 'nostr-tools';
 import { parseNostrUri } from '../../lib/utils/url';
 import EmbeddedNote from '../notes/EmbeddedNote';
-import { useMemo, ReactNode } from 'react';
+import { useMemo, ReactNode, useState, useEffect } from 'react';
 import { MediaEmbed } from './MediaEmbed';
 import { isImageUrl, isVideoUrl, isAudioUrl } from '../../lib/utils/media-urls';
 import { SensitiveImage } from '../ui/SensitiveImage';
+import { fetchProfileForNotification } from '../../features/profile/services/profile-cache';
 
 interface RichContentProps {
   content: string;
@@ -19,6 +20,28 @@ interface RichContentProps {
 }
 
 const TOKEN_REGEX = /(nostr:[^\s]+|https?:\/\/[^\s]+)/gi;
+
+// メンション表示用コンポーネント
+function MentionLink({ pubkey, npub }: { pubkey: string; npub: string }) {
+  const [displayName, setDisplayName] = useState(`@${npub.slice(0, 12)}…`);
+
+  useEffect(() => {
+    fetchProfileForNotification(pubkey).then(profile => {
+      setDisplayName(`@${profile.username || profile.name || npub.slice(0, 12) + '…'}`);
+    }).catch(() => {
+      // エラー時はデフォルト表示のまま
+    });
+  }, [pubkey, npub]);
+
+  return (
+    <Link
+      href={`/profile/${npub}`}
+      className="text-purple-600 underline hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-200"
+    >
+      {displayName}
+    </Link>
+  );
+}
 
 function renderText(text: string) {
   if (!text) return null;
@@ -125,29 +148,13 @@ function renderNostr(
   if (parsed.type === 'npub') {
     const hex = parsed.data as string;
     const npub = nip19.npubEncode(hex);
-    return (
-      <Link
-        key={key}
-        href={`/profile/${npub}`}
-        className="text-purple-600 underline hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-200"
-      >
-        @{npub.slice(0, 12)}…
-      </Link>
-    );
+    return <MentionLink key={key} pubkey={hex} npub={npub} />;
   }
 
   if (parsed.type === 'nprofile') {
     const data = parsed.data as { pubkey: string };
     const npub = nip19.npubEncode(data.pubkey);
-    return (
-      <Link
-        key={key}
-        href={`/profile/${npub}`}
-        className="text-purple-600 underline hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-200"
-      >
-        @{npub.slice(0, 12)}…
-      </Link>
-    );
+    return <MentionLink key={key} pubkey={data.pubkey} npub={npub} />;
   }
 
   return (
