@@ -80,7 +80,8 @@ export default function EmbeddedNote({ reference, className }: EmbeddedNoteProps
       active = false;
       clearTimeout(safetyTimeout);
     };
-  }, [reference.id, relayKey, relays]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reference.id, relayKey]); // relayKeyでrelay変更を検知、relays配列自体は含めない（不要な再レンダリングを防ぐ）
 
   if (isLoading) {
     return (
