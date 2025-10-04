@@ -273,7 +273,7 @@ export function TimelineItem({ tweet, onLike, onRetweet, onZap, onReply, onDelet
           {/* コンテンツ */}
           {tweet.content && tweet.content.trim().length > 0 && (
             <div className="mt-2">
-              <RichContent content={tweet.content} tags={tweet.tags} suppressNoteIds={tweet.quote ? [tweet.quote.id] : undefined} />
+              <RichContent content={tweet.content} tags={tweet.tags} suppressNoteIds={tweet.quote ? [tweet.quote.id] : undefined} authorPubkey={tweet.author.pubkey} />
             </div>
           )}
 

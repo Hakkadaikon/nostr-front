@@ -14,9 +14,10 @@ import { LinkPreview } from './LinkPreview';
 
 interface MediaEmbedProps {
   url: string;
+  authorPubkey?: string;
 }
 
-export function MediaEmbed({ url }: MediaEmbedProps) {
+export function MediaEmbed({ url, authorPubkey }: MediaEmbedProps) {
   const mediaInfo = parseMediaUrl(url);
 
   switch (mediaInfo.platform) {
@@ -60,7 +61,7 @@ export function MediaEmbed({ url }: MediaEmbedProps) {
       ) : null;
 
     case 'image':
-      return <EmbeddedImage url={url} />;
+      return <EmbeddedImage url={url} authorPubkey={authorPubkey} />;
 
     case 'video':
       return <EmbeddedVideo url={url} />;

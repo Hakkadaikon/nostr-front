@@ -43,7 +43,7 @@ export default function NoteCard({ content, id, author }: NoteCardProps) {
         </div>
       )}
       <div className="text-gray-800 dark:text-gray-200 overflow-hidden">
-        <RichContent content={content} suppressNoteIds={[id]} />
+        <RichContent content={content} suppressNoteIds={[id]} authorPubkey={author?.pubkey} />
       </div>
     </article>
   );

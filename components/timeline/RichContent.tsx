@@ -7,12 +7,14 @@ import EmbeddedNote from '../notes/EmbeddedNote';
 import { useMemo, ReactNode } from 'react';
 import { MediaEmbed } from './MediaEmbed';
 import { isImageUrl } from '../../lib/utils/media-urls';
+import { SensitiveImage } from '../ui/SensitiveImage';
 
 interface RichContentProps {
   content: string;
   tags?: string[][];
   suppressNoteIds?: string[];
   suppressUrls?: string[];
+  authorPubkey?: string; // 投稿者の公開鍵（フォロー判定に使用）
 }
 
 const TOKEN_REGEX = /(nostr:[^\s]+|https?:\/\/[^\s]+)/gi;
@@ -22,7 +24,7 @@ function renderText(text: string) {
   return text;
 }
 
-function renderLink(url: string, key: string, seenUrls: Set<string>, suppressUrls?: string[]) {
+function renderLink(url: string, key: string, seenUrls: Set<string>, suppressUrls?: string[], authorPubkey?: string) {
   // 末尾に付与されがちな括弧や句読点を除去（Markdown の ![]() や文章中の括弧閉じ対策）
   const cleaned = url.replace(/[)\]\}>,.;]+$/g, '');
   if (seenUrls.has(cleaned)) {
@@ -35,27 +37,39 @@ function renderLink(url: string, key: string, seenUrls: Set<string>, suppressUrl
     return null;
   }
 
-  // 画像URLの場合はインライン表示
+  // 画像URLの場合はインライン表示（SensitiveImageでラップ）
   if (isImageUrl(cleaned)) {
     return (
       <span key={key} className="inline-block my-2">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <SensitiveImage
           src={cleaned}
           alt="Embedded image"
-          loading="lazy"
-          className="max-w-full h-auto max-h-96 rounded-lg border border-gray-200 dark:border-gray-700"
-          referrerPolicy="no-referrer"
-        />
+          authorPubkey={authorPubkey}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={cleaned}
+            alt="Embedded image"
+            loading="lazy"
+            className="max-w-full h-auto max-h-96 rounded-lg border border-gray-200 dark:border-gray-700"
+            referrerPolicy="no-referrer"
+          />
+        </SensitiveImage>
       </span>
     );
   }
 
-  // その他のメディア（YouTube、動画など）もブロック要素として適切なマージンで表示
+  // その他のURLは通常のリンクとして表示
   return (
-    <div key={key} className="my-3">
-      <MediaEmbed url={cleaned} />
-    </div>
+    <a
+      key={key}
+      href={cleaned}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-purple-600 underline hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-200"
+    >
+      {cleaned}
+    </a>
   );
 }
 
@@ -147,7 +161,7 @@ function renderNostr(
   );
 }
 
-export function RichContent({ content, tags, suppressNoteIds, suppressUrls }: RichContentProps) {
+export function RichContent({ content, tags, suppressNoteIds, suppressUrls, authorPubkey }: RichContentProps) {
   const nodes = useMemo(() => {
     const elements: ReactNode[] = [];
     const seenNoteIds = new Set<string>();
@@ -175,7 +189,7 @@ export function RichContent({ content, tags, suppressNoteIds, suppressUrls }: Ri
           elements.push(node);
         }
       } else if (token.startsWith('http')) {
-        const node = renderLink(token, `${match.index}-${token}`, seenUrls, suppressUrls);
+        const node = renderLink(token, `${match.index}-${token}`, seenUrls, suppressUrls, authorPubkey);
         if (node) {
           elements.push(node);
         }
@@ -189,7 +203,7 @@ export function RichContent({ content, tags, suppressNoteIds, suppressUrls }: Ri
     }
 
     return elements;
-  }, [content, tags, suppressNoteIds, suppressUrls]);
+  }, [content, tags, suppressNoteIds, suppressUrls, authorPubkey]);
 
   return (
     <div className="text-gray-900 dark:text-white whitespace-pre-wrap break-all overflow-hidden">
