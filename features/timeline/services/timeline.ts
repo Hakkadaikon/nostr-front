@@ -609,8 +609,10 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
         }
 
         timelineTweets.sort((a, b) => {
-          const aTime = (a.activityTimestamp ?? a.createdAt).getTime();
-          const bTime = (b.activityTimestamp ?? b.createdAt).getTime();
+          const aDate = a.activityTimestamp ?? a.createdAt;
+          const bDate = b.activityTimestamp ?? b.createdAt;
+          const aTime = aDate instanceof Date ? aDate.getTime() : new Date(aDate).getTime();
+          const bTime = bDate instanceof Date ? bDate.getTime() : new Date(bDate).getTime();
           return bTime - aTime;
         });
 
