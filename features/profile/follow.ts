@@ -40,14 +40,9 @@ export async function followUser(targetNpubOrPubkey: string): Promise<void> {
     const tags = newFollowList.map(pk => ['p', pk]);
     
     // リレーの設定を取得
-    let relays = useRelaysStore.getState().relays.filter(r => r.write).map(r => r.url);
+    const relays = useRelaysStore.getState().relays.filter(r => r.write).map(r => r.url);
     if (relays.length === 0) {
-      const defaultRelays = process.env.NEXT_PUBLIC_DEFAULT_RELAYS;
-      if (defaultRelays) {
-        relays = defaultRelays.split(',').map(url => url.trim());
-      } else {
-        relays = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.nostr.band'];
-      }
+      throw new Error('書き込み可能なリレーが設定されていません');
     }
     
     // イベントを作成
@@ -98,14 +93,9 @@ export async function unfollowUser(targetNpubOrPubkey: string): Promise<void> {
     const tags = newFollowList.map(pk => ['p', pk]);
     
     // リレーの設定を取得
-    let relays = useRelaysStore.getState().relays.filter(r => r.write).map(r => r.url);
+    const relays = useRelaysStore.getState().relays.filter(r => r.write).map(r => r.url);
     if (relays.length === 0) {
-      const defaultRelays = process.env.NEXT_PUBLIC_DEFAULT_RELAYS;
-      if (defaultRelays) {
-        relays = defaultRelays.split(',').map(url => url.trim());
-      } else {
-        relays = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.nostr.band'];
-      }
+      throw new Error('書き込み可能なリレーが設定されていません');
     }
     
     // イベントを作成

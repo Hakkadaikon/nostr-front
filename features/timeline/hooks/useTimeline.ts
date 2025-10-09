@@ -234,7 +234,8 @@ export function useTimeline(params: TimelineParams) {
     } catch (error) {
       // エラー時は元に戻す
       dispatch({ type: 'TOGGLE_LIKE', tweetId });
-      alert('いいね操作に失敗しました。もう一度お試しください。');
+      const message = error instanceof Error ? error.message : 'いいね操作に失敗しました。もう一度お試しください。';
+      alert(message || 'いいね操作に失敗しました。もう一度お試しください。');
     }
   }, [state.tweets]);
 
@@ -264,7 +265,8 @@ export function useTimeline(params: TimelineParams) {
     } catch (error) {
       // エラー時は元に戻す
       dispatch({ type: 'TOGGLE_RETWEET', tweetId });
-      alert('リツイート操作に失敗しました。もう一度お試しください。');
+      const message = error instanceof Error ? error.message : 'リツイート操作に失敗しました。もう一度お試しください。';
+      alert(message || 'リツイート操作に失敗しました。もう一度お試しください。');
     }
   }, [state.tweets]);
 

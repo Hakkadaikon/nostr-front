@@ -30,21 +30,10 @@ export async function fetchFollowList(pubkey?: string): Promise<string[]> {
 
     // リレー設定を取得
     const relaysStore = useRelaysStore.getState();
-    let relays = getReadRelays(relaysStore.relays);
+    const relays = getReadRelays(relaysStore.relays);
 
     if (relays.length === 0) {
-      // 環境変数からデフォルトリレーを取得
-      const defaultRelays = process.env.NEXT_PUBLIC_DEFAULT_RELAYS;
-      if (defaultRelays) {
-        relays = defaultRelays.split(',').map(url => url.trim());
-      } else {
-        // フォールバック用のデフォルトリレー
-        relays = [
-          'wss://relay.damus.io',
-          'wss://nos.lol',
-          'wss://relay.nostr.band'
-        ];
-      }
+      return [];
     }
 
 
@@ -140,21 +129,10 @@ export async function fetchFollowLists(pubkeys: string[]): Promise<Map<string, s
 
     // リレー設定を取得
     const relaysStore = useRelaysStore.getState();
-    let relays = getReadRelays(relaysStore.relays);
-    
+    const relays = getReadRelays(relaysStore.relays);
+
     if (relays.length === 0) {
-      // 環境変数からデフォルトリレーを取得
-      const defaultRelays = process.env.NEXT_PUBLIC_DEFAULT_RELAYS;
-      if (defaultRelays) {
-        relays = defaultRelays.split(',').map(url => url.trim());
-      } else {
-        // フォールバック用のデフォルトリレー
-        relays = [
-          'wss://relay.damus.io',
-          'wss://nos.lol',
-          'wss://relay.nostr.band'
-        ];
-      }
+      return new Map();
     }
 
     return new Promise((resolve) => {

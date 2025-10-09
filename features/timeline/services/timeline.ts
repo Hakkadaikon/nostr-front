@@ -304,20 +304,18 @@ export async function fetchTimeline(params: TimelineParams): Promise<TimelineRes
 
   try {
     const relaysStore = useRelaysStore.getState();
-    const configuredRelays = getReadRelays(relaysStore.relays);
+    const relays = getReadRelays(relaysStore.relays);
 
-    const envRelays = (process.env.NEXT_PUBLIC_DEFAULT_RELAYS || '')
-      .split(',')
-      .map(u => u.trim())
-      .filter(Boolean);
-
-    const fallbackRelays = envRelays.length > 0 ? envRelays : [
-      'wss://relay.damus.io',
-      'wss://nos.lol',
-      'wss://relay.nostr.band'
-    ];
-
-    const relays = Array.from(new Set([...(configuredRelays || []), ...fallbackRelays]));
+    if (relays.length === 0) {
+      return {
+        tweets: [],
+        hasMore: false,
+        error: {
+          code: 'NO_RELAYS_CONFIGURED',
+          message: 'リレーが設定されていません。設定で読み取りリレーを追加してください。',
+        }
+      };
+    }
 
     const limit = params.limit || 10;
     const until = params.cursor ? parseInt(params.cursor) : Math.floor(Date.now() / 1000);
@@ -708,15 +706,10 @@ export async function likeTweet(tweetId: string, authorPubkey?: string): Promise
     }
 
     const relaysStore = useRelaysStore.getState();
-    let relays = relaysStore.relays.filter(r => r.write).map(r => r.url);
+    const relays = relaysStore.relays.filter(r => r.write).map(r => r.url);
 
     if (relays.length === 0) {
-      const defaultRelays = process.env.NEXT_PUBLIC_DEFAULT_RELAYS;
-      if (defaultRelays) {
-        relays = defaultRelays.split(',').map(url => url.trim());
-      } else {
-        relays = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.nostr.band'];
-      }
+      throw new Error('書き込み可能なリレーが設定されていません');
     }
 
     const tags: string[][] = [['e', tweetId]];

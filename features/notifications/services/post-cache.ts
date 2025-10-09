@@ -160,20 +160,8 @@ async function fetchPostDataFromNostr(postId: string, additionalRelays?: string[
       ...(additionalRelays || [])
     ]));
 
-    // フォールバック: デフォルトリレーを追加
     if (relays.length === 0) {
-      const envRelays = (process.env.NEXT_PUBLIC_DEFAULT_RELAYS || '')
-        .split(',')
-        .map(u => u.trim())
-        .filter(Boolean);
-
-      const fallbackRelays = envRelays.length > 0 ? envRelays : [
-        'wss://relay.damus.io',
-        'wss://nos.lol',
-        'wss://relay.nostr.band'
-      ];
-
-      relays.push(...fallbackRelays);
+      return null;
     }
 
 

@@ -2,26 +2,13 @@ import type { Event as NostrEvent } from 'nostr-tools';
 import { subscribeTo, getReadRelays } from '../relays/services/relayPool';
 import { useRelaysStore } from '../../stores/relays.store';
 
-const DEFAULT_FALLBACK_RELAYS = [
-  'wss://relay.damus.io',
-  'wss://nos.lol',
-  'wss://relay.nostr.band',
-];
-
 function buildRelayList(preferred: string[] = []) {
   const relaysStore = useRelaysStore.getState();
   const configured = getReadRelays(relaysStore.relays) || [];
 
-  const envRelays = (process.env.NEXT_PUBLIC_DEFAULT_RELAYS || '')
-    .split(',')
-    .map(u => u.trim())
-    .filter(Boolean);
-
   const combined = new Set<string>([
     ...preferred,
     ...configured,
-    ...envRelays,
-    ...DEFAULT_FALLBACK_RELAYS,
   ]);
 
   return Array.from(combined);

@@ -238,7 +238,8 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                   try {
                     await toggleFollow();
                   } catch (error) {
-                    alert(t('notifications.errors.followFailed'));
+                    const message = error instanceof Error ? error.message : t('notifications.errors.followFailed');
+                    alert(message);
                   }
                 }}
                 disabled={isFollowLoading}
@@ -268,7 +269,8 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                   try {
                     await toggleLike();
                   } catch (error) {
-                    alert(t('notifications.errors.reactionFailed'));
+                    const message = error instanceof Error ? error.message : t('notifications.errors.reactionFailed');
+                    alert(message);
                   }
                 }}
                 disabled={isLikeLoading}

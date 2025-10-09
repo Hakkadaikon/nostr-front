@@ -262,7 +262,8 @@ export default function ProfilePage({ params }: Props) {
     } catch (error) {
       // エラー時は元に戻す
       setIsFollowing(isFollowing);
-      // TODO: エラートーストを表示
+      const message = error instanceof Error ? error.message : 'フォロー操作に失敗しました。時間をおいて再試行してください。';
+      alert(message);
     }
   };
 
@@ -333,6 +334,8 @@ export default function ProfilePage({ params }: Props) {
         }
         return t;
       }));
+      const message = error instanceof Error ? error.message : 'いいね操作に失敗しました。時間をおいて再試行してください。';
+      alert(message);
     }
   };
 
@@ -431,6 +434,8 @@ export default function ProfilePage({ params }: Props) {
         }
         return t;
       }));
+      const message = error instanceof Error ? error.message : 'リツイート操作に失敗しました。時間をおいて再試行してください。';
+      alert(message);
     }
   };
 

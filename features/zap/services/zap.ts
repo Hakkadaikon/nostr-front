@@ -47,11 +47,15 @@ export async function generateZapInvoice(params: GenerateZapInvoiceParams): Prom
       .filter(r => r.read || r.write)
       .map(r => r.url);
 
+    if (relays.length === 0) {
+      throw new Error('リレーが設定されていません');
+    }
+
     zapRequest = createZapRequest({
       amount: amountMilliSats,
       pubkey: recipientPubkey,
       content: message,
-      relays: relays.length > 0 ? relays : ['wss://relay.damus.io', 'wss://nos.lol'],
+      relays,
       eventId,
     });
 

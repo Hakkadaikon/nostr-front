@@ -10,14 +10,9 @@ export async function createRepost(targetEventId: string, targetPubkey: string):
   try {
     
     // リレーの設定を取得
-    let relays = useRelaysStore.getState().relays.filter(r => r.write).map(r => r.url);
+    const relays = useRelaysStore.getState().relays.filter(r => r.write).map(r => r.url);
     if (relays.length === 0) {
-      const defaultRelays = process.env.NEXT_PUBLIC_DEFAULT_RELAYS;
-      if (defaultRelays) {
-        relays = defaultRelays.split(',').map(url => url.trim());
-      } else {
-        relays = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.nostr.band'];
-      }
+      throw new Error('書き込み可能なリレーが設定されていません');
     }
     
     // リポストイベントを作成
@@ -52,14 +47,9 @@ export async function deleteRepost(repostEventId: string): Promise<void> {
   try {
     
     // リレーの設定を取得
-    let relays = useRelaysStore.getState().relays.filter(r => r.write).map(r => r.url);
+    const relays = useRelaysStore.getState().relays.filter(r => r.write).map(r => r.url);
     if (relays.length === 0) {
-      const defaultRelays = process.env.NEXT_PUBLIC_DEFAULT_RELAYS;
-      if (defaultRelays) {
-        relays = defaultRelays.split(',').map(url => url.trim());
-      } else {
-        relays = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.nostr.band'];
-      }
+      throw new Error('書き込み可能なリレーが設定されていません');
     }
     
     // 削除イベントを作成（kind 5）
