@@ -102,8 +102,12 @@ export function LinkPreview({ url, suppressUrls, authorPubkey, actorPubkey }: Li
   // OGP画像がsuppressUrlsに含まれる場合は非表示
   const shouldShowImage = image && !suppressUrls?.some(suppressUrl => image === suppressUrl || image.startsWith(suppressUrl));
 
-  // OGP画像のURLが画像形式の場合は、インライン画像として表示
-  if (shouldShowImage && isImageUrl(image)) {
+  // OGPテキストメタデータ（title/description）が存在するかチェック
+  // titleがURLそのままの場合（フォールバック）は、真のOGPメタデータとは見なさない
+  const hasOgpText = (data?.title && data.title !== normalizedUrl) || data?.description;
+
+  // 直接画像URLで、かつOGPテキストメタデータがない場合のみインライン表示
+  if (shouldShowImage && isImageUrl(image) && !hasOgpText) {
     return (
       <span className="inline-block my-2">
         <SensitiveImage
