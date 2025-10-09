@@ -9,6 +9,7 @@ import { MediaEmbed } from './MediaEmbed';
 import { isImageUrl, isVideoUrl, isAudioUrl } from '../../lib/utils/media-urls';
 import { SensitiveImage } from '../ui/SensitiveImage';
 import { fetchProfileForNotification } from '../../features/profile/services/profile-cache';
+import { isTrackedOgpImage } from '../../lib/utils/ogp-image-tracker';
 
 interface RichContentProps {
   content: string;
@@ -64,6 +65,10 @@ function renderLink(url: string, key: string, seenUrls: Set<string>, suppressUrl
 
   // 画像URLの場合はインライン表示（SensitiveImageでラップ）
   if (isImageUrl(cleaned)) {
+    // OGP画像として既に表示されている場合は重複を防ぐ
+    if (isTrackedOgpImage(cleaned)) {
+      return null;
+    }
     return (
       <span key={key} className="inline-block my-2">
         <SensitiveImage

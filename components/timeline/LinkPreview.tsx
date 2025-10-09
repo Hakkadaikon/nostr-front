@@ -6,6 +6,7 @@ import { Spinner } from '../ui/Spinner';
 import { fetchLinkPreview } from '../../lib/services/linkPreview';
 import { isImageUrl } from '../../lib/utils/media-urls';
 import { SensitiveImage } from '../ui/SensitiveImage';
+import { trackOgpImage } from '../../lib/utils/ogp-image-tracker';
 
 interface LinkPreviewData {
   url?: string;
@@ -81,6 +82,31 @@ export function LinkPreview({ url, suppressUrls, authorPubkey, actorPubkey }: Li
     };
   }, [cacheKey, normalizedUrl]);
 
+  // 変数定義（normalizedUrlがnullの場合も安全に処理）
+  const title = data?.title || normalizedUrl || url;
+  const description = data?.description;
+  const image = data?.image;
+  const siteName = data?.siteName || (normalizedUrl ? new URL(normalizedUrl).hostname : '');
+
+  // OGP画像がsuppressUrlsに含まれる場合は非表示
+  const shouldShowImage = image && !suppressUrls?.some(suppressUrl => image === suppressUrl || image.startsWith(suppressUrl));
+
+  // OGPテキストメタデータ（title/description）が存在するかチェック
+  // titleがURLそのままの場合（フォールバック）は、真のOGPメタデータとは見なさない
+  const hasOgpText = (data?.title && data.title !== normalizedUrl) || data?.description;
+
+  // OGPカードとして画像を表示する場合、その画像URLをトラッキング
+  useEffect(() => {
+    // normalizedUrlがない場合はスキップ
+    if (!normalizedUrl) return;
+
+    // インライン画像表示の条件を満たさず、かつ画像がある場合、OGPカードとして表示される
+    const willShowAsOgpCard = shouldShowImage && (!isImageUrl(image) || hasOgpText);
+    if (willShowAsOgpCard && image) {
+      trackOgpImage(image);
+    }
+  }, [normalizedUrl, shouldShowImage, image, hasOgpText]);
+
   if (!normalizedUrl) {
     return (
       <a
@@ -93,18 +119,6 @@ export function LinkPreview({ url, suppressUrls, authorPubkey, actorPubkey }: Li
       </a>
     );
   }
-
-  const title = data?.title || normalizedUrl;
-  const description = data?.description;
-  const image = data?.image;
-  const siteName = data?.siteName || new URL(normalizedUrl as string).hostname;
-
-  // OGP画像がsuppressUrlsに含まれる場合は非表示
-  const shouldShowImage = image && !suppressUrls?.some(suppressUrl => image === suppressUrl || image.startsWith(suppressUrl));
-
-  // OGPテキストメタデータ（title/description）が存在するかチェック
-  // titleがURLそのままの場合（フォールバック）は、真のOGPメタデータとは見なさない
-  const hasOgpText = (data?.title && data.title !== normalizedUrl) || data?.description;
 
   // 直接画像URLで、かつOGPテキストメタデータがない場合のみインライン表示
   if (shouldShowImage && isImageUrl(image) && !hasOgpText) {
